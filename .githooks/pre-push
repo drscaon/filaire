@@ -1,0 +1,13 @@
+#!/bin/sh
+# GitHub Flow: refuse direct pushes to main; changes reach main through a
+# pull request from a short-lived branch. Enable once per clone with
+#   git config core.hooksPath .githooks
+# Override in an emergency with: ALLOW_MAIN_PUSH=1 git push ...
+protected="refs/heads/main"
+while read -r local_ref local_sha remote_ref remote_sha; do
+  if [ "$remote_ref" = "$protected" ] && [ "${ALLOW_MAIN_PUSH:-0}" != "1" ]; then
+    echo "pre-push: direct push to main refused. Push a branch and open a pull request." >&2
+    exit 1
+  fi
+done
+exit 0

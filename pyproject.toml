@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "filaire"
+version = "0.1.0b1"
+description = "Standard cable assets generator for Physical AI: cables of standard types (power, USB, Ethernet, HDMI, audio, industrial, ribbon, coiled) with male and female connectors, cut or stripped ends, exported to OpenUSD as UsdPhysics rigid-segment chains and checked in MuJoCo."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+authors = [{ name = "Daniel Régis Sarmento Caon" }]
+keywords = ["cable", "connector", "simulation", "openusd", "mujoco", "procedural", "robotics", "physical-ai", "synthetic-data"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Multimedia :: Graphics :: 3D Modeling",
+]
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "shapely>=2.1",
+    "usd-core>=24.0",
+]
+
+[project.optional-dependencies]
+render = ["matplotlib>=3.7"]
+sim = ["mujoco>=3.2"]
+dev = ["pytest>=7", "ruff>=0.5", "matplotlib>=3.7", "mujoco>=3.2"]
+
+[project.urls]
+Homepage = "https://github.com/drscaon/filaire"
+Issues = "https://github.com/drscaon/filaire/issues"
+
+[project.scripts]
+filaire = "filaire.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
