@@ -6,7 +6,7 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-## [0.1.0b1] - 2026-10-23 (beta)
+## [0.1.0b1] - 2026-10-24 (beta)
 
 First beta.
 
@@ -39,7 +39,10 @@ First beta.
   insertion and keying at 0°, 90° and 180°.
 - `filaire preview` (top view) and `filaire connectors` (plug faces and
   receptacles), with matplotlib; `filaire list`, `filaire ends`.
-- README with results, Blender renders, logo and GitHub social preview
+- Several cables in one MuJoCo scene, colliding with each other and with
+  static obstacles (`filaire.sim.mujoco_model.scene_model`).
+- README with results, Blender renders, an animated drop of five cables onto
+  a bar (simulated in MuJoCo), logo and GitHub social preview
   (`docs/images/social_preview.png`); scripts to rebuild the images.
 - Test suite (pytest), lint and format (ruff), continuous integration with
   the MuJoCo checks of every preset, release workflow, Dependabot, GitHub
