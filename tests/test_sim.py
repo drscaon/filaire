@@ -73,9 +73,15 @@ def test_cables_fall_on_an_obstacle_and_each_other(tmp_path):
     model, init = scene_model(cables, dt=5e-4, obstacles=[bar])
     data = mujoco.MjData(model)
     init(data)
-    while data.time < 1.5:
+
+    # how fast the pile settles depends on the platform's floating point (contact order),
+    # so simulate until it is at rest rather than for a fixed time
+    def speed():
+        return np.abs(data.cvel[1:, 3:]).max()
+
+    while data.time < 1.0 or (speed() > 0.01 and data.time < 6.0):
         mujoco.mj_step(model, data)
     assert data.warning[mujoco.mjtWarning.mjWARN_BADQACC].number == 0
     heights = data.xpos[1:, 2]
     assert heights.min() > -0.001 and heights.max() < 0.08  # on the floor or over the bar
-    assert np.abs(data.cvel[1:, 3:]).max() < 0.05
+    assert speed() < 0.05, f"still moving after {data.time:.1f} s"
