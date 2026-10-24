@@ -22,3 +22,6 @@ output/
 .DS_Store
 .idea/
 .vscode/
+
+# MuJoCo warnings log
+MUJOCO_LOG.TXT
