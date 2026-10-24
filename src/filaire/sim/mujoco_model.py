@@ -135,27 +135,23 @@ def coarsen(cable, max_links: int):
     return out
 
 
-def cable_model(cable, dt: float = DT, lift: float = 0.01, floor: bool = True):
-    """(model, init) — init(data) sets the authored pose, lifted by `lift`."""
-    spec = mujoco.MjSpec()
-    spec.option.timestep = dt
-    spec.option.integrator = mujoco.mjtIntegrator.mjINT_IMPLICITFAST
+def add_cable(spec, cable, prefix: str = "", dt: float = DT):
+    """Add one cable (a free kinematic tree) to a spec; returns init(model, data, lift) for its pose.
+
+    Body names: `{prefix}seg{i}`, `{prefix}end_a`, `{prefix}end_b`; free joint `{prefix}root`.
+    """
     fr = float(cable.attrs.get("filaire:friction", 0.5))
-    if floor:
-        spec.worldbody.add_geom(
-            type=mujoco.mjtGeom.mjGEOM_PLANE, size=[0, 0, 1], friction=[fr, 0.005, 0.0001]
-        )
     segs, joints = cable.segments, cable.joints
     lengths = [s.capsule[1] if s.capsule else s.box[0] for s in segs]
     bodies = []
     parent = spec.worldbody
     for i, seg in enumerate(segs):
         if i == 0:
-            b = parent.add_body(name="seg0", pos=list(seg.position), quat=_wxyz(seg.rotation))
-            b.add_freejoint(name="root")
+            b = parent.add_body(name=f"{prefix}seg0", pos=list(seg.position), quat=_wxyz(seg.rotation))
+            b.add_freejoint(name=f"{prefix}root")
         else:
             b = parent.add_body(
-                name=f"seg{i}", pos=[lengths[i - 1] / 2 + lengths[i] / 2, 0, 0], quat=[1, 0, 0, 0]
+                name=f"{prefix}seg{i}", pos=[lengths[i - 1] / 2 + lengths[i] / 2, 0, 0], quat=[1, 0, 0, 0]
             )
             j = joints[i - 1]
             anchor = [-lengths[i] / 2, 0, 0]
@@ -163,7 +159,7 @@ def cable_model(cable, dt: float = DT, lift: float = 0.01, floor: bool = True):
                 k = j.stiffness[dof]
                 a, c = _armature(k, dt)
                 b.add_joint(
-                    name=f"j{i}_{dof}",
+                    name=f"{prefix}j{i}_{dof}",
                     type=mujoco.mjtJoint.mjJNT_HINGE,
                     axis=axis,
                     pos=anchor,
@@ -174,7 +170,7 @@ def cable_model(cable, dt: float = DT, lift: float = 0.01, floor: bool = True):
             if j.free_axial:
                 k = j.stiffness["transX"]
                 b.add_joint(
-                    name=f"j{i}_transX",
+                    name=f"{prefix}j{i}_transX",
                     type=mujoco.mjtJoint.mjJNT_SLIDE,
                     axis=[1, 0, 0],
                     pos=anchor,
@@ -186,34 +182,106 @@ def cable_model(cable, dt: float = DT, lift: float = 0.01, floor: bool = True):
         bodies.append(b)
         parent = b
     for i in range(len(bodies) - 2):
-        spec.add_exclude(bodyname1=f"seg{i}", bodyname2=f"seg{i + 2}")
+        spec.add_exclude(bodyname1=f"{prefix}seg{i}", bodyname2=f"{prefix}seg{i + 2}")
     for side, idx in (("a", 0), ("b", len(segs) - 1)):
         end = cable.ends.get(side)
         if end is None:
             continue
         body, lp, lr = end
-        e = bodies[idx].add_body(name=f"end_{side}", pos=list(lp), quat=_wxyz(lr))
+        e = bodies[idx].add_body(name=f"{prefix}end_{side}", pos=list(lp), quat=_wxyz(lr))
         _inertial(e, body)
-        add_hulls(spec, e, body.hulls, f"end_{side}", 0.4)
+        add_hulls(spec, e, body.hulls, f"{prefix}end_{side}", 0.4)
         for k in (1, 2, 3):
-            if 0 <= idx + (k if side == "a" else -k) < len(segs):
-                spec.add_exclude(bodyname1=f"end_{side}", bodyname2=f"seg{idx + (k if side == 'a' else -k)}")
-    model = spec.compile()
+            other = idx + (k if side == "a" else -k)
+            if 0 <= other < len(segs):
+                spec.add_exclude(bodyname1=f"{prefix}end_{side}", bodyname2=f"{prefix}seg{other}")
 
-    def init(data):
-        root = model.joint("root").qposadr[0]
+    def init(model, data, lift: float = 0.0):
+        root = model.joint(f"{prefix}root").qposadr[0]
         data.qpos[root : root + 3] = segs[0].position + np.array([0, 0, lift])
         data.qpos[root + 3 : root + 7] = _wxyz(segs[0].rotation)
         for i in range(1, len(segs)):
             rel = segs[i - 1].rotation.T @ segs[i].rotation
+            # the hinges turn in body order, rotY then rotZ (then rotX when twist is kept):
+            # decompose in that order, so the chain starts in the authored pose
             angles = dict(
-                zip(("rotX", "rotY", "rotZ"), Rotation.from_matrix(rel).as_euler("XYZ"), strict=True)
+                zip(("rotY", "rotZ", "rotX"), Rotation.from_matrix(rel).as_euler("YZX"), strict=True)
             )
             for dof, _axis in DOFS:
-                data.qpos[model.joint(f"j{i}_{dof}").qposadr[0]] = angles[dof]
+                data.qpos[model.joint(f"{prefix}j{i}_{dof}").qposadr[0]] = angles[dof]
+
+    return init
+
+
+def _spec(dt: float, floor_friction: float | None):
+    spec = mujoco.MjSpec()
+    spec.option.timestep = dt
+    spec.option.integrator = mujoco.mjtIntegrator.mjINT_IMPLICITFAST
+    if floor_friction is not None:
+        spec.worldbody.add_geom(
+            type=mujoco.mjtGeom.mjGEOM_PLANE, size=[0, 0, 1], friction=[floor_friction, 0.005, 0.0001]
+        )
+    return spec
+
+
+def cable_model(cable, dt: float = DT, lift: float = 0.01, floor: bool = True):
+    """(model, init) — init(data) sets the authored pose, lifted by `lift`."""
+    spec = _spec(dt, float(cable.attrs.get("filaire:friction", 0.5)) if floor else None)
+    set_pose = add_cable(spec, cable, "", dt)
+    model = spec.compile()
+
+    def init(data):
+        set_pose(model, data, lift)
         mujoco.mj_forward(model, data)
 
     return model, init
+
+
+def scene_model(cables, dt: float = DT, floor_friction: float = 0.5, obstacles=()):
+    """Several cables on one floor, colliding with each other: (model, init), prefixes c0_, c1_, …
+
+    obstacles: static shapes on the floor, dicts {"type": "box" | "cylinder", "pos": [x, y, z],
+    "size": MuJoCo size (box: half sizes; cylinder: [radius, half length]), "euler": [deg x, y, z]}.
+    """
+    spec = _spec(dt, floor_friction)
+    for k, ob in enumerate(obstacles):
+        q = Rotation.from_euler("xyz", ob.get("euler", [0, 0, 0]), degrees=True).as_quat()
+        spec.worldbody.add_geom(
+            name=f"obstacle{k}",
+            type={"box": mujoco.mjtGeom.mjGEOM_BOX, "cylinder": mujoco.mjtGeom.mjGEOM_CYLINDER}[ob["type"]],
+            pos=list(ob["pos"]),
+            quat=[q[3], q[0], q[1], q[2]],
+            size=list(ob["size"]) + [0] * (3 - len(ob["size"])),
+            friction=[floor_friction, 0.005, 0.0001],
+        )
+    inits = [add_cable(spec, c, f"c{k}_", dt) for k, c in enumerate(cables)]
+    # stiffer contacts than MuJoCo's default (time constant 0.02 s), on every geom, floor included
+    # (a contact mixes the two geoms' values): dropped from a height, cables would sink on impact
+    for g in spec.geoms:
+        g.solref = [max(4 * dt, 0.002), 1.0]
+    spec.memory = 256 * 2**20  # arena for contacts and constraints between the cables
+    model = spec.compile()
+
+    def init(data):
+        for f in inits:
+            f(model, data)
+        mujoco.mj_forward(model, data)
+
+    return model, init
+
+
+def transformed(cable, rotation: np.ndarray, translation) -> object:
+    """The same cable moved rigidly: every segment pose is premultiplied (ends follow, they are local)."""
+    import copy
+
+    out = copy.copy(cable)
+    out.segments = []
+    for s in cable.segments:
+        t = copy.copy(s)
+        t.rotation = rotation @ s.rotation
+        t.position = rotation @ s.position + np.asarray(translation, float)
+        out.segments.append(t)
+    return out
 
 
 def chain_model(

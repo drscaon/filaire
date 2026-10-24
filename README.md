@@ -294,6 +294,15 @@ and critical damping so that stiff, light links stay stable with a 1 ms
 step; neither changes a static equilibrium, which is what the sag and coil
 checks compare.
 
+![Five cables dropped onto a bar on the floor, simulated in MuJoCo](docs/images/drop.gif)
+
+*Power cord, Cat 6, USB-C, 3.5 mm jack and M12 sensor cable (70 cm),
+steeply tilted and dropped together onto a bar: one end hits first, the
+cables fold over the bar and over each other, connectors attached, and come
+to rest. Simulated in MuJoCo from the OpenUSD files (rest shape straight,
+60 links per cable, 0.5 ms step), rendered in Blender:
+[`scripts/drop_gif.py`](scripts/drop_gif.py).*
+
 ### Results
 
 `filaire generate --preset <p> --count 3` (1 m cables, seed 1) then
