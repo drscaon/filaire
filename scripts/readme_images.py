@@ -103,17 +103,41 @@ def plugs(tmp: Path, out: Path, samples: int):
     blender("hero", out, 1600, 760, *cam, 34, *args, samples=samples)
 
 
+SOCIAL = [
+    # preset, options: short cables close to the camera, connectors in view
+    ("power_c13", dict(seed=5, ends={"a": "c13_plug", "b": "cee77_plug"})),
+    ("ethernet", dict(seed=2, color="#2a6fbf", ends={"b": "rj45_plug"})),
+    ("usb_c", dict(seed=3, color="#f0f0ee", ends={"b": "usb_c_plug"})),
+    ("audio_jack", dict(seed=4, color="#c0392b", ends={"b": "jack35_plug"})),
+    ("m12_sensor", dict(seed=2, color="#e88a2a", ends={"b": "stripped"})),
+    ("hdmi", dict(seed=7, ends={"b": "hdmi_a_plug"})),
+]
+
+
+def social_render(tmp: Path, out: Path, samples: int, size=(2560, 900)):
+    """Six short cables in two columns, seen from above, for the social preview."""
+    args = []
+    for k, (preset, opts) in enumerate(SOCIAL):
+        scene = generate_scene(preset, count=1, layout="slack", length=0.55, **opts)
+        folder = write_outputs(scene, tmp / "social")
+        col, row = divmod(k, 3)  # two columns of three
+        args += [folder / f"filaire_{preset}.usdc", 0.64 * col - 0.02, 0.16 * row + 0.12, 0, 0]
+    cam = (0.62, -0.18, 1.2, 0.62, 0.2, 0.0)
+    blender("hero", out, *size, *cam, 31, *args, samples=samples)
+
+
 def social(hero_png: Path, logo_png: Path, out: Path):
     from PIL import Image, ImageDraw, ImageFont
 
-    W, H = 1280, 640
+    W, H, band_h = 1280, 640, 190
     img = Image.open(hero_png).convert("RGB")
-    s = max(W / img.width, H / img.height)
+    top_h = H - band_h  # the render fills the top, the band holds logo and tagline below it
+    s = max(W / img.width, top_h / img.height)
     img = img.resize((int(img.width * s), int(img.height * s)), Image.LANCZOS)
-    left, top = (img.width - W) // 2, (img.height - H) // 2
-    img = img.crop((left, top, left + W, top + H))
-    band = Image.new("RGBA", (W, 190), (255, 255, 255, 228))
-    img.paste(band, (0, H - 190), band)
+    left, top = (img.width - W) // 2, (img.height - top_h) // 2
+    canvas = Image.new("RGB", (W, H), (255, 255, 255))
+    canvas.paste(img.crop((left, top, left + W, top + top_h)), (0, 0))
+    img = canvas
     logo = Image.open(logo_png).convert("RGBA")
     k = 92 / logo.height
     logo = logo.resize((int(logo.width * k), 92), Image.LANCZOS)
@@ -145,12 +169,13 @@ def main(argv=None):
         tmp = Path(t)
         if "hero" in only:
             hero(tmp, out / "hero.jpg", args.samples)
+        if "social" in only:
+            social_render(tmp, tmp / "social.png", args.samples)
+            social(tmp / "social.png", out / "logo.png", out / "social_preview.png")
         if "plugs" in only:
             plugs(tmp, out / "plugs.jpg", args.samples)
     if "connectors" in only:
         render.connectors_sheet(out / "connectors.png")
-    if "social" in only:
-        social(out / "hero.jpg", out / "logo.png", out / "social_preview.png")
 
 
 if __name__ == "__main__":

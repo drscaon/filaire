@@ -16,6 +16,8 @@ from matplotlib.path import Path as MPath
 from matplotlib.textpath import TextPath
 
 INK, INK_DARK = "#16191D", "#E8EAED"
+ACCENT, ACCENT_DARK = "#1F7A5C", "#5CC7A0"  # the letters "ai" (as Maillage colours its "ai")
+AI = (3, 4)  # indices of "a" and the second "ı" in the word
 COPPER = "#C47A3D"
 SCALE = 1.0
 
@@ -53,7 +55,7 @@ def _d(path: MPath, dx: float, dy: float, s: float, height: float) -> str:
     return "".join(out)
 
 
-def logo(ink: str) -> str:
+def logo(ink: str, accent: str) -> str:
     from matplotlib.font_manager import findfont, get_font
 
     fp = FontProperties(family="DejaVu Sans", weight="bold")
@@ -79,7 +81,14 @@ def logo(ink: str) -> str:
     xs = [dx + x * s for x in xs]
     top = height - (dy + 76 * s)  # just above the x-height
     plug_w, plug_h = 15.0, 18.0
-    parts = [f'<path fill="{ink}" d="{"".join(_d(g, dx + p * s, dy, s, height) for p, g in glyphs)}"/>']
+
+    def letters(keep) -> str:
+        return "".join(_d(g, dx + p * s, dy, s, height) for k, (p, g) in enumerate(glyphs) if keep(k))
+
+    parts = [
+        f'<path fill="{ink}" d="{letters(lambda k: k not in AI)}"/>',
+        f'<path fill="{accent}" d="{letters(lambda k: k in AI)}"/>',
+    ]
     # cable between the two plugs, arching over "la"
     (x1, x2) = xs
     y0 = top - plug_h - 4
@@ -108,8 +117,8 @@ def logo(ink: str) -> str:
 def main(out: str = "docs/images"):
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
-    (out / "logo.svg").write_text(logo(INK), encoding="utf-8")
-    (out / "logo-dark.svg").write_text(logo(INK_DARK), encoding="utf-8")
+    (out / "logo.svg").write_text(logo(INK, ACCENT), encoding="utf-8")
+    (out / "logo-dark.svg").write_text(logo(INK_DARK, ACCENT_DARK), encoding="utf-8")
     # PNG for the social preview, through matplotlib's SVG-free path: rasterise with cairosvg if present
     try:
         import cairosvg
