@@ -42,3 +42,23 @@ def test_female_contacts_and_roles():
     assert CONNECTORS["c13"].gender == "female"
     assert CONNECTORS["usb_c"].gender == "male"
     assert CONNECTORS["xlr3"].inline is not None  # the male XLR on a cable
+
+
+def test_barrel_plugs_only_fit_compatible_jacks():
+    from filaire.connectors import fits
+
+    c = CONNECTORS
+    assert fits(c["dc5521"], 0) and fits(c["dc5525"], 0)
+    # a 2.5 mm bore goes loosely over the 2.1 jack's pin, as on real connectors...
+    assert fits(c["dc5525"], 0, socket=c["dc5521"])
+    # ...but a 2.1 mm bore cannot go over the 2.5 jack's thicker pin
+    assert not fits(c["dc5521"], 0, socket=c["dc5525"])
+    assert not fits(c["dc4017"], 0, socket=c["dc5521"])
+    assert not fits(c["dc5521"], 0, socket=c["dc4017"])
+
+
+def test_micro_b_is_keyed_by_its_trapezoid():
+    from filaire.connectors import fits
+
+    spec = CONNECTORS["usb_micro"]
+    assert fits(spec, 0) and not fits(spec, 180)

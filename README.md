@@ -15,7 +15,7 @@
 
 Filaire generates cables of standard types (power cords, USB, Ethernet,
 HDMI, audio, microphone, speaker wire, sensor, ribbon and coiled handset
-cords) with their real connectors, **male and female**, or with cut or
+cords, DC barrel and Micro-USB) with their real connectors, **male and female**, or with cut or
 stripped ends, and exports them to **OpenUSD** as physics-ready assets: a
 chain of rigid segments with `UsdPhysics` joints whose springs come from
 the cable's bending and torsional stiffness. Every connector comes with the
@@ -47,7 +47,7 @@ files into Blender and rendered with Cycles.*
   slack random curve or coiled on the floor.
 - Puts on **each end, independently**, a connector plug, a receptacle on a
   cable (the female end of an extension or a coupler), a clean cut or a
-  stripped end with the cores out: 13 connector families, 21 end variants,
+  stripped end with the cores out: 17 connector families, 28 end variants,
   any of them on any cable.
 - Models the cable as a **Kirchhoff rod**: rigid segments of 1.5 cable
   widths, joints with twist and bending springs `G·J / L` and `E·I / L`
@@ -131,8 +131,10 @@ other ends…).
 |---|---|---|---|---|
 | Power | `power_c13` | round Ø6.4 mm, 3 cores | C13 | CEE 7/7 plug, C14 (extension), stripped |
 | | `power_c7` | figure-8, 2 × Ø3.4 mm | C7 | Europlug, stripped |
+| | `dc_barrel` | figure-8, 2 × Ø2.4 mm | DC plug 5.5 × 2.1, 5.5 × 2.5 or 4.0 × 1.7 | stripped, cut, DC jack (extension) |
 | Data | `usb_c` | round Ø4.0 mm | USB-C plug | USB-C plug, USB-C receptacle (extension) |
 | | `usb_a_to_c` | round Ø3.8 mm | USB-A plug | USB-C plug |
+| | `usb_micro` | round Ø3.5 mm | USB-A plug | Micro-B plug |
 | | `ethernet` | round Ø6.0 mm, 4 pairs | RJ45 plug | RJ45 plug, RJ45 coupler |
 | | `hdmi` | round Ø7.0 mm | HDMI plug | HDMI plug, HDMI receptacle (extension) |
 | Audio | `audio_jack` | round Ø3.5 mm | 3.5 mm plug | 3.5 mm plug, 3.5 mm socket (extension) |
@@ -158,6 +160,7 @@ fixed receptacles derived from them (`sockets.usdc`), rendered in Blender.*
 |---|---|---|---|---|---|---|
 | `usb_c` | USB-C plug | male | USB-C receptacle | USB-C port | reversible | 6.65 mm |
 | `usb_a` | USB-A plug | male | | USB-A port | keyed | 12 mm |
+| `usb_micro` | Micro-B plug | male | | Micro-B port | keyed | 5.6 mm |
 | `hdmi_a` | HDMI plug | male | HDMI receptacle | HDMI port | keyed | 9.5 mm |
 | `rj45` | RJ45 plug | male | RJ45 coupler | RJ45 jack | keyed | 14 mm |
 | `rj9` | RJ9 plug | male | | RJ9 handset jack | keyed | 10 mm |
@@ -169,6 +172,7 @@ fixed receptacles derived from them (`sockets.usdc`), rendered in Blender.*
 | `xlr3` | XLR3 female | **female** | XLR3 male | XLR3 male (panel) | keyed | 11 mm |
 | `m12a` | M12 A-coded female | **female** | | M12 male (panel) | keyed | 8 mm |
 | `idc10` | IDC socket 2 × 5 | **female** | | box header 2 × 5 | keyed | 6 mm |
+| `dc5521`, `dc5525`, `dc4017` | DC plug 5.5 × 2.1, 5.5 × 2.5, 4.0 × 1.7 mm | male | DC jack | DC jack | none | 9.5 mm |
 
 **Gender and role are kept apart.** *Gender* is the contact gender of the
 standard; *role* is geometric: the plug enters, the receptacle receives. An
@@ -184,6 +188,12 @@ or tongue, the plug's key becomes the keyway, and the two always mate. The
 keying is then *found* by turning the plug in 15° steps and testing for
 overlap, and a test checks it against the standard's.
 
+The same test answers which plug goes into which receptacle across families
+(`fits(plug, angle, socket=other)`). For the DC barrels it gives the real
+behaviour: the derived jacks get a centre pin from the plug's bore, so a
+5.5 × 2.5 mm plug goes loosely onto a 5.5 × 2.1 mm jack, while a 5.5 × 2.1 mm
+plug is stopped by the thicker pin of a 5.5 × 2.5 mm jack.
+
 ![Plug faces and the receptacles derived from them](docs/images/connectors.png)
 
 *`filaire connectors`: the plug seen from its tip (left) and the fixed
@@ -193,8 +203,9 @@ light grey.*
 Dimensions come from published figures where they could be found (USB-C
 receptacle opening and insertion length, HDMI plug and receptacle, RJ45 and
 RJ9 widths and heights, 3.5 mm diameter and length, CEE 7 pins and recess
-depth, IEC 60320 pin spacing); the others (XLR, M12, IDC, C13 face, inner
-cavities, overmolds) are **approximate** and marked so in
+depth, IEC 60320 pin spacing, Micro-B receptacle opening, DC barrel diameters
+and the 4.0 × 1.7 mm barrel length); the others (XLR, M12, IDC, C13 face,
+Micro-B chamfers, 5.5 mm barrel length, inner cavities, overmolds) are **approximate** and marked so in
 [`connectors.py`](src/filaire/connectors.py), each with its sources. The
 standards themselves were not consulted. Connectors are simplified: no
 latches that move, no threads, no contacts inside the holes, no logos.
@@ -312,8 +323,10 @@ to rest. Simulated in MuJoCo from the OpenUSD files (rest shape straight,
 |---|---|---|---|---|---|---|
 | `power_c13` | 104 | 0.0049–0.0073 | 119–187 | 3/3 (0.004 m/s, 0.10 mm) | sag −0.8 % | C13 panel + inline, CEE 7/7 ✓ |
 | `power_c7` | 98 | 0.00066–0.00098 | 49–67 | 3/3 (0.002 m/s, 0.06 mm) | sag −0.8 % | C7, Europlug ✓ |
+| `dc_barrel` | 139 | 0.00016–0.00026 | 30–33 | 3/3 (0.012 m/s, 0.09 mm) | sag −0.8 % | three DC jacks ✓ |
 | `usb_c` | 167 | 0.00050–0.00080 | 46–50 | 3/3 (0.013 m/s, 0.18 mm) | sag −0.8 % | USB-C panel + inline ✓ |
 | `usb_a_to_c` | 175 | 0.00041–0.00065 | 43–46 | 3/3 (0.004 m/s, 0.18 mm) | sag −0.8 % | USB-A, USB-C ✓ |
+| `usb_micro` | 190 | 0.00029–0.00051 | 38–40 | 3/3 (0.004 m/s, 0.10 mm) | sag −0.8 % | USB-A, Micro-B ✓ |
 | `ethernet` | 111 | 0.0050–0.0072 | 61–70 | 3/3 (0.005 m/s, 0.07 mm) | sag −0.8 % | RJ45 panel + inline ✓ |
 | `hdmi` | 95 | 0.0094–0.0139 | 99–107 | 3/3 (0.005 m/s, 0.09 mm) | sag −0.8 % | HDMI panel + inline ✓ |
 | `audio_jack` | 190 | 0.00022–0.00036 | 20–22 | 3/3 (0.003 m/s, 0.13 mm) | sag −0.8 % | 3.5 mm panel + inline ✓ |
@@ -326,7 +339,7 @@ to rest. Simulated in MuJoCo from the OpenUSD files (rest shape straight,
 Every keyed connector was stopped at 90° and 180° (at most 12 % of its
 depth, the IDC socket's flat face entering a little before its key meets the
 header), every reversible one went in at 180°, the 3.5 mm jack at every
-angle. The sag is 0.8 % under the linear beam formula for every cable: the
+angle, like the DC barrels. The sag is 0.8 % under the linear beam formula for every cable: the
 geometric nonlinearity of a 10 % deflection, the same for all since the
 sample length is scaled to the stiffness. Generation takes 1–4 s per
 preset (3 cables), the checks 15–30 s (a minute for the coiled cords).
