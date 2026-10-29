@@ -10,6 +10,8 @@ filaire generate --preset usb_c [--count 6] [--seed 1] [--length 1 | --length pr
 filaire preview output/usb_c
 filaire connectors [--out connectors.png]
 filaire sim-test output/usb_c [--cables 2] [--seconds 3]
+filaire blender-test output/usb_c [--cables 1] [--mode setup|naive] [--blender /path/to/blender]
+filaire blender-addon [--out filaire_physics.zip]
 """
 
 from __future__ import annotations
@@ -110,7 +112,7 @@ def _cmd_generate(args) -> int:
         color=args.color,
         youngs_modulus=args.modulus,
     )
-    out = write_outputs(scene, args.out)
+    out = write_outputs(scene, args.out, physics=args.physics)
     print(json.dumps(summarize(scene), indent=2, ensure_ascii=False))
     print(f"written to {out}")
     return 0
@@ -141,6 +143,30 @@ def _cmd_sim_test(args) -> int:
 
     report = run_folder(args.folder, cables=args.cables, seconds=args.seconds, out=args.out)
     return 0 if report["passed"] else 1
+
+
+def _cmd_blender_test(args) -> int:
+    from .blender.checks import blender_test
+
+    try:
+        report = blender_test(args.folder, args.cables, args.seconds, args.mode, args.blender)
+    except RuntimeError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 2
+    print(f"{report['passed']}/{report['total']} passed (Blender, {args.mode})")
+    if args.mode == "naive":
+        return 0  # a comparison: rigid bodies set by hand are expected to come apart
+    return 0 if report["passed"] == report["total"] else 1
+
+
+def _cmd_blender_addon(args) -> int:
+    from .blender import write_addon
+
+    path = write_addon(args.out)
+    print(path)
+    print("Blender 4.4+: Edit > Preferences > Get Extensions > Install from Disk, then File > Import > USD")
+    print("or run it without installing: blender -b -P <the .py> -- file.usdc")
+    return 0
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -180,6 +206,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="maximum rigid segments per cable (default: 400)",
     )
     g.add_argument("--out", default="output", help="output root folder (default: output)")
+    g.add_argument(
+        "--no-physics",
+        dest="physics",
+        action="store_false",
+        help="visual assets only: no rigid bodies, colliders, joints, physics scene or ground",
+    )
     for name, text in VARIATION_HELP.items():
         g.add_argument(
             f"--vary-{name}",
@@ -208,6 +240,25 @@ def build_parser() -> argparse.ArgumentParser:
     )
     s.add_argument("--out", default=None, help="report folder (default: <folder>/sim_test)")
     s.set_defaults(func=_cmd_sim_test)
+
+    b = sub.add_parser(
+        "blender-test", help="the drop check in Blender, through the add-on (needs bpy or Blender)"
+    )
+    b.add_argument("folder", help="a generated folder, output/<preset>")
+    b.add_argument("--cables", type=_positive_int, default=1, help="cables dropped (default: 1)")
+    b.add_argument("--seconds", type=_positive_float, default=1.5, help="simulated time (default: 1.5)")
+    b.add_argument(
+        "--mode",
+        choices=("setup", "naive"),
+        default="setup",
+        help="setup: imported through the add-on (default); naive: every mesh a rigid body by hand",
+    )
+    b.add_argument("--blender", default=None, help="Blender executable (default: the bpy module, then PATH)")
+    b.set_defaults(func=_cmd_blender_test)
+
+    a = sub.add_parser("blender-addon", help="write the Blender add-on (physics set up on USD import)")
+    a.add_argument("--out", default="filaire_physics.zip", help=".zip (extension) or .py (add-on or script)")
+    a.set_defaults(func=_cmd_blender_addon)
     return ap
 
 

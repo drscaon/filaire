@@ -16,6 +16,39 @@ and the project uses [Semantic Versioning](https://semver.org/).
 - `fits(plug, angle, socket=other)` tests a plug against another family's
   receptacle: a 5.5 × 2.5 mm plug goes loosely onto a 5.5 × 2.1 mm jack, the
   reverse is stopped by the thicker pin.
+- A Blender add-on (`filaire blender-addon`, a Blender 4.4+ extension, also
+  attached to releases), adapted from Quincaillerie's: on File > Import >
+  USD, every segment and connector becomes a rigid body (origin at its
+  centre of mass, compound of the USD capsules, boxes and convex hulls,
+  mass, friction, margins), the cable joints Generic Spring constraints with
+  the drives' stiffness and damping, the connectors' fixed joints Fixed
+  constraints; 4000 substeps per second.
+- `filaire blender-test`: the drop check in Blender through the add-on, and
+  `--mode naive` (rigid bodies set by hand) for comparison. CI runs it on
+  every preset.
+- `--no-physics` (`write_outputs(…, physics=False)`): visual assets only, one
+  mesh per cable, no rigid bodies, colliders, joints, physics scene or ground.
+- `filaire.validate.validate()`: every OpenUSD `UsdValidation` validator on
+  each end variant; the tests and the CI smoke test require no issue.
+- README: hero with every preset, a labelled sheet of the 14 presets and of
+  the 17 connector families (each plug on its cable in front of its
+  receptacle), on a warm wood surface where grey cables stand out.
+
+### Changed
+- One visual mesh per rigid body: a connector's shell, body, cores and
+  copper are one mesh with a GeomSubset per material (displayColor per
+  face), so every DCC imports one object per body. Crease normals on every
+  visual mesh (smooth tubes, sharp connector edges).
+- Every body carries `PhysxRigidBodyAPI` (solver iterations) and every
+  collider `PhysxCollisionAPI` (contact and rest offsets), for Isaac Sim.
+- The ground is a collision box whose top face is at z = 0, instead of a
+  plane mesh.
+
+### Fixed
+- On tight curves the rigid segments were as long as the arc they stand
+  for, so neighbouring segments overlapped by up to 0.4 mm at their joint;
+  each segment now spans the chord between its two joints (its mass is
+  still that of the arc).
 
 ## [0.1.0b1] - 2026-10-24 (beta)
 

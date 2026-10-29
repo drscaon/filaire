@@ -67,3 +67,78 @@ def test_sockets(folder):
     hulls = sock.GetChild("Collision").GetChildren()
     assert hulls and all(h.HasAPI(UsdPhysics.CollisionAPI) for h in hulls)
     assert sock.GetChild("MateFrame").GetAttribute("filaire:keying").Get() == "keyed"
+
+
+def test_one_visual_mesh_per_body(folder):
+    stage = Usd.Stage.Open(str(folder / "filaire_ethernet.usdc"))
+    bodies = [p for p in stage.Traverse() if p.HasAPI(UsdPhysics.RigidBodyAPI)]
+    assert bodies
+    for b in bodies:
+        meshes = [
+            p
+            for p in Usd.PrimRange(b)
+            if p.IsA(UsdGeom.Mesh) and UsdGeom.Imageable(p).ComputePurpose() != UsdGeom.Tokens.guide
+        ]
+        assert len(meshes) == 1, b.GetPath()
+        assert "PhysxRigidBodyAPI" in _authored_schemas(b)
+    colliders = [p for p in stage.Traverse() if p.HasAPI(UsdPhysics.CollisionAPI)]
+    assert all("PhysxCollisionAPI" in _authored_schemas(p) for p in colliders)
+
+
+def _authored_schemas(prim):
+    """API schemas as authored: the PhysX ones are not registered without Isaac Sim's plug-ins, so
+    GetAppliedSchemas() may leave them out; the files still carry them for Isaac Sim."""
+    names = []
+    for spec in prim.GetPrimStack():
+        op = spec.GetInfo("apiSchemas")
+        if op:
+            names += list(op.prependedItems) + list(op.explicitItems) + list(op.appendedItems)
+    return names
+
+
+def test_joint_anchors_meet(folder):
+    """Both bodies of every joint put its anchor at the same point (cables curve: chords, not arcs)."""
+    import numpy as np
+
+    stage = Usd.Stage.Open(str(folder / "filaire_ethernet.usdc"))
+    cache = UsdGeom.XformCache()
+
+    def world(path, local):
+        M = np.array(cache.GetLocalToWorldTransform(stage.GetPrimAtPath(path)))
+        return np.append(np.array(local), 1.0) @ M
+
+    n = 0
+    for p in stage.Traverse():
+        if p.IsA(UsdPhysics.Joint):
+            j = UsdPhysics.Joint(p)
+            a = world(j.GetBody0Rel().GetTargets()[0], j.GetLocalPos0Attr().Get())
+            b = world(j.GetBody1Rel().GetTargets()[0], j.GetLocalPos1Attr().Get())
+            assert np.linalg.norm(a[:3] - b[:3]) < 1e-6, p.GetPath()
+            n += 1
+    assert n > 10
+
+
+def test_openusd_validators(folder):
+    from filaire.validate import validate
+
+    assert validate(folder / "filaire_ethernet.usdc") == []
+    assert validate(folder / "sockets.usdc") == []
+
+
+def test_no_physics(tmp_path):
+    from filaire.validate import validate
+
+    scene = generate_scene("power_c13", count=2, seed=1)
+    out = write_outputs(scene, tmp_path, physics=False)
+    for name in ("filaire_power_c13.usdc", "sockets.usdc"):
+        stage = Usd.Stage.Open(str(out / name))
+        assert stage.GetDefaultPrim().GetCustomDataByKey("filaire:physics") is False
+        for p in stage.Traverse():
+            assert not p.HasAPI(UsdPhysics.RigidBodyAPI) and not p.HasAPI(UsdPhysics.CollisionAPI)
+            assert not p.IsA(UsdPhysics.Joint) and not p.IsA(UsdPhysics.Scene)
+            assert not any(s.startswith("Physx") for s in _authored_schemas(p))
+        assert validate(out / name) == []
+    stage = Usd.Stage.Open(str(out / "filaire_power_c13.usdc"))
+    cable = stage.GetPrimAtPath("/World/Cables/power_c13_000")
+    assert cable.GetChild("Visual").IsA(UsdGeom.Mesh)  # one mesh for the whole cable
+    assert stage.GetPrimAtPath("/World/Cables/power_c13_000/End_A/Body/MateFrame")
