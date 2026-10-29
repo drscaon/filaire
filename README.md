@@ -9,8 +9,10 @@
 
 <p align="center">
   <a href="https://github.com/drscaon/filaire/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/drscaon/filaire/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://pypi.org/project/filaire/"><img alt="PyPI" src="https://img.shields.io/pypi/v/filaire"></a>
   <img alt="Python 3.10+" src="https://img.shields.io/badge/python-3.10%2B-3776AB">
   <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green">
+  <a href="https://primvaria.com"><img alt="Part of Primvaria" src="https://img.shields.io/badge/suite-Primvaria-0f6e74"></a>
 </p>
 
 Filaire generates cables of standard types (power cords, USB, Ethernet,
@@ -29,7 +31,7 @@ when a file is imported. Every file passes OpenUSD's own validators.
 It is built for **Physical AI**: robots that route, plug and unplug cables
 are trained and tested in simulation, and they need many different cables
 with exact ground truth, not one capsule chain. Everything can run on CPU.
-Filaire belongs to a series with
+Filaire is part of [**Primvaria**](https://primvaria.com), with
 [Granulaire](https://github.com/drscaon/granulaire) (granular assets),
 [Maillage](https://github.com/drscaon/maillage) (textiles) and
 [Quincaillerie](https://github.com/drscaon/quincaillerie) (fasteners, cells
@@ -75,6 +77,18 @@ and rendered with Cycles.*
 - **A Blender add-on** (`filaire blender-addon`): rigid bodies and
   constraints set up on every USD import, and the same drop check in
   Blender (`filaire blender-test`).
+
+## Engines
+
+Every file is OpenUSD with standard `UsdPhysics` schemas. Where each engine
+stands, as on the [Primvaria engine matrix](https://primvaria.com/#engines):
+
+| Engine | Status |
+|---|---|
+| OpenUSD validators (`usdchecker`) | **tested**: every preset, with and without physics, in CI |
+| Blender | **tested**: every preset dropped through the add-on (`filaire blender-test`) |
+| MuJoCo | **tested**: drop, cantilever sag, coil, insertion of every preset (`filaire sim-test`) |
+| NVIDIA Isaac Sim (PhysX) | not tested yet (needs an NVIDIA RTX GPU); `UsdPhysics` joints and PhysX attributes |
 
 ## Installation
 
@@ -541,4 +555,4 @@ converted to paths, so it displays without the font installed.
 
 ---
 
-Filaire is part of [**Primvaria**](https://github.com/drscaon/primvaria), physics-ready variability for Physical AI, in OpenUSD: `pip install primvaria` installs the whole suite.
+Filaire is part of [**Primvaria**](https://primvaria.com), physics-ready variability for Physical AI, in OpenUSD: `pip install primvaria` installs the whole suite ([source](https://github.com/drscaon/primvaria)).

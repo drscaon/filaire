@@ -11,6 +11,12 @@ and the project uses [Semantic Versioning](https://semver.org/).
 - CI job: the OpenUSD validators on every preset, with and without physics
   (was three sample files).
 
+### Changed
+
+- README: the same header as the other Primvaria projects (PyPI and suite
+  badges), an Engines table matching the suite's engine matrix, and links to
+  primvaria.com.
+
 ## [0.2.0b1] - 2026-10-29 (beta)
 
 First release on PyPI; USB Micro-B and DC barrel connectors, a Blender add-on.
