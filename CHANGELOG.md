@@ -6,6 +6,10 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.0b1] - 2026-10-29 (beta)
+
+First release on PyPI; USB Micro-B and DC barrel connectors, a Blender add-on.
+
 ### Added
 - Connector families: USB Micro-B (`usb_micro`, keyed by its trapezoid) and
   coaxial DC barrels 5.5 × 2.1, 5.5 × 2.5 and 4.0 × 1.7 mm (`dc5521`,

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "filaire"
-version = "0.1.0b1"
+version = "0.2.0b1"
 description = "Standard cable assets generator for Physical AI: cables of standard types (power, USB, Ethernet, HDMI, audio, industrial, ribbon, coiled) with male and female connectors, cut or stripped ends, exported to OpenUSD as UsdPhysics rigid-segment chains and checked in MuJoCo."
 readme = "README.md"
 license = "MIT"
