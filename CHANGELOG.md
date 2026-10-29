@@ -6,6 +6,10 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.0b1] - 2026-10-29 (beta)
+
+First release on PyPI; USB Micro-B and DC barrel connectors, a Blender add-on.
+
 ### Added
 - Connector families: USB Micro-B (`usb_micro`, keyed by its trapezoid) and
   coaxial DC barrels 5.5 × 2.1, 5.5 × 2.5 and 4.0 × 1.7 mm (`dc5521`,
@@ -35,6 +39,9 @@ and the project uses [Semantic Versioning](https://semver.org/).
   receptacle), on a warm wood surface where grey cables stand out.
 
 ### Changed
+- Released on PyPI (`pip install filaire`) by the release workflow, through Trusted Publishing.
+- README images and links use absolute URLs, so that they show on PyPI; the README links to
+  Primvaria, the suite the project belongs to.
 - One visual mesh per rigid body: a connector's shell, body, cores and
   copper are one mesh with a GeomSubset per material (displayColor per
   face), so every DCC imports one object per body. Crease normals on every
