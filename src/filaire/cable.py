@@ -143,7 +143,8 @@ class Cable:
 
     @property
     def segment_length(self) -> float:
-        return self.segments[0].length
+        """Nominal segment length: the cable's length over its segment count (the springs use it)."""
+        return self.length / len(self.segments)
 
     @property
     def joint_stiffness(self) -> dict:
@@ -398,7 +399,9 @@ def build_cable(
             nrm = np.vstack([n0, normal[m], n1])
             prof = ring
         mesh = sweep(prof, pts, nrm) if len(pts) >= 2 else TriMesh.empty()
-        segments.append(Segment(c, R, L_seg, mesh.transformed(R.T, -R.T @ c)))
+        # the rigid segment spans the chord between its two joints (a little shorter than the arc
+        # on a curve), so that neighbouring segments meet exactly at their joint
+        segments.append(Segment(c, R, float(np.linalg.norm(p1 - p0)), mesh.transformed(R.T, -R.T @ c)))
 
     # ----- place the ends: plug Z out of the cable, inline receptacle Z into it
     for end, idx, sign in (("a", 0, -1.0), ("b", -1, 1.0)):

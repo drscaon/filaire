@@ -160,3 +160,37 @@ def principal_inertia(inertia: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     if np.linalg.det(vecs) < 0:
         vecs[:, 2] *= -1
     return np.maximum(w, 1e-18), vecs
+
+
+def weld(mesh: TriMesh, tol: float = 1e-7) -> TriMesh:
+    """Merge coincident vertices (within tol), so that neighbouring faces share them."""
+    if not len(mesh.points):
+        return mesh
+    key = np.round(mesh.points / tol).astype(np.int64)
+    _, first, inverse = np.unique(key, axis=0, return_index=True, return_inverse=True)
+    faces = inverse.reshape(-1)[mesh.faces]
+    keep = (faces[:, 0] != faces[:, 1]) & (faces[:, 1] != faces[:, 2]) & (faces[:, 0] != faces[:, 2])
+    return TriMesh(mesh.points[first], faces[keep])
+
+
+def split_normals(points: np.ndarray, faces: np.ndarray, crease_deg: float = 35.0) -> np.ndarray:
+    """Face-varying normals: each corner averages the normals of the faces around its vertex that
+    are within crease_deg of its own face, so tubes shade smoothly and connector edges stay sharp."""
+    V = np.asarray(points, float)
+    F = np.asarray(faces)
+    fn = np.cross(V[F[:, 1]] - V[F[:, 0]], V[F[:, 2]] - V[F[:, 0]])  # area-weighted
+    fu = fn / np.clip(np.linalg.norm(fn, axis=1, keepdims=True), 1e-30, None)
+    cosc = np.cos(np.radians(crease_deg))
+    corners_v = F.ravel()
+    corners_f = np.repeat(np.arange(len(F)), 3)
+    order = np.argsort(corners_v, kind="stable")
+    sv, sf = corners_v[order], corners_f[order]
+    starts = np.r_[0, np.nonzero(np.diff(sv))[0] + 1, len(sv)]
+    out = np.zeros((len(corners_v), 3))
+    for a, b in zip(starts[:-1], starts[1:], strict=True):
+        f = sf[a:b]
+        U = fu[f]
+        acc = ((U @ U.T) > cosc).astype(float) @ fn[f]
+        acc /= np.clip(np.linalg.norm(acc, axis=1, keepdims=True), 1e-30, None)
+        out[order[a:b]] = acc
+    return out

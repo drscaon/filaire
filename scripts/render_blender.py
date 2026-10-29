@@ -59,7 +59,15 @@ def import_usd(path: str, dx=0.0, dy=0.0, dz=0.0, rotz=0.0, merge: bool = True) 
     return new
 
 
-def floor(size=200.0, color=(0.36, 0.37, 0.39, 1)):
+# a warm, light-wood desk: black, grey, white and coloured cables all stand out on it
+FLOOR = (0.20, 0.12, 0.06, 1)
+
+
+def floor(size=200.0, color=None):
+    if color is None:
+        color = (
+            tuple(float(v) for v in os.environ["FLOOR"].split(",")) + (1,) if "FLOOR" in os.environ else FLOOR
+        )
     bpy.ops.mesh.primitive_plane_add(size=size, location=(0, 0, 0))
     p = bpy.context.object
     mat = bpy.data.materials.new("floor")
@@ -85,6 +93,8 @@ def camera(location, target, lens=50.0):
     bpy.ops.object.camera_add(location=location)
     cam = bpy.context.object
     cam.data.lens = lens
+    cam.data.clip_start = 0.001  # close-ups of connectors: the default 0.1 m would cut them
+    cam.data.clip_end = 100.0
     d = Vector(target) - cam.location
     cam.rotation_euler = d.to_track_quat("-Z", "Y").to_euler()
     bpy.context.scene.camera = cam

@@ -64,3 +64,15 @@ def test_preview_and_connectors(tmp_path):
     assert main(["preview", str(tmp_path / "ribbon_idc")]) == 0
     assert (tmp_path / "ribbon_idc" / "sheet.png").exists()
     assert main(["connectors", "--out", str(tmp_path / "c.png")]) == 0
+
+
+def test_no_physics_and_addon(tmp_path, capsys):
+    from pxr import Usd, UsdPhysics
+
+    assert (
+        main(["generate", "--preset", "usb_c", "--count", "1", "--no-physics", "--out", str(tmp_path)]) == 0
+    )
+    stage = Usd.Stage.Open(str(tmp_path / "usb_c" / "filaire_usb_c.usdc"))
+    assert not any(p.HasAPI(UsdPhysics.RigidBodyAPI) for p in stage.Traverse())
+    assert main(["blender-addon", "--out", str(tmp_path / "a.zip")]) == 0
+    assert (tmp_path / "a.zip").exists()

@@ -277,14 +277,18 @@ def summarize(scene: Scene) -> dict:
     }
 
 
-def write_outputs(scene: Scene, out_root: str | Path = "output") -> Path:
+def write_outputs(scene: Scene, out_root: str | Path = "output", physics: bool = True) -> Path:
+    """Write the OpenUSD files, cables.csv and summary.json under out_root/<preset>.
+
+    physics=False writes visual assets only: no rigid bodies, colliders, joints, physics
+    materials, physics scene or ground (the cables keep their filaire:* attributes)."""
     from .usd_export import export_cables, export_sockets
 
     out = Path(out_root) / scene.preset_key
     out.mkdir(parents=True, exist_ok=True)
-    export_cables(out / f"filaire_{scene.preset_key}.usdc", scene)
+    export_cables(out / f"filaire_{scene.preset_key}.usdc", scene, physics=physics)
     if scene.connectors:
-        export_sockets(out / "sockets.usdc", scene.connectors)
+        export_sockets(out / "sockets.usdc", scene.connectors, physics=physics)
     rows = [cable_row(c) for c in scene.cables]
     keys = list(dict.fromkeys(k for r in rows for k in r))
     with open(out / "cables.csv", "w", newline="", encoding="utf-8") as f:

@@ -58,6 +58,9 @@ jobs:
           filaire ends
           filaire generate --preset usb_c --count 2 --out ci-output
           filaire generate --preset power_c13 --count 2 --length 0.5 --end-a c13_plug --end-b stripped --layout coil --out ci-output
+          filaire generate --preset dc_barrel --count 2 --no-physics --out ci-output
+          filaire blender-addon --out ci-output/filaire_physics.zip
+          python -c "from filaire.validate import validate; import sys; m = [x for f in ('ci-output/usb_c/filaire_usb_c.usdc', 'ci-output/usb_c/sockets.usdc', 'ci-output/dc_barrel/filaire_dc_barrel.usdc') for x in validate(f)]; print(m); sys.exit(bool(m))"
           filaire preview ci-output/usb_c
 
   sim:
@@ -85,6 +88,47 @@ jobs:
         with:
           name: sim-test-reports
           path: ci-output/*/sim_test/sim_test.json
+          retention-days: 14
+
+  blender:
+    name: Blender checks of every preset (add-on)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"  # the bpy module is built for one Python version
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: System libraries for bpy
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libxrender1 libxxf86vm1 libxfixes3 libxi6 libxkbcommon0 libsm6 libgl1 libegl1
+      - name: Install
+        run: pip install -e ".[blender]"
+      - name: Drop checks through the add-on
+        run: |
+          status=0
+          for preset in $(python -c "import filaire; print(' '.join(filaire.PRESETS))"); do
+            filaire generate --preset "$preset" --count 2 --out ci-output > /dev/null
+            filaire blender-test "ci-output/$preset" --cables 2 || status=1
+          done
+          exit $status
+      - name: The same, rigid bodies set by hand (for comparison, not a gate)
+        run: |
+          for preset in usb_c power_c13 coiled_handset; do
+            filaire blender-test "ci-output/$preset" --mode naive
+          done
+      - name: Visual-only assets
+        run: |
+          filaire generate --preset hdmi --count 2 --no-physics --out ci-visual
+          python -c "from filaire.validate import validate; import sys; m = validate('ci-visual/hdmi/filaire_hdmi.usdc'); print(m); sys.exit(bool(m))"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: sim-test-blender
+          path: ci-output/*/sim_test/blender_*.json
           retention-days: 14
 
   build:
