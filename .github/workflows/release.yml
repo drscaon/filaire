@@ -4,17 +4,20 @@ name: Release
 # packages and publishes them on the GitHub release for that tag. Pre-release
 # versions (a, b, rc) are marked as pre-releases. If the release already exists
 # (for example created from the GitHub web page), the packages are added to it.
+# The Python packages are then published on PyPI (job `pypi`).
 
 on:
   push:
     tags: ["v*"]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -42,6 +45,14 @@ jobs:
           twine check --strict dist/*
           filaire blender-addon --out dist/filaire_physics.zip
 
+      - name: Keep the Python packages for the PyPI job
+        uses: actions/upload-artifact@v7
+        with:
+          name: python-packages
+          path: |
+            dist/*.whl
+            dist/*.tar.gz
+
       - name: Release notes from CHANGELOG.md
         run: |
           python - <<'EOF'
@@ -65,3 +76,22 @@ jobs:
             gh release create "$GITHUB_REF_NAME" dist/* $PRERELEASE \
               --title "Filaire $VERSION" --notes-file release-notes.md --verify-tag
           fi
+
+  # Trusted Publishing: no API token. One-time setup on pypi.org, Account >
+  # Publishing > add a pending publisher: project "filaire", owner "drscaon",
+  # repository "filaire", workflow "release.yml", environment "pypi"; and create
+  # the "pypi" environment in Settings > Environments (restrict it to tags v*).
+  pypi:
+    needs: release
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/filaire
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: python-packages
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
