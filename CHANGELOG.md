@@ -6,6 +6,11 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- CI job: the OpenUSD validators on every preset, with and without physics
+  (was three sample files).
+
 ## [0.2.0b1] - 2026-10-29 (beta)
 
 First release on PyPI; USB Micro-B and DC barrel connectors, a Blender add-on.

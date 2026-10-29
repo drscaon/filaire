@@ -131,6 +131,39 @@ jobs:
           path: ci-output/*/sim_test/blender_*.json
           retention-days: 14
 
+
+  openusd:
+    name: OpenUSD validators of every preset
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Install
+        run: pip install -e .
+      - name: Generate every preset, with and without physics
+        run: |
+          for preset in $(python -c "from filaire.catalog import PRESETS; print(' '.join(PRESETS))"); do
+            filaire generate --preset "$preset" --count 2 --out ci-usd > /dev/null
+            filaire generate --preset "$preset" --count 1 --no-physics --out ci-usd-visual > /dev/null
+          done
+      - name: Validate every file (what usdchecker runs)
+        run: |
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          from filaire.validate import validate
+          files = sorted(f for d in ("ci-usd", "ci-usd-visual") for f in Path(d).rglob("*.usdc"))
+          bad = {str(f): m for f in files if (m := validate(f))}
+          for f, m in bad.items():
+              print(f, m)
+          print(f"{len(files)} OpenUSD files checked, {len(bad)} with issues")
+          sys.exit(1 if bad or not files else 0)
+          PY
+
   build:
     name: Build packages
     runs-on: ubuntu-latest
