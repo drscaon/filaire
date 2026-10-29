@@ -6,6 +6,17 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- Connector families: USB Micro-B (`usb_micro`, keyed by its trapezoid) and
+  coaxial DC barrels 5.5 × 2.1, 5.5 × 2.5 and 4.0 × 1.7 mm (`dc5521`,
+  `dc5525`, `dc4017`), each with a jack on a cable and a fixed jack: 17
+  families, 28 end variants.
+- Presets `dc_barrel` (DC power cord, figure-8) and `usb_micro` (USB-A to
+  Micro-B): 14 presets.
+- `fits(plug, angle, socket=other)` tests a plug against another family's
+  receptacle: a 5.5 × 2.5 mm plug goes loosely onto a 5.5 × 2.1 mm jack, the
+  reverse is stopped by the thicker pin.
+
 ## [0.1.0b1] - 2026-10-24 (beta)
 
 First beta.

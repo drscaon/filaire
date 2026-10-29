@@ -81,6 +81,24 @@ PRESETS = {
         "layouts": {"slack": 0.7, "coil": 0.15, "straight": 0.15},
         "ends": {"a": {"c7_plug": 1.0}, "b": {"cee716_plug": 0.85, "stripped": 0.15}},
     },
+    "dc_barrel": {
+        "category": "Power",
+        "label": "DC power cord, coaxial barrel plug",
+        "profile": ("figure8", 2.4),
+        "conductors": ["#c0392b", "#1c1c1c"],
+        "jacket": "pvc",
+        "colors": _BLACKS + ["#f0f0ee"],
+        "lengths": {1.0: 0.3, 1.5: 0.4, 1.8: 0.3},
+        "tolerance": 0.01,
+        "youngs_modulus": (50.0, 100.0),
+        "linear_density": (18.0, 28.0),
+        "layouts": {"slack": 0.6, "coil": 0.25, "straight": 0.15},
+        # the adapter side (power brick) is not modelled: a stripped or cut end, or an extension jack
+        "ends": {
+            "a": {"dc5521_plug": 0.5, "dc5525_plug": 0.3, "dc4017_plug": 0.2},
+            "b": {"stripped": 0.5, "cut": 0.2, "dc5521_inline": 0.3},
+        },
+    },
     # -------------------------------------------------------------- Data
     "usb_c": {
         "category": "Data",
@@ -95,6 +113,20 @@ PRESETS = {
         "linear_density": (30.0, 45.0),
         "layouts": {"slack": 0.6, "coil": 0.2, "straight": 0.2},
         "ends": {"a": {"usb_c_plug": 1.0}, "b": {"usb_c_plug": 0.8, "usb_c_inline": 0.2}},
+    },
+    "usb_micro": {
+        "category": "Data",
+        "label": "USB-A to Micro-B",
+        "profile": ("round", 3.5),
+        "conductors": ["#c0392b", "#1c1c1c", "#2e8b3a", "#f2f2f2"],
+        "jacket": "pvc",
+        "colors": _BLACKS + ["#f0f0ee"],
+        "lengths": {0.5: 0.3, 1.0: 0.5, 2.0: 0.2},
+        "tolerance": 0.01,
+        "youngs_modulus": (40.0, 90.0),
+        "linear_density": (20.0, 35.0),
+        "layouts": {"slack": 0.6, "coil": 0.2, "straight": 0.2},
+        "ends": {"a": {"usb_a_plug": 1.0}, "b": {"usb_micro_plug": 1.0}},
     },
     "usb_a_to_c": {
         "category": "Data",

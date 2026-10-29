@@ -119,6 +119,38 @@ _M12_INSERT = _holes(
 _M12_NUT = g2.circle(15.0).difference(g2.circle(12.6))
 _IDC_HOLES = [g2.rect(1.0, 1.0, x, y) for x in (-5.08, -2.54, 0.0, 2.54, 5.08) for y in (-1.27, 1.27)]
 _IDC_SOCKET = _holes(g2.union(g2.rect(15.0, 6.2), g2.rect(4.6, 1.2, 0.0, 3.6)), *_IDC_HOLES)
+# Micro-B: trapezoid shell (chamfered lower corners), cavity for the receptacle's tongue near the top
+_MICRO_B_PLUG = g2.chamfered_rect(6.80, 1.75, bottom=0.75).difference(g2.rect(5.6, 0.62, 0.0, 0.32))
+
+
+def _barrel(key: str, od: float, bore: float, length: float, sizes_source: str, length_source: str):
+    """A coaxial DC plug: a sleeve of outer diameter od around a bore of diameter bore.
+
+    The derived jack gets its centre pin from the bore (bore minus twice the clearance), so a
+    plug with a smaller bore cannot go onto a thicker pin, while a larger bore fits loosely, as
+    on real 5.5 × 2.1 and 5.5 × 2.5 mm connectors.
+    """
+    return ConnectorSpec(
+        key=key,
+        label=f"DC barrel {od:g} × {bore:g} mm",
+        standard="IEC 60130-10" if od == 5.5 else "EIAJ RC-5320A",
+        gender="male",
+        keying="none",
+        layers=[Layer(0.0, length, g2.circle(od).difference(g2.circle(bore)))],
+        body=[(6.0, g2.circle(od + 2.5)), (16.0, g2.circle(od + 4.5))],
+        inline=(26.0, g2.circle(od + 5.5)),
+        panel=(4.0, g2.rrect(od + 7.5, od + 7.5, 1.5)),
+        clearance=0.05,
+        plug_name=f"DC plug {od:g} × {bore:g}",
+        inline_name=f"DC jack {od:g} × {bore:g} (extension)",
+        panel_name=f"DC jack {od:g} × {bore:g}",
+        shell=_METAL,
+        approximate=([] if length_source else [f"plug length {length:g}"]) + ["overmold and jack body"],
+        sources=[f"{od:g} × {bore:g} mm: {sizes_source}"] + ([length_source] if length_source else []),
+    )
+
+
+_BARREL_SOURCE = "https://en.wikipedia.org/wiki/Coaxial_power_connector"
 
 CONNECTORS: dict[str, ConnectorSpec] = {
     "usb_c": ConnectorSpec(
@@ -349,6 +381,37 @@ CONNECTORS: dict[str, ConnectorSpec] = {
         approximate=["insert Ø10", "key 1.6", "pins on Ø5", "nut Ø15 / bore Ø12.6"],
         sources=["thread M12 × 1 (IEC 61076-2-101, not consulted)"],
     ),
+    "usb_micro": ConnectorSpec(
+        key="usb_micro",
+        label="USB Micro-B",
+        standard="USB 2.0 Specification (Micro-B)",
+        gender="male",
+        keying="keyed",
+        layers=[Layer(0.0, 5.6, _MICRO_B_PLUG)],
+        body=[(16.0, g2.rrect(10.5, 6.5, 2.0))],
+        inline=None,
+        panel=(3.0, g2.rrect(16.0, 10.0, 1.5)),
+        clearance=0.05,
+        plug_name="Micro-B plug",
+        panel_name="Micro-B port",
+        shell=_METAL,
+        approximate=[
+            "plug 6.80 × 1.75 with 0.75 chamfers",
+            "tongue cavity 5.6 × 0.62",
+            "insertion depth 5.6",
+        ],
+        sources=["receptacle opening 6.85 × 1.8: https://www.accesscomms.com.au/usb-connector-dimensions/"],
+    ),
+    "dc5521": _barrel("dc5521", 5.5, 2.1, 9.5, f"IEC 60130-10 Type A, {_BARREL_SOURCE}", ""),
+    "dc5525": _barrel("dc5525", 5.5, 2.5, 9.5, f"IEC 60130-10 Type A, {_BARREL_SOURCE}", ""),
+    "dc4017": _barrel(
+        "dc4017",
+        4.0,
+        1.7,
+        9.5,
+        f"EIAJ-02, {_BARREL_SOURCE}",
+        f"barrel length 9.5 (EIAJ-02): {_BARREL_SOURCE}",
+    ),
     "idc10": ConnectorSpec(
         key="idc10",
         label="IDC 2 × 5, 2.54 mm",
@@ -445,18 +508,27 @@ def mass_of(parts: list[Part], density: float) -> dict:
     return mass_properties(part_mesh(parts), density)
 
 
-def fits(spec: ConnectorSpec, angle_deg: float, mount: str = "panel", tol: float = 1e-9) -> bool:
+def fits(
+    spec: ConnectorSpec,
+    angle_deg: float,
+    mount: str = "panel",
+    tol: float = 1e-9,
+    socket: ConnectorSpec | None = None,
+) -> bool:
     """Does the plug, turned by angle about the insertion axis, enter the receptacle fully?
 
     Plane test, layer by layer: the turned plug cross-section must not overlap
-    the receptacle's solid at any depth it goes through.
+    the receptacle's solid at any depth it goes through. `socket` tests the plug
+    of `spec` against the receptacle of another family (a 5.5 × 2.5 plug in a
+    5.5 × 2.1 jack); by default the receptacle is the plug's own.
     """
-    outline = spec.panel[1] if mount == "panel" else spec.inline[1]
-    solids = [outline.difference(_cavity(other.region, spec.clearance)) for other in spec.layers]
+    socket = socket or spec
+    outline = socket.panel[1] if mount == "panel" else socket.inline[1]
+    solids = [outline.difference(_cavity(other.region, socket.clearance)) for other in socket.layers]
     for layer in spec.layers:
         turned = g2.rotate(layer.region, angle_deg)
         # every receptacle layer the turned plug layer passes through on its way in
-        for other, solid in zip(spec.layers, solids, strict=True):
+        for other, solid in zip(socket.layers, solids, strict=True):
             if other.t1 <= layer.t0 + 1e-12:
                 continue
             if turned.intersection(solid).area > tol:
