@@ -254,6 +254,29 @@ def animate(job_path: str):
                 obj = _find(root, path)
                 if obj is not None:
                     objects[key] = obj
+    if job.get("hide_segments"):  # the cable is drawn by a "deform" mesh instead (a stretched coil)
+        for o in bpy.data.objects:
+            if _strip(o.name).startswith("seg_"):
+                for x in [o, *o.children_recursive]:
+                    x.hide_render = True
+    deform = None
+    if job.get("deform"):  # one mesh, its points given per frame (npz: faces, points[frame])
+        import numpy as np
+
+        dz = np.load(job["deform"]["npz"])
+        me = bpy.data.meshes.new("deform")
+        me.from_pydata(dz["points"][0].tolist(), [], dz["faces"].tolist())
+        for poly in me.polygons:
+            poly.use_smooth = True
+        o = bpy.data.objects.new("deform", me)
+        bpy.context.scene.collection.objects.link(o)
+        mat = bpy.data.materials.new("deform")
+        mat.use_nodes = True
+        bsdf = mat.node_tree.nodes["Principled BSDF"]
+        bsdf.inputs["Base Color"].default_value = tuple(job["deform"]["color"])
+        bsdf.inputs["Roughness"].default_value = job["deform"].get("roughness", 0.5)
+        me.materials.append(mat)
+        deform = (me, dz["points"].astype("float32"))
     for ob in job.get("obstacles", []):
         add_obstacle(ob)
     movers = []  # obstacles with a pose per frame (a gripper): their mesh has no scale, so a
@@ -269,6 +292,9 @@ def animate(job_path: str):
             obj.matrix_world = Matrix(job["tracks"][key][f])
         for obj, track in movers:
             obj.matrix_world = Matrix(track[f])
+        if deform is not None:
+            deform[0].vertices.foreach_set("co", deform[1][f].ravel())
+            deform[0].update()
         bpy.context.view_layer.update()
         render(os.path.join(job["out_dir"], f"frame_{f:04d}.png"))
 

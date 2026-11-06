@@ -141,12 +141,76 @@ def simulate(usd: Path, fps: int):
     return [fine], [coarse], frames, hand_track, length, t_release
 
 
+def coil_mesh(cable, frames, per_turn: int = 14, sides: int = 8):
+    """The cord as one wire mesh per frame, wound along the simulated axis.
+
+    The segments' own coil pieces are rigid: stretched, gaps open between them. Here the wire
+    is a helix along the axis through the simulated joints, with a fixed number of turns per
+    segment (the turns spread as the coil stretches), on the axis in the straight leads.
+    Returns (faces, points[frame, vertex, 3])."""
+    a = cable.attrs
+    D, p, wire = (
+        float(a["filaire:coil:diameter"]),
+        float(a["filaire:coil:pitch"]),
+        float(a["filaire:coil:wireDiameter"]),
+    )
+    la, lb = map(float, a["filaire:coil:leads"])
+    L = np.array([sg.capsule[1] for sg in cable.segments])
+    s_rest = np.r_[0.0, np.cumsum(L)]  # rest arc length at the joints
+    n = max(int(s_rest[-1] / p * per_turn), 16)
+    s = np.linspace(0.0, s_rest[-1], n)
+    seg = np.clip(np.searchsorted(s_rest, s, side="right") - 1, 0, len(L) - 1)
+    u = (s - s_rest[seg]) / L[seg]
+    ramp = 1.2 * D
+    w = np.ones(n)
+    for start, x in ((la, s), (lb, s_rest[-1] - s)):
+        t = np.clip((x - start) / ramp, 0.0, 1.0)
+        w = np.minimum(w, t * t * (3 - 2 * t))
+    phi = 2 * np.pi * s / p
+    ring = np.linspace(0, 2 * np.pi, sides, endpoint=False)
+    faces = [
+        (i * sides + k, i * sides + (k + 1) % sides, (i + 1) * sides + (k + 1) % sides, (i + 1) * sides + k)
+        for i in range(n - 1)
+        for k in range(sides)
+    ]
+    out = []
+    for fr in frames:
+        mats = [fr[(0, f"seg{i}")] for i in range(len(L))]
+        p0 = np.array([M[:3, 3] - M[:3, 0] * L[i] / 2 for i, M in enumerate(mats)])
+        p1 = np.array([M[:3, 3] + M[:3, 0] * L[i] / 2 for i, M in enumerate(mats)])
+        J = np.vstack([p0[:1], 0.5 * (p1[:-1] + p0[1:]), p1[-1:]])  # joints: across the slides' gaps
+        axis = J[seg] + (J[seg + 1] - J[seg]) * u[:, None]
+        t = np.gradient(axis, axis=0)
+        t /= np.linalg.norm(t, axis=1, keepdims=True)
+        # rotation-minimising frame along the axis, from the first segment's y axis
+        e1 = np.empty_like(axis)
+        e1[0] = mats[0][:3, 1]
+        for i in range(1, n):
+            v = e1[i - 1] - t[i] * (e1[i - 1] @ t[i])
+            e1[i] = v / np.linalg.norm(v)
+        e2 = np.cross(t, e1)
+        radial = np.cos(phi)[:, None] * e1 + np.sin(phi)[:, None] * e2
+        pts = axis + (D / 2 * w)[:, None] * radial
+        tw = np.gradient(pts, axis=0)
+        tw /= np.linalg.norm(tw, axis=1, keepdims=True)
+        nn = w[:, None] * radial + (1 - w)[:, None] * e1  # the wire's frame: steady along a lead
+        nn -= tw * np.sum(nn * tw, axis=1, keepdims=True)
+        nn /= np.linalg.norm(nn, axis=1, keepdims=True)
+        bb = np.cross(tw, nn)
+        r = wire / 2
+        verts = pts[:, None, :] + r * (
+            np.cos(ring)[None, :, None] * nn[:, None, :] + np.sin(ring)[None, :, None] * bb[:, None, :]
+        )
+        out.append(verts.reshape(-1, 3))
+    return np.array(faces, dtype=np.int32), np.array(out, dtype=np.float32)
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="docs/images/coil.gif")
     ap.add_argument("--fps", type=int, default=25)
     ap.add_argument("--samples", type=int, default=24)
-    ap.add_argument("--size", default="450x600")
+    ap.add_argument("--size", default="540x720")
     ap.add_argument("--frames", default=None, help="keep the rendered PNG frames in this folder")
     ap.add_argument("--plot", default=None, help="simulate only, write time and length to this CSV")
     args = ap.parse_args(argv)
@@ -159,7 +223,7 @@ def main(argv=None):
             Path(args.plot).write_text("t,length\n" + "".join(f"{a:.3f},{b:.4f}\n" for a, b in length))
             print(args.plot)
             return
-        tracks = object_tracks(fine, coarse, frames)
+        tracks = {k: v for k, v in object_tracks(fine, coarse, frames).items() if "/End_" in k}
         top = frames[0][(0, "end_a")][:3, 3]
         clamp = {"type": "box", "pos": list(top + [0, 0, 0.03]), "size": [0.02, 0.02, 0.015], "color": STEEL}
         bar = {"type": "cylinder", "pos": list(top + [0, 0.15, 0.045]), "size": [0.008, 0.15],
@@ -182,15 +246,22 @@ def main(argv=None):
                 jaw_track.append(M)
             else:
                 jaw_track.append(far)
-        mid = 0.5 * (top[2] + hand_track[n_hold][2, 3])
+        faces, points = coil_mesh(fine[0], frames)
+        np.savez(tmp / "coil.npz", faces=faces, points=points)
+        # a dark wall behind: the floor's horizon would cut the portrait frame
+        wall = {"type": "box", "pos": [0, 0.7, 1.5], "size": [4.0, 0.02, 1.5],
+                "color": (0.11, 0.115, 0.12, 1), "metallic": 0.0, "roughness": 0.9}  # fmt: skip
+        mid = 0.64
         job = {
             "cables": [{"usd": str(usd), "name": name}],
             "tracks": {key: [m.tolist() for m in mats] for key, mats in tracks.items()},
             "frames": len(frames),
             "size": [w, h],
-            "camera": [0.55, -1.45, mid + 0.15, 0.0, 0.0, mid],
-            "lens": 50,
-            "obstacles": [clamp, bar],
+            "camera": [0.32, -1.36, mid + 0.08, 0.0, 0.0, mid],
+            "lens": 36,  # portrait: Blender fits the 36 mm sensor to the height
+            "obstacles": [clamp, bar, wall],
+            "hide_segments": True,
+            "deform": {"npz": str(tmp / "coil.npz"), "color": [0.012, 0.012, 0.012, 1], "roughness": 0.45},
             "movers": [{"ob": jaw, "track": [m.tolist() for m in jaw_track]}],
             "floor_markings": True,
             "samples": args.samples,
