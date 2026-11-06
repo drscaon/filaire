@@ -13,6 +13,15 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Connector looks, closer to the real parts (visual only: the colliders, masses and
+  insertion results do not change):
+  - panel receptacles: a metal shell around the opening of USB-C, USB-A, micro-USB,
+    HDMI, RJ45, XLR and M12 ports, in a dark device face instead of a white block;
+    power inlets (C14, C8) in black with metal pins; DC jacks black with a metal
+    centre pin; the IDC header black with gold pins; wall sockets stay white;
+  - the tongue or insert inside a receptacle has its own colour;
+  - the 3.5 mm plug gets its two black insulator rings (tip, ring, sleeve);
+  - RJ45 and RJ9 plugs are clear plastic (`opacity` and `ior` in UsdPreviewSurface).
 - README: the same header as the other Primvaria projects (PyPI and suite
   badges), an Engines table matching the suite's engine matrix, and links to
   primvaria.com.
