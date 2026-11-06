@@ -20,6 +20,11 @@ import sys
 import bpy
 from mathutils import Vector
 
+sys.path.insert(
+    0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src", "filaire", "blender")
+)
+from physics import flat_where_flat  # noqa: E402  (the add-on module, importable without the package)
+
 
 def reset(resolution=(1600, 900), samples=64):
     bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -45,6 +50,7 @@ def import_usd(path: str, dx=0.0, dy=0.0, dz=0.0, rotz=0.0, merge: bool = True) 
         filepath=path, import_guide=False, import_proxy=False, import_render=True, merge_parent_xform=merge
     )
     new = [o for o in bpy.data.objects if o not in before]
+    flat_where_flat([o.data for o in new if o.type == "MESH"])
     for o in new:
         if o.name.startswith("Ground") or o.name.startswith("PhysicsScene"):
             o.hide_render = True
