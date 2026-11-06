@@ -96,7 +96,17 @@ def _ring(profile: tuple, segments: int = 16) -> np.ndarray:
         a = np.linspace(0, 2 * math.pi, segments, endpoint=False)
         return np.c_[r * np.cos(a), r * np.sin(a)]
     region = profile_region(profile).simplify(0.02 * profile_region(profile).bounds[3])
-    return g2.ring_points(region)
+    ring = g2.ring_points(region)
+    # vertices on the boundaries between side-by-side wires, so that each face of the tube lies
+    # on one wire and takes its colour (stripes): a flat cable's top is otherwise one wide face
+    cores, _ = _core_layout(profile, profile[1] if kind == "flat" else 2)
+    cuts = (cores[1:, 0] + cores[:-1, 0]) / 2
+    out = []
+    for p, q in zip(ring, np.roll(ring, -1, axis=0), strict=True):
+        out.append(p)
+        ts = sorted((x - p[0]) / (q[0] - p[0]) for x in cuts if (p[0] - x) * (q[0] - x) < 0)
+        out += [p + t * (q - p) for t in ts if 1e-6 < t < 1 - 1e-6]
+    return np.array(out)
 
 
 # ----------------------------------------------------------------- the cable
