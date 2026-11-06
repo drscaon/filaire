@@ -100,7 +100,20 @@ def camera(location, target, lens=50.0):
     bpy.context.scene.camera = cam
 
 
+def clear_plastic():
+    """Blender reads UsdPreviewSurface opacity as alpha; render Filaire's clear plastic (RJ45 and
+    RJ9 plugs, opacity < 1 with an ior) as transmission instead, like a path tracer would."""
+    for m in bpy.data.materials:
+        if "_clear" in m.name and m.node_tree:
+            for n in m.node_tree.nodes:
+                if n.bl_idname == "ShaderNodeBsdfPrincipled":
+                    n.inputs["Alpha"].default_value = 1.0
+                    n.inputs["Transmission Weight"].default_value = 0.95
+                    n.inputs["Roughness"].default_value = 0.08
+
+
 def render(out: str):
+    clear_plastic()
     settings = bpy.context.scene.render.image_settings
     if out.lower().endswith((".jpg", ".jpeg")):
         settings.file_format = "JPEG"

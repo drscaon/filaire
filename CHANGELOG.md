@@ -22,6 +22,10 @@ and the project uses [Semantic Versioning](https://semver.org/).
   - the tongue or insert inside a receptacle has its own colour;
   - the 3.5 mm plug gets its two black insulator rings (tip, ring, sleeve);
   - RJ45 and RJ9 plugs are clear plastic (`opacity` and `ior` in UsdPreviewSurface).
+- README images re-rendered with these looks (hero, presets, every connector
+  family, social preview), and a paragraph on the looks in the Connectors
+  section. `scripts/render_blender.py` renders clear plastic as transmission
+  (Blender reads UsdPreviewSurface opacity as alpha).
 - README: the same header as the other Primvaria projects (PyPI and suite
   badges), an Engines table matching the suite's engine matrix, and links to
   primvaria.com.
