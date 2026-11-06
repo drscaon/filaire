@@ -394,6 +394,42 @@ def setup_physics(stage, prim_map=None, scene=None):
     return out
 
 
+def flat_where_flat(meshes, tol_deg: float = 1.0) -> int:
+    """Flat shading on the faces whose authored normals are all their own face normal.
+
+    Filaire writes face-varying normals (sharp connector edges, smooth tubes). Blender imports
+    every face of such a mesh as smooth, and Cycles then shades large flat faces next to
+    curved ones with dark streaks (white wall sockets show it most). Marking the flat faces
+    flat gives the same normals without the streaks; curved faces stay smooth.
+    Returns the number of faces changed."""
+    import numpy as np
+
+    cos_tol = float(np.cos(np.radians(tol_deg)))
+    changed = 0
+    for me in {m for m in meshes if m is not None}:
+        n, nl = len(me.polygons), len(me.loops)
+        if not n or not me.has_custom_normals:
+            continue
+        pn = np.empty(3 * n)
+        me.polygons.foreach_get("normal", pn)
+        cn = np.empty(3 * nl)
+        me.corner_normals.foreach_get("vector", cn)
+        start = np.empty(n, dtype=np.int32)
+        me.polygons.foreach_get("loop_start", start)
+        total = np.empty(n, dtype=np.int32)
+        me.polygons.foreach_get("loop_total", total)
+        poly = np.repeat(np.arange(n), total)
+        dots = np.einsum("ij,ij->i", cn.reshape(-1, 3), pn.reshape(-1, 3)[poly])
+        flat = np.ones(n, dtype=bool)
+        np.logical_and.at(flat, poly, dots > cos_tol)
+        smooth = np.empty(n, dtype=bool)
+        me.polygons.foreach_get("use_smooth", smooth)
+        changed += int((smooth & flat).sum())
+        me.polygons.foreach_set("use_smooth", smooth & ~flat)
+        me.update()
+    return changed
+
+
 # ------------------------------------------------------------------ add-on: hook into the importer
 _registered = False
 
@@ -413,6 +449,10 @@ class FILAIRE_USDHook(bpy.types.USDHook):
         except AttributeError:  # Blender before 4.4
             prim_map = None
         setup_physics(stage, prim_map)
+        try:  # a look fix only: it must never stop the physics import
+            flat_where_flat([o.data for o in bpy.context.scene.objects if o.type == "MESH"])
+        except Exception as e:  # noqa: BLE001
+            print("filaire: flat shading skipped:", e)
         return True
 
 
