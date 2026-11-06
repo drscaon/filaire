@@ -28,6 +28,15 @@ class TriMesh:
         return self.points.min(axis=0), self.points.max(axis=0)
 
 
+def submesh(mesh: TriMesh, face_mask: np.ndarray) -> TriMesh:
+    """The faces selected by a boolean mask, with only the points they use."""
+    faces = mesh.faces[np.asarray(face_mask, bool)]
+    if not len(faces):
+        return TriMesh.empty()
+    used, inverse = np.unique(faces.ravel(), return_inverse=True)
+    return TriMesh(mesh.points[used], inverse.reshape(-1, 3).astype(np.int64))
+
+
 def merge(meshes: list[TriMesh]) -> TriMesh:
     meshes = [m for m in meshes if len(m.faces)]
     if not meshes:

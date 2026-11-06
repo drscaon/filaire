@@ -49,6 +49,18 @@ def chamfered_rect(w: float, h: float, bottom: float = 0.0, top: float = 0.0) ->
     return Polygon(_dedupe(pts))
 
 
+def trapezoid(top: float, h: float, side_deg: float, r: float = 0.0) -> Polygon:
+    """Isosceles trapezoid, top width `top` (y = +h/2), sides leaning in by side_deg towards the
+    bottom (the D shape of a D-sub shell), corners rounded with radius r."""
+    x0 = top / 2
+    x1 = x0 - h * math.tan(math.radians(side_deg))
+    y = h / 2
+    poly = Polygon([(-x1, -y), (x1, -y), (x0, y), (-x0, y)])
+    if r <= 0:
+        return poly
+    return poly.buffer(-r, quad_segs=QUAD_SEGS).buffer(r, quad_segs=QUAD_SEGS, join_style="round")
+
+
 def _dedupe(pts):
     out = []
     for p in pts:

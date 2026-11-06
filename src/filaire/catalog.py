@@ -21,6 +21,8 @@ Each preset describes *distributions*, not a single cable:
   stripped end with the cores out. Every variant listed is authored in the
   OpenUSD file (a variant set per end); the weights only choose which one is
   selected.
+- stripes (optional, flat and figure-8 cables): for a jacket colour, the colour of each
+  wire across the width (a servo lead drawn "brown" has brown, red and orange wires);
 - coil (coiled cords): mean coil diameter in mm, coiled lengths in m, pitch
   as a multiple of the wire size (close-wound ≈ 1).
 
@@ -30,7 +32,7 @@ a specific product; nothing is calibrated yet (see the README).
 
 from __future__ import annotations
 
-CATEGORIES = ["Power", "Data", "Audio", "Industrial", "Telephone"]
+CATEGORIES = ["Power", "Data", "Audio", "Industrial", "Robotics", "Telephone"]
 
 POISSON = 0.45  # jacket polymers and stranded conductors, order of magnitude
 
@@ -39,6 +41,7 @@ JACKETS = {
     "tpe": {"label": "TPE", "friction": 0.7, "restitution": 0.15, "roughness": 0.6},
     "pur": {"label": "PUR", "friction": 0.5, "restitution": 0.1, "roughness": 0.45},
     "lszh": {"label": "LSZH", "friction": 0.6, "restitution": 0.1, "roughness": 0.6},
+    "silicone": {"label": "Silicone", "friction": 0.9, "restitution": 0.1, "roughness": 0.5},
 }
 
 # connector plastic and metal, for the physics material of the ends
@@ -235,12 +238,105 @@ PRESETS = {
         "conductors": ["#c0392b"] + ["#9aa0a6"] * 9,
         "jacket": "pvc",
         "colors": ["#9aa0a6", "#8a8d91"],
+        # wire 1 marked red, as on real ribbon cables
+        "stripes": {c: ["#c0392b"] + [c] * 9 for c in ("#9aa0a6", "#8a8d91")},
         "lengths": {0.15: 0.4, 0.3: 0.4, 0.5: 0.2},
         "tolerance": 0.02,
         "youngs_modulus": (150.0, 300.0),
         "linear_density": (8.0, 12.0),
         "layouts": {"straight": 0.5, "slack": 0.5},
         "ends": {"a": {"idc10_plug": 1.0}, "b": {"idc10_plug": 0.9, "cut": 0.1}},
+    },
+    "can_bus": {
+        "category": "Industrial",
+        "label": "CAN bus cable, D-sub 9 female (DE-9)",
+        "profile": ("round", 5.5),
+        "conductors": ["#f2f2f2", "#2a5fa8", "#c0392b", "#1c1c1c"],  # CAN_H, CAN_L, V+, V−
+        "jacket": "pur",
+        "colors": ["#6b4fa0", "#8a8d91", "#1c1c1c"],
+        "lengths": {0.5: 0.2, 1.0: 0.3, 2.0: 0.3, 5.0: 0.2},
+        "tolerance": 0.01,
+        "youngs_modulus": (60.0, 120.0),
+        "linear_density": (40.0, 55.0),
+        "layouts": {"slack": 0.5, "coil": 0.4, "straight": 0.1},
+        "ends": {
+            "a": {"dsub9_plug": 1.0},
+            "b": {"dsub9_plug": 0.6, "dsub9_inline": 0.25, "stripped": 0.15},
+        },
+    },
+    # ---------------------------------------------------------- Robotics
+    "servo_lead": {
+        "category": "Robotics",
+        "label": "Servo lead, 3-pin 2.54 mm",
+        "profile": ("flat", 3, 1.05, 1.05),
+        "conductors": ["#7b4a2a", "#c0392b", "#e88a2a"],  # ground, power, signal
+        "jacket": "pvc",
+        "colors": ["#7b4a2a", "#1c1c1c"],
+        "stripes": {
+            "#7b4a2a": ["#7b4a2a", "#c0392b", "#e88a2a"],  # brown, red, orange
+            "#1c1c1c": ["#1c1c1c", "#c0392b", "#f2f2f2"],  # black, red, white
+        },
+        "lengths": {0.15: 0.3, 0.3: 0.5, 0.5: 0.2},
+        "tolerance": 0.02,
+        "youngs_modulus": (30.0, 60.0),
+        "linear_density": (4.0, 7.0),
+        "layouts": {"slack": 0.6, "coil": 0.2, "straight": 0.2},
+        # the servo itself is not modelled: its lead ends cut, or is an extension
+        "ends": {
+            "a": {"servo3_plug": 1.0},
+            "b": {"servo3_inline": 0.5, "cut": 0.3, "stripped": 0.2},
+        },
+    },
+    "jumper_wire": {
+        "category": "Robotics",
+        "label": "Jumper wire, 2.54 mm pin or socket",
+        "profile": ("round", 1.3),
+        "conductors": ["#c47a3d"],
+        "jacket": "pvc",
+        "colors": ["#c0392b", "#1c1c1c", "#e3c22a", "#2e8b3a", "#2a5fa8", "#e88a2a", "#f2f2f2", "#7d4fa0"],
+        "lengths": {0.1: 0.3, 0.2: 0.5, 0.3: 0.2},
+        "tolerance": 0.03,
+        "youngs_modulus": (30.0, 80.0),
+        "linear_density": (2.0, 3.0),
+        "layouts": {"slack": 0.7, "straight": 0.3},
+        "ends": {
+            "a": {"pin_m_plug": 0.5, "pin_f_plug": 0.5},
+            "b": {"pin_m_plug": 0.5, "pin_f_plug": 0.3, "pin_m_inline": 0.2},
+        },
+    },
+    "battery_lead": {
+        "category": "Robotics",
+        "label": "Battery lead, high-current DC plug (3.5 mm bullets)",
+        "profile": ("figure8", 4.0),
+        "conductors": ["#c0392b", "#1c1c1c"],
+        "jacket": "silicone",
+        "colors": ["#c0392b"],
+        "stripes": {"#c0392b": ["#c0392b", "#1c1c1c"]},
+        "lengths": {0.1: 0.3, 0.15: 0.3, 0.3: 0.4},
+        "tolerance": 0.03,
+        "youngs_modulus": (10.0, 25.0),
+        "linear_density": (65.0, 80.0),
+        "layouts": {"slack": 0.6, "straight": 0.25, "coil": 0.15},
+        # a pack's lead (female plug) soldered to the cells, or an extension with the male plug
+        "ends": {
+            "a": {"batt35_plug": 1.0},
+            "b": {"stripped": 0.5, "batt35_inline": 0.5},
+        },
+    },
+    "balance_lead": {
+        "category": "Robotics",
+        "label": "Balance lead 4S, 5-pin 2.5 mm",
+        "profile": ("flat", 5, 1.2, 1.2),
+        "conductors": ["#1c1c1c", "#c0392b", "#c0392b", "#c0392b", "#c0392b"],
+        "jacket": "silicone",
+        "colors": ["#c0392b"],
+        "stripes": {"#c0392b": ["#1c1c1c", "#c0392b", "#c0392b", "#c0392b", "#c0392b"]},
+        "lengths": {0.08: 0.4, 0.1: 0.4, 0.15: 0.2},
+        "tolerance": 0.03,
+        "youngs_modulus": (10.0, 25.0),
+        "linear_density": (11.0, 16.0),
+        "layouts": {"slack": 0.6, "straight": 0.4},
+        "ends": {"a": {"bal5_plug": 1.0}, "b": {"stripped": 0.8, "cut": 0.2}},
     },
     # --------------------------------------------------------- Telephone
     "coiled_handset": {

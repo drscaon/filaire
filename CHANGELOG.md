@@ -8,11 +8,31 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Robotics and drones: four presets and six connector families.
+  - `servo_lead`: a 3-wire flat lead (brown, red, orange or black, red, white), with a
+    3-way 2.54 mm servo plug keyed by a rib; at the other end a servo extension
+    (3 pins), cut or stripped. Fixed receptacle: a servo port, 3 pins in a slot.
+  - `jumper_wire`: 2.54 mm jumper pins (`pin_m`) and sockets (`pin_f`), in any
+    combination; receptacles: a breadboard contact and a header pin. The new
+    `square` keying: square pins go in at every quarter turn.
+  - `battery_lead`: a red and black silicone figure-8 lead with a high-current DC plug
+    (3.5 mm bullets, 7.2 mm apart, 60 A class), female on the battery side, male on
+    an extension or on a board.
+  - `balance_lead`: a 5-wire 2.5 mm balance lead (4S), black and four red, into a
+    charger or BMS header.
+  - `can_bus` (Industrial): a CAN bus cable with D-sub 9 (DE-9, shell size E) female
+    plugs, a male one on an extension, or a stripped end.
+- Wire colours: flat and figure-8 presets can give each wire its own jacket colour
+  (`stripes`): the servo, battery and balance leads, and the ribbon's red wire 1.
+- A silicone jacket (friction 0.9), for the battery and balance leads.
 - CI job: the OpenUSD validators on every preset, with and without physics
   (was three sample files).
 
 ### Changed
 
+- MuJoCo drop check: the same stiff contacts as the multi-cable scene (time constant
+  max(4 dt, 2 ms) instead of MuJoCo's 20 ms). The light plugs of thin leads (a few
+  grams per metre) rested up to 2 mm into the floor with the default.
 - Coiled handset cord: a straight lead of bare wire (4–8 cm, drawn per end) between
   each RJ9 plug and the coil, as on real cords, instead of coil right up to the plug.
   The coil opens out of the lead over about one coil diameter. The leads are physical

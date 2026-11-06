@@ -56,7 +56,7 @@ class ConnectorSpec:
     label: str
     standard: str
     gender: str  # contact gender of the cable-side part: male | female
-    keying: str  # declared: none (any angle) | reversible (0° and 180°) | keyed (one orientation)
+    keying: str  # declared: none (any angle) | square (quarter turns) | reversible (0°, 180°) | keyed
     layers: list  # mating cross-sections of the plug, from its tip
     body: list  # plug body behind the mating plane: [(length mm, region), ...] from the plane back
     inline: tuple | None  # receptacle on a cable: (body length mm, outline)
@@ -137,6 +137,44 @@ _IDC_HOLES = [g2.rect(1.0, 1.0, x, y) for x in (-5.08, -2.54, 0.0, 2.54, 5.08) f
 _IDC_SOCKET = _holes(g2.union(g2.rect(15.0, 6.2), g2.rect(4.6, 1.2, 0.0, 3.6)), *_IDC_HOLES)
 # Micro-B: trapezoid shell (chamfered lower corners), cavity for the receptacle's tongue near the top
 _MICRO_B_PLUG = g2.chamfered_rect(6.80, 1.75, bottom=0.75).difference(g2.rect(5.6, 0.62, 0.0, 0.32))
+
+# 0.1 in (2.54 mm) pin headers: 0.64 mm square posts; a socket's entry is the post plus the clearance
+_PITCH = 2.54
+_POST = 0.64
+_ENTRY = _POST + 2 * 0.1
+
+
+def _entries(xs, size=_ENTRY, y=0.0):
+    return [g2.rect(size, size, x, y) for x in xs]
+
+
+# servo lead: 3-way housing, polarised by a rib along one long side
+_SERVO_HOUSING = g2.union(g2.rect(7.6, 2.6, 0.0, -0.3), g2.rect(1.6, 0.6, 0.0, 1.3))
+_SERVO_SOCKET = _holes(_SERVO_HOUSING, *_entries([-_PITCH, 0.0, _PITCH], y=-0.3))
+# jumper wire: one 2.54 mm square housing
+_JUMPER_HOUSING = g2.rect(2.5, 2.5)
+# battery plug (60 A class): two Ø3.5 mm bullets 7.2 mm apart, housing with two chamfered corners
+_BATT_FRONT = g2.chamfered_rect(13.6, 6.4, top=1.6)
+_BATT_SOCKET = _holes(_BATT_FRONT, g2.circle(3.7, -3.6), g2.circle(3.7, 3.6))
+_BATT_OUTER = g2.chamfered_rect(15.8, 8.2, top=2.0)
+# balance plug, 5-way 2.5 mm pitch: housing with two locking ribs on one side
+_BAL_N, _BAL_PITCH = 5, 2.5
+_BAL_W = _BAL_PITCH * (_BAL_N - 1) + 2.9
+_BAL_HOUSING = g2.union(
+    g2.rect(_BAL_W, 4.2, 0.0, -0.25),
+    g2.rect(1.2, 0.6, -(_BAL_W / 2 - 1.8), 2.1),
+    g2.rect(1.2, 0.6, _BAL_W / 2 - 1.8, 2.1),
+)
+_BAL_SOCKET = _holes(
+    _BAL_HOUSING, *_entries([(k - (_BAL_N - 1) / 2) * _BAL_PITCH for k in range(_BAL_N)], y=-0.25)
+)
+# D-sub 9 (shell size E): the female insert goes into the male's D shell; 5 + 4 contacts
+_DSUB_D = g2.trapezoid(16.30, 7.80, 10.0, r=1.0)
+_DSUB_ROWS = [(x, 1.42) for x in (-5.54, -2.77, 0.0, 2.77, 5.54)]
+_DSUB_ROWS += [(x, -1.42) for x in (-4.155, -1.385, 1.385, 4.155)]
+_DSUB_SOCKET = _holes(_DSUB_D, *(g2.circle(1.2, x, y) for x, y in _DSUB_ROWS))
+_DSUB_FLANGE = g2.rrect(30.81, 12.55, 1.0)
+_DSUB_HOOD = g2.rrect(31.5, 15.5, 3.0)
 
 
 def _barrel(key: str, od: float, bore: float, length: float, sizes_source: str, length_source: str):
@@ -485,6 +523,158 @@ CONNECTORS: dict[str, ConnectorSpec] = {
         approximate=["socket 15.0 × 6.2 with key 4.6", "box header 20.3 × 8.85", "depth 6"],
         sources=["2.54 mm pin pitch (0.1 in)"],
     ),
+    # ------------------------------------------------------------ robotics
+    "servo3": ConnectorSpec(
+        key="servo3",
+        label="Servo connector, 3-pin 2.54 mm",
+        standard="3-way crimp housing, 0.1 in pitch (hobby servo)",
+        gender="female",
+        keying="keyed",
+        layers=[Layer(0.0, 6.0, _SERVO_SOCKET)],
+        body=[(8.5, _SERVO_HOUSING)],
+        inline=(14.5, g2.rect(8.8, 4.2)),
+        panel=(3.0, g2.rect(10.0, 5.0)),
+        clearance=0.1,
+        density=1300.0,
+        plug_name="Servo plug (3 sockets)",
+        inline_name="Servo extension (3 pins)",
+        panel_name="Servo port (3 pins in a slot)",
+        socket_insert=_GOLD,
+        insert_metal=True,
+        panel_color=_BLACK,
+        color=_BLACK,
+        approximate=["housing 7.6 × 2.6 with a 1.6 × 0.6 rib, 14.5 long", "receiver slot 10 × 5", "depth 6"],
+        sources=[
+            "2.54 mm (0.1 in) pitch, 1 × 3: https://www.pololu.com/product/1902/specs",
+            "0.64 mm square posts: https://mantech.co.za/datasheets/products/XH-JST.pdf",
+        ],
+    ),
+    "pin_m": ConnectorSpec(
+        key="pin_m",
+        label="Jumper pin, 2.54 mm (male)",
+        standard="0.1 in pitch jumper wire",
+        gender="male",
+        keying="square",
+        layers=[Layer(0.0, 6.0, g2.rect(_POST, _POST))],
+        body=[(14.0, _JUMPER_HOUSING)],
+        inline=(14.0, g2.rect(2.5, 2.5)),
+        panel=(3.0, g2.rect(7.62, 7.62)),
+        clearance=0.1,
+        density=2500.0,
+        plug_name="Jumper pin (male)",
+        inline_name="Jumper socket (female)",
+        panel_name="Breadboard contact",
+        pin_layers=(0,),
+        socket_insert=_GOLD,
+        insert_metal=True,
+        panel_color="#efefea",
+        color=_BLACK,
+        approximate=["housing 2.5 × 2.5 × 14", "pin 6 long", "breadboard block 7.62 square"],
+        sources=["2.54 mm pitch, 0.64 mm square posts: https://mantech.co.za/datasheets/products/XH-JST.pdf"],
+    ),
+    "pin_f": ConnectorSpec(
+        key="pin_f",
+        label="Jumper socket, 2.54 mm (female)",
+        standard="0.1 in pitch jumper wire",
+        gender="female",
+        keying="square",
+        layers=[Layer(0.0, 6.0, _holes(_JUMPER_HOUSING, g2.rect(_ENTRY, _ENTRY)))],
+        body=[(8.0, _JUMPER_HOUSING)],
+        inline=None,
+        # the header's plastic base: the socket covers it, only the post stands in the cavity
+        panel=(2.5, g2.rect(2.54, 2.54)),
+        clearance=0.1,
+        density=1300.0,
+        plug_name="Jumper socket (female)",
+        panel_name="Header pin",
+        socket_insert=_GOLD,
+        insert_metal=True,
+        panel_color=_BLACK,
+        color=_BLACK,
+        approximate=["housing 2.5 × 2.5 × 14", "post 6 above a 2.5 base"],
+        sources=["2.54 mm pitch, 0.64 mm square posts: https://mantech.co.za/datasheets/products/XH-JST.pdf"],
+    ),
+    "batt35": ConnectorSpec(
+        key="batt35",
+        label="High-current DC plug, 3.5 mm bullets (60 A class)",
+        standard="2-pole battery connector, 3.5 mm bullets, 7.2 mm pitch",
+        gender="female",
+        keying="keyed",
+        layers=[Layer(0.0, 8.0, _BATT_SOCKET)],
+        body=[(8.0, _BATT_OUTER)],
+        inline=(17.0, _BATT_OUTER),
+        panel=(4.0, g2.rrect(20.0, 12.0, 1.5)),
+        clearance=0.1,
+        density=2200.0,
+        plug_name="Battery plug (female)",
+        inline_name="Battery plug (male, lead)",
+        panel_name="Battery plug (male, board)",
+        socket_insert=_GOLD,
+        insert_metal=True,
+        panel_color=_BLACK,
+        color="#e3b21f",
+        approximate=[
+            "front 13.6 × 6.4 with 1.6 chamfers, body 15.8 × 8.2 with 2.0 chamfers",
+            "insertion depth 8",
+        ],
+        sources=["7.2 mm pitch: https://altronics.cl/uploads/XT-60.pdf", "3.5 mm bullets"],
+    ),
+    "bal5": ConnectorSpec(
+        key="bal5",
+        label="Balance connector, 5-pin 2.5 mm (4S)",
+        standard="5-way wire-to-board housing, 2.5 mm pitch",
+        gender="female",
+        keying="keyed",
+        layers=[Layer(0.0, 6.0, _BAL_SOCKET)],
+        body=[(2.0, g2.rect(_BAL_W, 4.7, 0.0, 0.0))],
+        inline=None,
+        panel=(3.0, g2.rect(_BAL_PITCH * (_BAL_N - 1) + 4.9, 6.0)),
+        clearance=0.1,
+        density=1300.0,
+        plug_name="Balance plug 5-pin",
+        panel_name="Balance header 5-pin",
+        socket_insert=_METAL,
+        insert_metal=True,
+        panel_color="#efe9d8",
+        color="#efe9d8",
+        approximate=[f"housing {_BAL_W:g} × 4.2 with two 1.2 ribs", "header depth 6", "insertion depth 6"],
+        sources=[
+            "header width 2.5 (n − 1) + 4.9, 0.64 mm posts: https://mantech.co.za/datasheets/products/XH-JST.pdf",
+        ],
+    ),
+    "dsub9": ConnectorSpec(
+        key="dsub9",
+        label="D-sub 9 (DE-9)",
+        standard="IEC 60807-3 / MIL-DTL-24308, shell size E",
+        gender="female",
+        keying="keyed",
+        layers=[Layer(0.0, 6.0, _DSUB_SOCKET)],
+        body=[(1.0, _DSUB_FLANGE), (32.0, _DSUB_HOOD)],
+        inline=(35.0, _DSUB_HOOD),
+        panel=(4.0, _DSUB_FLANGE),
+        clearance=0.1,
+        density=2200.0,
+        plug_name="DE-9 female (cable)",
+        inline_name="DE-9 male (cable)",
+        panel_name="DE-9 male (panel)",
+        shell=_METAL,
+        plug_insert=_BLACK,
+        plug_rim=0.4,
+        socket_shell=_METAL,
+        socket_insert=_GOLD,
+        insert_metal=True,
+        color="#4a4d52",
+        approximate=[
+            "female D 16.30 × 7.80 (male shell 16.92 × 8.36 less its wall)",
+            "row spacing 2.84",
+            "hood 31.5 × 15.5 × 32",
+            "engagement 6",
+        ],
+        sources=[
+            "male shell 16.92 × 8.36, flange 30.81 × 12.55: https://www.farnell.com/datasheets/2722993.pdf",
+            "2.77 mm pitch: https://uk.rs-online.com/p/d-sub-connectors/2411334",
+        ],
+    ),
 }
 
 
@@ -695,10 +885,13 @@ def admissible_angles(spec: ConnectorSpec, step: float = 15.0) -> list[float]:
 
 
 def keying_of(spec: ConnectorSpec) -> str:
-    """Keying found from the geometry: none, reversible or keyed."""
+    """Keying found from the geometry: none (any angle), square (every quarter turn),
+    reversible (0° and 180°) or keyed (one orientation)."""
     angles = admissible_angles(spec)
     if len(angles) == int(360 / 15):
         return "none"
+    if 90.0 in angles and 180.0 in angles:
+        return "square"
     if 180.0 in angles:
         return "reversible"
     return "keyed"

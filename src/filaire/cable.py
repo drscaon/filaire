@@ -38,7 +38,7 @@ from .connectors import (
     receptacle_looks,
     receptacle_parts,
 )
-from .mesh3d import TriMesh, mass_properties, merge, sweep
+from .mesh3d import TriMesh, mass_properties, merge, submesh, sweep
 
 DAMPING_TIME = 0.01  # s: joint damping = stiffness × DAMPING_TIME
 UP = np.array([0.0, 0.0, 1.0])
@@ -96,7 +96,17 @@ def _ring(profile: tuple, segments: int = 16) -> np.ndarray:
         a = np.linspace(0, 2 * math.pi, segments, endpoint=False)
         return np.c_[r * np.cos(a), r * np.sin(a)]
     region = profile_region(profile).simplify(0.02 * profile_region(profile).bounds[3])
-    return g2.ring_points(region)
+    ring = g2.ring_points(region)
+    # vertices on the boundaries between side-by-side wires, so that each face of the tube lies
+    # on one wire and takes its colour (stripes): a flat cable's top is otherwise one wide face
+    cores, _ = _core_layout(profile, profile[1] if kind == "flat" else 2)
+    cuts = (cores[1:, 0] + cores[:-1, 0]) / 2
+    out = []
+    for p, q in zip(ring, np.roll(ring, -1, axis=0), strict=True):
+        out.append(p)
+        ts = sorted((x - p[0]) / (q[0] - p[0]) for x in cuts if (p[0] - x) * (q[0] - x) < 0)
+        out += [p + t * (q - p) for t in ts if 1e-6 < t < 1 - 1e-6]
+    return np.array(out)
 
 
 # ----------------------------------------------------------------- the cable
@@ -150,6 +160,14 @@ class Cable:
     ends: dict  # {"a": {variant: End}, "b": {...}}
     selected: dict  # {"a": variant, "b": variant}
     position: tuple = (0.0, 0.0, 0.0)
+    stripes: tuple | None = None  # jacket colour of each wire, across the width (flat, figure-8)
+
+    def jacket_pieces(self, mesh: TriMesh) -> list[tuple[TriMesh, str]]:
+        """A segment's tube (in the segment's frame) by colour: one piece per wire colour when the
+        cable has stripes (a servo lead's brown, red and orange wires), else the whole tube."""
+        if not self.stripes or not len(mesh.faces) or self.coil:
+            return [(mesh, self.color)]
+        return stripe_pieces(mesh, self.profile, self.stripes)
 
     @property
     def segment_length(self) -> float:
@@ -273,6 +291,20 @@ def _core_layout(profile: tuple, n: int) -> tuple[np.ndarray, float]:
     return np.c_[rc * np.cos(a), rc * np.sin(a)], dc
 
 
+def stripe_pieces(mesh: TriMesh, profile: tuple, stripes) -> list[tuple[TriMesh, str]]:
+    """Split a piece of tube, in its segment's frame (y across the width), by the wire each face
+    belongs to: the nearest core across the width."""
+    cores, _ = _core_layout(profile, len(stripes))
+    y = mesh.points[mesh.faces].mean(axis=1)[:, 1]
+    wire = np.abs(y[:, None] - cores[None, :, 0]).argmin(axis=1)
+    out = []
+    for color in dict.fromkeys(stripes):
+        mask = np.isin(wire, [k for k, c in enumerate(stripes) if c == color])
+        if mask.any():
+            out.append((submesh(mesh, mask), color))
+    return out
+
+
 def stripped_end(profile: tuple, colors: list) -> End:
     pos, dc = _core_layout(profile, len(colors))
     visuals, regions = [], []
@@ -325,6 +357,7 @@ def build_cable(
     coil_leads: tuple = (0.0, 0.0),
 ) -> Cable:
     pr = PRESETS[preset_key]
+    stripes = pr.get("stripes", {}).get(color)
     profile = pr["profile"]
     sec = section(profile)
     width = sec["width"]
@@ -501,6 +534,7 @@ def build_cable(
         segments=segments,
         ends=ends,
         selected=selected,
+        stripes=tuple(stripes) if stripes else None,
     )
 
 

@@ -320,7 +320,7 @@ def _segment(stage, looks, path: str, cable: Cable, seg, mats) -> None:
             stage,
             looks,
             f"{path}/Visual",
-            [(seg.visual, cable.color, JACKETS[cable.jacket]["roughness"], 0.0)],
+            [(m, c, JACKETS[cable.jacket]["roughness"], 0.0) for m, c in cable.jacket_pieces(seg.visual)],
         )
     UsdPhysics.RigidBodyAPI.Apply(p)
     _physx_body(p)
@@ -464,8 +464,12 @@ def _new_stage(path: Path, physics: bool = True):
 
 def _cable_visual(stage, looks, cp: str, c: Cable) -> None:
     """Visual-only cable: every segment's piece of tube in one mesh, in the cable's frame."""
-    pieces = [s.visual.transformed(s.rotation, s.center) for s in c.segments if len(s.visual.faces)]
-    _visual(stage, looks, f"{cp}/Visual", [(merge(pieces), c.color, JACKETS[c.jacket]["roughness"], 0.0)])
+    by_color: dict = {}
+    for seg in c.segments:
+        for m, color in c.jacket_pieces(seg.visual):
+            by_color.setdefault(color, []).append(m.transformed(seg.rotation, seg.center))
+    rough = JACKETS[c.jacket]["roughness"]
+    _visual(stage, looks, f"{cp}/Visual", [(merge(ms), color, rough, 0.0) for color, ms in by_color.items()])
 
 
 def export_cables(path: str | Path, scene, physics: bool = True) -> Path:

@@ -142,3 +142,17 @@ def test_no_physics(tmp_path):
     cable = stage.GetPrimAtPath("/World/Cables/power_c13_000")
     assert cable.GetChild("Visual").IsA(UsdGeom.Mesh)  # one mesh for the whole cable
     assert stage.GetPrimAtPath("/World/Cables/power_c13_000/End_A/Body/MateFrame")
+
+
+def test_striped_wires(tmp_path):
+    """A servo lead's three wires keep their own colours; a plain cable has one jacket colour."""
+    from filaire import Variations
+
+    scene = generate_scene("servo_lead", 1, 1, Variations(color=False), layout="straight")
+    out = write_outputs(scene, tmp_path)
+    stage = Usd.Stage.Open(str(next(out.glob("filaire_*.usdc"))))
+    mesh = stage.GetPrimAtPath(f"/World/Cables/{scene.cables[0].name}/Segments/seg_000/Visual")
+    colors = {
+        str(sub.GetPrim().GetName()) for sub in UsdGeom.Subset.GetAllGeomSubsets(UsdGeom.Imageable(mesh))
+    }
+    assert {"m_7b4a2a_55_0", "m_c0392b_55_0", "m_e88a2a_55_0"} <= colors

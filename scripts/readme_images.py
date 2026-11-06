@@ -48,15 +48,31 @@ PLUG_CABLE = {
     "xlr3": "xlr_mic",
     "m12a": "m12_sensor",
     "idc10": "ribbon_idc",
+    "dsub9": "can_bus",
+    "servo3": "servo_lead",
+    "pin_m": "jumper_wire",
+    "pin_f": "jumper_wire",
+    "batt35": "battery_lead",
+    "bal5": "balance_lead",
 }
 # how each preset is shown: length (m), layout
-SHOW = {"coiled_handset": (0.25, "straight"), "ribbon_idc": (0.25, "straight")}
+SHOW = {
+    "coiled_handset": (0.25, "straight"),
+    "ribbon_idc": (0.25, "straight"),
+    "servo_lead": (0.3, "slack"),
+    "jumper_wire": (0.2, "slack"),
+    "battery_lead": (0.2, "slack"),
+    "balance_lead": (0.15, "straight"),
+}
 SEEDS = {"usb_c": 3, "power_c13": 5, "hdmi": 7, "audio_jack": 4, "ethernet": 2}
 
 
-def _preset_scene(key: str, length: float = 0.4, seed: int | None = None):
-    """One cable of a preset, with the preset's first end variants (its typical cable)."""
-    length, layout = SHOW.get(key, (length, "slack"))
+def _preset_scene(key: str, length: float = 0.4, seed: int | None = None, same_length: bool = False):
+    """One cable of a preset, with the preset's first end variants (its typical cable).
+    same_length: every cable `length` long (the hero), except a coiled cord's own length."""
+    shown_length, layout = SHOW.get(key, (length, "slack"))
+    if not same_length or "coil" in PRESETS[key]:
+        length = shown_length
     return generate_scene(
         key,
         count=1,
@@ -98,7 +114,7 @@ def hero(tmp: Path, out: Path, samples: int, size=(1600, 900)):
     keys = list(PRESETS)
     args, cells = [], []
     for k, key in enumerate(keys):
-        folder = write_outputs(_preset_scene(key, 0.62), tmp / "hero", physics=False)
+        folder = write_outputs(_preset_scene(key, 0.62, same_length=True), tmp / "hero", physics=False)
         usd = folder / f"filaire_{key}.usdc"
         lo, hi = _bbox(usd)
         col, row = divmod(k, (len(keys) + 1) // 2)
