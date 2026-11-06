@@ -255,7 +255,8 @@ PRESETS = {
         "youngs_modulus": (30.0, 60.0),
         "linear_density": (10.0, 15.0),  # of the wire itself
         "layouts": {"straight": 0.4, "slack": 0.6},
-        "coil": {"diameter": 8.5, "pitch": 1.05},
+        # leads: straight wire between each plug and the coil, mm (drawn per end)
+        "coil": {"diameter": 8.5, "pitch": 1.05, "leads": (40.0, 80.0)},
         "ends": {"a": {"rj9_plug": 1.0}, "b": {"rj9_plug": 1.0}},
     },
 }

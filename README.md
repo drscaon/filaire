@@ -180,7 +180,7 @@ other ends…).
 | | `speaker_wire` | figure-8, 2 × Ø3.2 mm | stripped, cut | stripped, cut |
 | Industrial | `m12_sensor` | round Ø5.0 mm, PUR | M12 female | stripped, cut |
 | | `ribbon_idc` | flat, 10 × 1.27 mm | IDC socket 2 × 5 | IDC socket, cut |
-| Telephone | `coiled_handset` | coil Ø8.5 mm of Ø2.8 mm wire | RJ9 plug | RJ9 plug |
+| Telephone | `coiled_handset` | coil Ø8.5 mm of Ø2.8 mm wire, straight 4–8 cm leads | RJ9 plug | RJ9 plug |
 
 Every cable also carries `cut` and `stripped` variants on both ends, and any
 other variant forced with `--end-a` / `--end-b`. Diameters, densities
@@ -190,7 +190,7 @@ magnitude, not measurements of a specific product.
 ![The 14 presets, one cable each](https://raw.githubusercontent.com/drscaon/filaire/main/docs/images/presets.jpg)
 
 *Each preset with its usual ends (the first variant of each end), 40 cm
-long (25 cm for the ribbon and the coiled cord), rendered in Blender.*
+long (25 cm for the ribbon, 25 cm of coil for the coiled cord), rendered in Blender.*
 
 ## Connectors
 
@@ -290,7 +290,7 @@ Z up, metres, kilograms, `/World` the default prim.
     /Segments/seg_000 …          rigid bodies (RigidBodyAPI, MassAPI, PhysxRigidBodyAPI), x along the cable
       /Visual                    ONE mesh: the piece of tube this segment carries
       /Collision                 Capsule along x (round, coiled) or Cube (flat, figure-8), purpose guide
-    /Joints/joint_000 …          PhysicsJoint: translations locked (coiled: transX free),
+    /Joints/joint_000 …          PhysicsJoint: translations locked (coil: transX free between limits),
                                  drives rotX (twist), rotY, rotZ (bending) [, transX (coil)]
     /End_A, /End_B               filled by the selected variant:
       /Body                      rigid body of the connector or stripped end
@@ -333,7 +333,7 @@ are kept as engine-neutral attributes:
 | `filaire:youngsModulus`, `filaire:shearModulus`, `filaire:linearDensity` | material (Pa, kg/m) |
 | `filaire:segmentLength`, `filaire:segmentCount`, `filaire:restShape` | discretisation; rest shape is straight |
 | `filaire:dampingTime` | joint damping = stiffness × 0.01 s |
-| `filaire:coil:*`, `filaire:axialStiffness` | coiled cords: coil diameter, pitch, turns, wire length; spring k (N/m) |
+| `filaire:coil:*`, `filaire:axialStiffness` | coiled cords: coil diameter, pitch, turns, wire length, coiled length, straight leads (m, end A and B); spring k (N/m) |
 | `filaire:length`, `filaire:layout`, `filaire:profile`, `filaire:jacket`, … | what the cable is |
 
 | Attribute (on a `MateFrame`) | Content |
@@ -356,7 +356,13 @@ are kept as engine-neutral attributes:
 - **Coiled cords** are modelled along their axis, as a helical spring seen
   as a rod (Wahl's close-coiled formulas): bending `2 E I p / (π D (2 + ν))`,
   twist `E I p / (π D)`, and an axial spring `4 G J / (π D³ n)` shared by
-  free `transX` joints. The coil itself is in the visual mesh.
+  free `transX` joints, limited (`PhysicsLimitAPI`) from 0 (a close-coiled cord
+  does not compress: its turns touch) to the stretch at which the wire is
+  straight. The coil itself is in the visual mesh. As on a real
+  handset cord, each plug is on a straight lead of bare wire (4–8 cm, drawn
+  per end, added to the coiled length): there the joints bend and twist like
+  the wire (`E I`, `G J`), do not stretch, and the segments weigh and collide
+  as the wire; the coil opens out of the lead over about one coil diameter.
 - **Masses** from the linear density; connectors from the volume of their
   parts and an effective density; inertia tensors from the meshes.
 
@@ -407,14 +413,27 @@ and critical damping so that stiff, light links stay stable with a 1 ms
 step; neither changes a static equilibrium, which is what the sag and coil
 checks compare.
 
-![Five cables dropped onto a bar on the floor, simulated in MuJoCo](https://raw.githubusercontent.com/drscaon/filaire/main/docs/images/drop.gif)
+![Six cables dropped onto a steel frame, simulated in MuJoCo](https://raw.githubusercontent.com/drscaon/filaire/main/docs/images/drop.gif)
 
-*Power cord, Cat 6, USB-C, 3.5 mm jack and M12 sensor cable (70 cm),
-steeply tilted and dropped together onto a bar: one end hits first, the
-cables fold over the bar and over each other, connectors attached, and come
-to rest. Simulated in MuJoCo from the OpenUSD files (rest shape straight,
-60 links per cable, 0.5 ms step), rendered in Blender:
+*Power cord, coiled handset cord, Cat 6, USB-C, 3.5 mm jack and M12 sensor
+cable (1.5 m; the coiled cord 35 cm of coil), dropped together onto a steel
+swing-set frame from different heights and in very different orientations
+(flat or steep, across or along the beam, turned about their own axis). The
+power cord and the coiled cord land across the beam and stay there, the coil
+stretched by its own weight; the others hit an end first, glance off the beam
+or a leg and pile up on the floor. Simulated in MuJoCo from the OpenUSD files
+(rest shape straight, up to 60 links per cable, 0.5 ms step), rendered in
+Blender:
 [`scripts/drop_gif.py`](https://github.com/drscaon/filaire/blob/main/scripts/drop_gif.py).*
+
+![A coiled handset cord pulled and let go, simulated in MuJoCo](https://raw.githubusercontent.com/drscaon/filaire/main/docs/images/coil.gif)
+
+*A coiled handset cord hangs from its top plug, a gripper pulls the bottom
+plug 45 cm down and lets go. Nothing is scripted after the release: the coil
+springs back on its axial spring, cannot shorten past its touching turns,
+bounces a few times and settles on its hanging length. Simulated in MuJoCo
+from the OpenUSD file, rendered in Blender:
+[`scripts/coil_gif.py`](https://github.com/drscaon/filaire/blob/main/scripts/coil_gif.py).*
 
 ### Results
 
@@ -547,7 +566,8 @@ The README images are made by [`scripts/`](https://github.com/drscaon/filaire/bl
 `readme_images.py` (Blender renders through `bpy` of every preset and every
 connector family, connector sheet, GitHub social preview
 `docs/images/social_preview.png`, to upload in the repository's Settings >
-General > Social preview), `drop_gif.py` (the MuJoCo drop animation).
+General > Social preview), `drop_gif.py` (the MuJoCo drop animation), `coil_gif.py` (the coiled cord
+pulled and let go).
 
 ### Continuous integration
 

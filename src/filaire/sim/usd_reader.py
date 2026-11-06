@@ -81,6 +81,7 @@ class Joint:
     stiffness: dict  # dof -> SI (rad or m)
     damping: dict
     free_axial: bool
+    axial_range: tuple | None = None  # (low, high) m of a free transX, if limited
 
 
 @dataclass
@@ -101,7 +102,11 @@ def _joint(prim) -> Joint:
             f = 1 / DEG if dof.startswith("rot") else 1.0  # per degree -> per radian
             k[dof] = float(d.GetStiffnessAttr().Get()) * f
             c[dof] = float(d.GetDampingAttr().Get()) * f
-    return Joint(k, c, "transX" in k)
+    rng = None
+    lim = UsdPhysics.LimitAPI.Get(prim, "transX")
+    if "transX" in k and lim and lim.GetLowAttr().HasAuthoredValue():
+        rng = (float(lim.GetLowAttr().Get()), float(lim.GetHighAttr().Get()))
+    return Joint(k, c, "transX" in k, rng)
 
 
 def read_cable(stage: Usd.Stage, path: str, variants: dict | None = None) -> CableData:

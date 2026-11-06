@@ -124,6 +124,7 @@ class Segment:
     rotation: np.ndarray  # columns: x along the cable, y across, z up-ish
     length: float
     visual: TriMesh
+    lead: bool = False  # straight wire at a coiled cord's end (no coil around it)
 
 
 @dataclass
@@ -157,7 +158,8 @@ class Cable:
 
     @property
     def joint_stiffness(self) -> dict:
-        """Per-joint spring constants: twist, bend_y, bend_z (N·m/rad), axial (N/m)."""
+        """Per-joint spring constants: twist, bend_y, bend_z (N·m/rad), axial (N/m).
+        For a coiled cord, those of the coil; see joint_stiffness_at for its straight leads."""
         L = self.segment_length
         out = {
             "twist": self.torsional_stiffness / L,
@@ -168,9 +170,35 @@ class Cable:
             out["axial"] = self.axial_stiffness * (len(self.segments) - 1)
         return out
 
+    def joint_stiffness_at(self, i: int) -> dict:
+        """Spring constants of joint i (between segments i and i + 1). In a coiled cord's straight
+        lead the joint bends and twists like the bare wire, and does not stretch (no axial key)."""
+        if not (self.coil and self.segments[i].lead and self.segments[i + 1].lead):
+            return self.joint_stiffness
+        L = self.segment_length
+        ei, gj = self.coil["lead_stiffness"]
+        return {"twist": gj / L, "bend_y": ei / L, "bend_z": ei / L}
+
+    def axial_range(self) -> tuple[float, float] | None:
+        """Travel of a coil joint along the axis, m: a close-coiled cord does not compress (its
+        turns touch at rest) and stretches at most until its wire is straight."""
+        if not self.coil:
+            return None
+        return 0.0, self.segment_length * (self.coil["wire_per_axis"] - 1.0)
+
+    def segment_density(self, seg: Segment) -> float:
+        """Mass per metre along the segment: the bare wire in a lead, the coil elsewhere."""
+        return self.coil["wire_density"] if self.coil and seg.lead else self.linear_density
+
+    def segment_radius(self, seg: Segment) -> float:
+        """Collision radius of a round segment (coil or lead) or of a round cable."""
+        if self.coil:
+            return self.coil["wire"] / 2 if seg.lead else (self.coil["diameter"] + self.coil["wire"]) / 2
+        return self.section["width"] / 2
+
     @property
     def mass(self) -> float:
-        return self.linear_density * self.length
+        return float(sum(self.segment_density(sg) for sg in self.segments) * self.segment_length)
 
     def end_mass(self, end: str) -> float:
         return self.ends[end][self.selected[end]].mass
@@ -294,6 +322,7 @@ def build_cable(
     rng_layout: np.random.Generator,
     max_segments: int = 400,
     coil_length: float | None = None,
+    coil_leads: tuple = (0.0, 0.0),
 ) -> Cable:
     pr = PRESETS[preset_key]
     profile = pr["profile"]
@@ -308,18 +337,27 @@ def build_cable(
         d = profile[1] * MM
         D = pr["coil"]["diameter"] * MM  # mean coil diameter
         p = pr["coil"]["pitch"] * d
-        axis_length = coil_length if coil_length is not None else length
-        turns = axis_length / p
+        coiled = coil_length if coil_length is not None else length
+        turns = coiled / p
         Iw, Jw = sec["Iy"], sec["J"]
         bend = 2 * E * Iw * p / (math.pi * D * (2 + POISSON))
         twist = E * Iw * p / (math.pi * D)
         axial = 4 * G * Jw / (math.pi * D**3 * turns)
         wire_per_axis = math.hypot(math.pi * D, p) / p
         rho = linear_density * wire_per_axis
-        wire_length = axis_length * wire_per_axis
-        coil_info = {"diameter": D, "pitch": p, "turns": turns, "wire_length": wire_length, "wire": d}
+        coil_info = {
+            "diameter": D,
+            "pitch": p,
+            "turns": turns,
+            "wire": d,
+            "coiled_length": coiled,
+            "wire_density": linear_density,
+            "lead_stiffness": (E * Iw, G * Jw),  # the bare wire: E·I, G·J
+            "wire_per_axis": wire_per_axis,
+        }
         bending, torsion, axial_k = (bend, bend), twist, axial
-        cable_len = axis_length
+        # straight leads at both ends, as on a real handset cord (snapped to whole segments below)
+        cable_len = coiled + coil_leads[0] + coil_leads[1]
         tube_width = D + d
     else:
         bending = (E * sec["Iy"], E * sec["Iz"])
@@ -332,6 +370,11 @@ def build_cable(
     L_seg = _segment_length(tube_width, cable_len, max_segments)
     n_seg = max(2, int(round(cable_len / L_seg)))
     L_seg = cable_len / n_seg
+    lead_n = (0, 0)
+    if coil_info:
+        lead_n = tuple(int(round(x / L_seg)) if x > 0 else 0 for x in coil_leads)
+        coil_info["leads"] = (lead_n[0] * L_seg, lead_n[1] * L_seg)
+        coil_info["wire_length"] = coiled * wire_per_axis + sum(coil_info["leads"])
 
     # ----- ends (every variant, for the variant sets)
     ends: dict = {"a": {}, "b": {}}
@@ -408,7 +451,16 @@ def build_cable(
         mesh = sweep(prof, pts, nrm) if len(pts) >= 2 else TriMesh.empty()
         # the rigid segment spans the chord between its two joints (a little shorter than the arc
         # on a curve), so that neighbouring segments meet exactly at their joint
-        segments.append(Segment(c, R, float(np.linalg.norm(p1 - p0)), mesh.transformed(R.T, -R.T @ c)))
+        lead = i < lead_n[0] or i >= n_seg - lead_n[1]
+        segments.append(
+            Segment(
+                c,
+                R,
+                float(np.linalg.norm(p1 - p0)),
+                mesh.transformed(R.T, -R.T @ c),
+                bool(coil_info) and lead,
+            )
+        )
 
     # ----- place the ends: plug Z out of the cable, inline receptacle Z into it
     for end, idx, sign in (("a", 0, -1.0), ("b", -1, 1.0)):
@@ -472,8 +524,10 @@ def _end_extent(end: End) -> float:
 
 
 def _helix(path: np.ndarray, s: np.ndarray, coil: dict):
-    """Wire centre line of a coiled cord around its axis path, with arc length along the axis."""
-    R = coil["diameter"] / 2
+    """Wire centre line of a coiled cord around its axis path, with arc length along the axis.
+    In the straight leads at the ends the wire runs on the axis; the coil opens out of it over
+    about one coil diameter (a smooth step of the radius)."""
+    R0 = coil["diameter"] / 2
     p = coil["pitch"]
     per_turn = 24
     n = max(int(s[-1] / p * per_turn), 8)
@@ -485,8 +539,18 @@ def _helix(path: np.ndarray, s: np.ndarray, coil: dict):
     v = np.cross(t, u)
     phi = 2 * math.pi * sa / p
     radial = np.cos(phi)[:, None] * u + np.sin(phi)[:, None] * v
-    pts = axis + R * radial
-    return pts, sa, radial
+    la, lb = coil.get("leads", (0.0, 0.0))
+    ramp = coil["diameter"] * 1.2
+    w = np.ones(len(sa))
+    for start, x in ((la, sa), (lb, s[-1] - sa)):
+        if start > 0:
+            t = np.clip((x - start) / ramp, 0.0, 1.0)
+            w = np.minimum(w, t * t * (3 - 2 * t))
+    pts = axis + (R0 * w)[:, None] * radial
+    # the wire's own frame: turning with the coil, steady along a straight lead (no screw look)
+    frame = w[:, None] * radial + (1 - w)[:, None] * v
+    frame /= np.linalg.norm(frame, axis=1, keepdims=True)
+    return pts, sa, frame
 
 
 def cable_color_rgb(color: str) -> tuple:

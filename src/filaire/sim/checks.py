@@ -117,17 +117,20 @@ def sag_check(cable, links: int = 40) -> dict:
 
 
 def coil_check(cable) -> dict:
-    n = len(cable.segments)
-    seg = cable.segments[0]
+    # the coil only: its joints stretch; the straight leads at the ends do not
+    coil_joints = [i for i, j in enumerate(cable.joints) if j.free_axial]
+    n = len(coil_joints) + 1
+    seg = cable.segments[coil_joints[len(coil_joints) // 2]]
+    j0 = cable.joints[coil_joints[0]]
     L_seg = seg.capsule[1]
-    k_j = cable.joints[0].stiffness["transX"]
+    k_j = j0.stiffness["transX"]
     model = chain_model(
         n,
         L_seg,
         seg.mass,
         seg.capsule[0],
-        cable.joints[0].stiffness["rotY"],
-        cable.joints[0].stiffness["rotX"],
+        j0.stiffness["rotY"],
+        j0.stiffness["rotX"],
         vertical=True,
         k_axial=k_j,
     )

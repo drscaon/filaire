@@ -67,3 +67,18 @@ def test_options_override_draws():
     c = generate_scene("audio_jack", count=1, color="#123456", youngs_modulus=55.0).cables[0]
     assert c.color == "#123456"
     assert c.youngs_modulus == pytest.approx(55e6)
+
+
+def test_coiled_cord_has_straight_leads():
+    c = generate_scene("coiled_handset", count=1, length=0.3).cables[0]
+    la, lb = c.coil["leads"]
+    assert 0.03 <= la <= 0.09 and 0.03 <= lb <= 0.09  # 40-80 mm, snapped to whole segments
+    assert c.length == pytest.approx(0.3 + la + lb, abs=c.segment_length)  # leads: whole segments
+    assert c.segments[0].lead and c.segments[-1].lead and not c.segments[len(c.segments) // 2].lead
+    # a lead bends like the bare wire (stiffer than the coil) and does not stretch
+    lead_k, coil_k = c.joint_stiffness_at(0), c.joint_stiffness_at(len(c.segments) // 2)
+    assert "axial" not in lead_k and "axial" in coil_k
+    assert lead_k["bend_y"] > coil_k["bend_y"]
+    # the wire is lighter per metre of axis in a lead than in the coil
+    assert c.segment_density(c.segments[0]) < c.segment_density(c.segments[len(c.segments) // 2])
+    assert c.segment_radius(c.segments[0]) < c.segment_radius(c.segments[len(c.segments) // 2])
