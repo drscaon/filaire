@@ -85,3 +85,29 @@ def test_cables_fall_on_an_obstacle_and_each_other(tmp_path):
     heights = data.xpos[1:, 2]
     assert heights.min() > -0.001 and heights.max() < 0.08  # on the floor or over the bar
     assert speed() < 0.05, f"still moving after {data.time:.1f} s"
+
+
+def test_coarsen_keeps_a_coiled_cords_leads_rigid_axially(tmp_path):
+    from filaire.sim.mujoco_model import coarsen
+
+    folder = write_outputs(generate_scene("coiled_handset", count=1, length=0.3), tmp_path)
+    fine = _cable(folder, "coiled_handset")
+    assert not fine.joints[0].free_axial and fine.joints[len(fine.joints) // 2].free_axial
+    coarse = coarsen(fine, len(fine.segments) // 2)
+    g = 2
+    mid = len(coarse.joints) // 2
+    # in the coil, two joints in series: half the stiffness of one
+    assert coarse.joints[mid].stiffness["transX"] == pytest.approx(
+        fine.joints[g * mid].stiffness["transX"] / 2
+    )
+    assert not coarse.joints[0].free_axial
+
+
+def test_coil_joints_neither_compress_nor_overstretch(tmp_path):
+    folder = write_outputs(generate_scene("coiled_handset", count=1, length=0.3), tmp_path)
+    c = _cable(folder, "coiled_handset")
+    coil = [j for j in c.joints if j.free_axial]
+    assert coil and all(j.axial_range is not None and j.axial_range[0] == 0.0 for j in coil)
+    # stretched to the limit, the axis is as long as the wire (leads included)
+    total = sum(j.axial_range[1] for j in coil) + float(c.attrs["filaire:length"])
+    assert total == pytest.approx(float(c.attrs["filaire:coil:wireLength"]), rel=0.1)

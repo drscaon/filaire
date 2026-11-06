@@ -325,9 +325,9 @@ def _segment(stage, looks, path: str, cable: Cable, seg, mats) -> None:
     UsdPhysics.RigidBodyAPI.Apply(p)
     _physx_body(p)
     L = seg.length
-    m = cable.linear_density * cable.segment_length  # the arc it stands for: total mass kept
+    m = cable.segment_density(seg) * cable.segment_length  # the arc it stands for: total mass kept
     if cable.coil:
-        r2 = (cable.coil["diameter"] / 2) ** 2
+        r2 = (cable.coil["wire"] / 2 if seg.lead else cable.coil["diameter"] / 2) ** 2
         inertia = np.diag([m * r2, m * (r2 / 2 + L * L / 12), m * (r2 / 2 + L * L / 12)])
     else:
         sec = cable.section
@@ -341,7 +341,7 @@ def _segment(stage, looks, path: str, cable: Cable, seg, mats) -> None:
         )
     _mass(p, m, (0, 0, 0), inertia)
     if cable.coil or cable.profile[0] == "round":
-        r = (cable.coil["diameter"] + cable.coil["wire"]) / 2 if cable.coil else cable.section["width"] / 2
+        r = cable.segment_radius(seg)
         col = UsdGeom.Capsule.Define(stage, f"{path}/Collision")
         col.CreateAxisAttr(UsdGeom.Tokens.x)
         col.CreateRadiusAttr(float(r))
@@ -356,7 +356,7 @@ def _segment(stage, looks, path: str, cable: Cable, seg, mats) -> None:
     _collider(col.GetPrim(), mats["jacket"])
 
 
-def _joint(stage, path: str, s0: str, s1: str, L0: float, L1: float, cable: Cable) -> None:
+def _joint(stage, path: str, s0: str, s1: str, L0: float, L1: float, cable: Cable, i: int) -> None:
     j = UsdPhysics.Joint.Define(stage, path)
     j.CreateBody0Rel().SetTargets([Sdf.Path(s0)])
     j.CreateBody1Rel().SetTargets([Sdf.Path(s1)])
@@ -365,10 +365,14 @@ def _joint(stage, path: str, s0: str, s1: str, L0: float, L1: float, cable: Cabl
     j.CreateLocalRot0Attr(Gf.Quatf(1, 0, 0, 0))
     j.CreateLocalRot1Attr(Gf.Quatf(1, 0, 0, 0))
     p = j.GetPrim()
-    k = cable.joint_stiffness
+    k = cable.joint_stiffness_at(i)
     free_axial = "axial" in k
     for dof in ("transX", "transY", "transZ"):
         if dof == "transX" and free_axial:
+            lim = UsdPhysics.LimitAPI.Apply(p, dof)  # a coil: no compression, stretch up to straight wire
+            lo, hi = cable.axial_range()
+            lim.CreateLowAttr(float(lo))
+            lim.CreateHighAttr(float(hi))
             continue
         lim = UsdPhysics.LimitAPI.Apply(p, dof)
         lim.CreateLowAttr(1.0)  # low > high: locked
@@ -418,6 +422,8 @@ def _cable_attrs(prim, c: Cable) -> None:
         _attr(prim, "filaire:coil:turns", _F.Float, float(c.coil["turns"]))
         _attr(prim, "filaire:coil:wireLength", _F.Float, float(c.coil["wire_length"]))
         _attr(prim, "filaire:coil:wireDiameter", _F.Float, float(c.coil["wire"]))
+        _attr(prim, "filaire:coil:coiledLength", _F.Float, float(c.coil["coiled_length"]))
+        _attr(prim, "filaire:coil:leads", _F.Float2, Gf.Vec2f(*map(float, c.coil["leads"])))
 
 
 def _ground(stage, size: float, lo=(0.0, 0.0), hi=(0.0, 0.0), thickness: float = 0.02) -> None:
@@ -493,7 +499,7 @@ def export_cables(path: str | Path, scene, physics: bool = True) -> Path:
                 _segment(stage, looks, sp, c, seg, mats)
             for i in range(len(segs) - 1):
                 L0, L1 = c.segments[i].length, c.segments[i + 1].length
-                _joint(stage, f"{cp}/Joints/joint_{i:03d}", segs[i], segs[i + 1], L0, L1, c)
+                _joint(stage, f"{cp}/Joints/joint_{i:03d}", segs[i], segs[i + 1], L0, L1, c, i)
         else:
             _cable_visual(stage, looks, cp, c)
         for side, seg_idx in (("a", 0), ("b", -1)):

@@ -166,6 +166,14 @@ def _locked(UsdPhysics, jp, dof):
     return lim.GetLowAttr().Get() > lim.GetHighAttr().Get()
 
 
+def _range(UsdPhysics, jp, dof):
+    lim = UsdPhysics.LimitAPI.Get(jp, dof)
+    if not lim or not lim.GetLowAttr().HasAuthoredValue():
+        return None
+    lo, hi = float(lim.GetLowAttr().Get()), float(lim.GetHighAttr().Get())
+    return (lo, hi) if lo <= hi else None
+
+
 def setup_physics(stage, prim_map=None, scene=None):
     """Build Blender rigid bodies and constraints for the UsdPhysics bodies of an imported stage.
 
@@ -379,6 +387,10 @@ def setup_physics(stage, prim_map=None, scene=None):
                     setattr(c, f"use_limit_{kind}_{a}", True)
                     setattr(c, f"limit_{kind}_{a}_lower", 0.0)
                     setattr(c, f"limit_{kind}_{a}_upper", 0.0)
+                elif kind == "lin" and (r := _range(UsdPhysics, jp, dof)) is not None:  # a coil's travel
+                    setattr(c, f"use_limit_{kind}_{a}", True)
+                    setattr(c, f"limit_{kind}_{a}_lower", r[0])
+                    setattr(c, f"limit_{kind}_{a}_upper", r[1])
                 drive = _drive(UsdPhysics, jp, dof)
                 if drive is None:
                     continue

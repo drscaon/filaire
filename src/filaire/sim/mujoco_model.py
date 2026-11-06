@@ -116,10 +116,21 @@ def coarsen(cable, max_links: int):
         links.append(b)
     out.segments = links
     joints = []
-    for j in cable.joints[: len(links) - 1]:
-        jj = copy.copy(j)
-        jj.stiffness = {k: v / g for k, v in j.stiffness.items()}
-        jj.damping = {k: v / g for k, v in j.damping.items()}
+    for k in range(len(links) - 1):
+        # the g fine joints this one stands for, springs in series (uniform: stiffness / g); a dof
+        # locked in some of them (a coiled cord's straight lead does not stretch) adds only the
+        # joints where it is free, and stays locked if it is locked in all
+        grp = cable.joints[k * g : min((k + 1) * g, len(cable.joints))]
+        jj = copy.copy(grp[0])
+        jj.stiffness, jj.damping = {}, {}
+        for dof in {d for j in grp for d in j.stiffness}:
+            free = [j for j in grp if dof in j.stiffness]
+            jj.stiffness[dof] = 1.0 / sum(1.0 / j.stiffness[dof] for j in free)
+            damp = [j.damping.get(dof, 0.0) for j in free]
+            jj.damping[dof] = 1.0 / sum(1.0 / c for c in damp) if all(c > 0 for c in damp) else 0.0
+        jj.free_axial = "transX" in jj.stiffness
+        ranges = [j.axial_range for j in grp if j.free_axial and j.axial_range is not None]
+        jj.axial_range = (sum(r[0] for r in ranges), sum(r[1] for r in ranges)) if ranges else None
         joints.append(jj)
     out.joints = joints
     ends = {}
@@ -169,7 +180,7 @@ def add_cable(spec, cable, prefix: str = "", dt: float = DT):
                 )
             if j.free_axial:
                 k = j.stiffness["transX"]
-                b.add_joint(
+                jt = b.add_joint(
                     name=f"{prefix}j{i}_transX",
                     type=mujoco.mjtJoint.mjJNT_SLIDE,
                     axis=[1, 0, 0],
@@ -177,6 +188,10 @@ def add_cable(spec, cable, prefix: str = "", dt: float = DT):
                     stiffness=k,
                     damping=max(j.damping["transX"], 2 * np.sqrt(k * seg.mass)),
                 )
+                if j.axial_range is not None:  # a coil: turns touching, wire straight
+                    jt.limited = mujoco.mjtLimited.mjLIMITED_TRUE
+                    jt.range = list(j.axial_range)
+                    jt.solref_limit = [max(4 * dt, 0.002), 1.0]  # stiff: turns touching are solid
         _inertial(b, seg)
         _segment_geom(b, seg, fr, (0.15, 0.15, 0.15, 1))
         bodies.append(b)
@@ -241,7 +256,8 @@ def scene_model(cables, dt: float = DT, floor_friction: float = 0.5, obstacles=(
     """Several cables on one floor, colliding with each other: (model, init), prefixes c0_, c1_, …
 
     obstacles: static shapes on the floor, dicts {"type": "box" | "cylinder", "pos": [x, y, z],
-    "size": MuJoCo size (box: half sizes; cylinder: [radius, half length]), "euler": [deg x, y, z]}.
+    "size": MuJoCo size (box: half sizes; cylinder: [radius, half length]), "euler": [deg x, y, z],
+    optional "friction" (default: the floor's)}.
     """
     spec = _spec(dt, floor_friction)
     for k, ob in enumerate(obstacles):
@@ -252,7 +268,7 @@ def scene_model(cables, dt: float = DT, floor_friction: float = 0.5, obstacles=(
             pos=list(ob["pos"]),
             quat=[q[3], q[0], q[1], q[2]],
             size=list(ob["size"]) + [0] * (3 - len(ob["size"])),
-            friction=[floor_friction, 0.005, 0.0001],
+            friction=[ob.get("friction", floor_friction), 0.005, 0.0001],
         )
     inits = [add_cable(spec, c, f"c{k}_", dt) for k, c in enumerate(cables)]
     # stiffer contacts than MuJoCo's default (time constant 0.02 s), on every geom, floor included

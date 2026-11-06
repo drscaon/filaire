@@ -66,21 +66,84 @@ def import_usd(path: str, dx=0.0, dy=0.0, dz=0.0, rotz=0.0, merge: bool = True) 
 
 
 # a warm, light-wood desk: black, grey, white and coloured cables all stand out on it
-FLOOR = (0.20, 0.12, 0.06, 1)
+FLOOR_DARK, FLOOR_LIGHT = (0.16, 0.165, 0.17, 1), (0.27, 0.272, 0.275, 1)  # factory concrete
 
 
-def floor(size=200.0, color=None):
-    if color is None:
-        color = (
-            tuple(float(v) for v in os.environ["FLOOR"].split(",")) + (1,) if "FLOOR" in os.environ else FLOOR
-        )
+def floor(size=200.0, color=None, markings=False):
+    """Factory floor: sealed grey concrete with a faint large-scale variation, fine speckle and a
+    little gloss. markings: saw-cut joints every 2 m and a yellow lane line (wide shots only).
+    FLOOR=r,g,b in the environment (or color) gives a plain floor instead."""
+    if color is None and "FLOOR" in os.environ:
+        color = tuple(float(v) for v in os.environ["FLOOR"].split(",")) + (1,)
     bpy.ops.mesh.primitive_plane_add(size=size, location=(0, 0, 0))
     p = bpy.context.object
     mat = bpy.data.materials.new("floor")
     mat.use_nodes = True
-    bsdf = mat.node_tree.nodes["Principled BSDF"]
-    bsdf.inputs["Base Color"].default_value = color
-    bsdf.inputs["Roughness"].default_value = 0.85
+    nt = mat.node_tree
+    bsdf = nt.nodes["Principled BSDF"]
+    if color is not None:
+        bsdf.inputs["Base Color"].default_value = color
+        bsdf.inputs["Roughness"].default_value = 0.85
+        p.data.materials.append(mat)
+        return
+    L = nt.links.new
+    tc = nt.nodes.new("ShaderNodeTexCoord")
+
+    def noise(scale, detail):
+        n = nt.nodes.new("ShaderNodeTexNoise")
+        n.inputs["Scale"].default_value = scale
+        n.inputs["Detail"].default_value = detail
+        L(tc.outputs["Object"], n.inputs["Vector"])
+        return n
+
+    def math(op, *args):
+        m = nt.nodes.new("ShaderNodeMath")
+        m.operation = op
+        for i, v in enumerate(args):
+            if isinstance(v, float | int):
+                m.inputs[i].default_value = v
+            else:
+                L(v, m.inputs[i])
+        return m.outputs[0]
+
+    coarse, fine = noise(0.6, 3.0), noise(400.0, 2.0)
+    # concrete value: mostly the speckle, a faint large-scale cloud (strong, it reads as fog)
+    v = math("MULTIPLY_ADD", fine.outputs["Fac"], 0.6, math("MULTIPLY", coarse.outputs["Fac"], 0.4))
+    ramp = nt.nodes.new("ShaderNodeValToRGB")
+    ramp.color_ramp.elements[0].position = 0.35
+    ramp.color_ramp.elements[0].color = FLOOR_DARK
+    ramp.color_ramp.elements[1].position = 0.75
+    ramp.color_ramp.elements[1].color = FLOOR_LIGHT
+    L(v, ramp.inputs["Fac"])
+    col = ramp.outputs["Color"]
+    rough = math("MULTIPLY_ADD", coarse.outputs["Fac"], 0.3, 0.3)
+    if markings:
+        sep = nt.nodes.new("ShaderNodeSeparateXYZ")
+        L(tc.outputs["Object"], sep.inputs[0])
+
+        def joint(axis):  # 1 on a 6 mm saw cut every 2 m
+            d = math("PINGPONG", math("ADD", axis, 1.0), 1.0)  # distance to the nearest multiple of 2
+            return math("LESS_THAN", d, 0.003)
+
+        cut = math("MAXIMUM", joint(sep.outputs["X"]), joint(sep.outputs["Y"]))
+        lane = math("LESS_THAN", math("ABSOLUTE", math("ADD", sep.outputs["Y"], 1.1), 0.0), 0.05)
+        mix = nt.nodes.new("ShaderNodeMix")
+        mix.data_type = "RGBA"
+        L(lane, mix.inputs["Factor"])
+        L(col, mix.inputs[6])
+        mix.inputs[7].default_value = (0.75, 0.52, 0.03, 1)  # safety yellow
+        dark = nt.nodes.new("ShaderNodeMix")
+        dark.data_type = "RGBA"
+        L(cut, dark.inputs["Factor"])
+        L(mix.outputs[2], dark.inputs[6])
+        dark.inputs[7].default_value = (0.04, 0.04, 0.045, 1)
+        col = dark.outputs[2]
+    L(col, bsdf.inputs["Base Color"])
+    L(rough, bsdf.inputs["Roughness"])
+    bump = nt.nodes.new("ShaderNodeBump")
+    bump.inputs["Strength"].default_value = 0.03
+    L(fine.outputs["Fac"], bump.inputs["Height"])
+    L(bump.outputs["Normal"], bsdf.inputs["Normal"])
     p.data.materials.append(mat)
 
 
@@ -148,8 +211,9 @@ def _find(obj, path: list[str]):
     return obj
 
 
-def add_obstacle(ob: dict, color=(0.32, 0.22, 0.14, 1)):
-    """A static box or cylinder, with MuJoCo's size convention (half sizes; radius, half length)."""
+def add_obstacle(ob: dict):
+    """A static box or cylinder, with MuJoCo's size convention (half sizes; radius, half length):
+    painted steel by default; an optional "color" (RGBA) and "metallic" (0-1) override it."""
     from math import radians
 
     if ob["type"] == "box":
@@ -164,8 +228,9 @@ def add_obstacle(ob: dict, color=(0.32, 0.22, 0.14, 1)):
     mat = bpy.data.materials.new("obstacle")
     mat.use_nodes = True
     bsdf = mat.node_tree.nodes["Principled BSDF"]
-    bsdf.inputs["Base Color"].default_value = color
-    bsdf.inputs["Roughness"].default_value = 0.6
+    bsdf.inputs["Base Color"].default_value = tuple(ob.get("color", (0.55, 0.56, 0.58, 1)))
+    bsdf.inputs["Metallic"].default_value = float(ob.get("metallic", 1.0))
+    bsdf.inputs["Roughness"].default_value = float(ob.get("roughness", 0.35))
     o.data.materials.append(mat)
 
 
@@ -178,7 +243,7 @@ def animate(job_path: str):
     job = json.loads(open(job_path, encoding="utf-8").read())
     w, h = job["size"]
     reset((w, h), job["samples"])
-    floor()
+    floor(markings=job.get("floor_markings", False))
     objects = {}
     for k, cable in enumerate(job["cables"]):
         new = import_usd(cable["usd"], merge=False)  # keep one object per USD Xform, to move it
@@ -191,6 +256,10 @@ def animate(job_path: str):
                     objects[key] = obj
     for ob in job.get("obstacles", []):
         add_obstacle(ob)
+    movers = []  # obstacles with a pose per frame (a gripper): their mesh has no scale, so a
+    for mv in job.get("movers", []):  # world matrix places them
+        add_obstacle(mv["ob"])
+        movers.append((bpy.context.object, mv["track"]))
     cam = job["camera"]
     lights(cam[3:6], 1.0)
     camera(cam[:3], cam[3:6], job["lens"])
@@ -198,6 +267,8 @@ def animate(job_path: str):
     for f in range(job["frames"]):
         for key, obj in objects.items():
             obj.matrix_world = Matrix(job["tracks"][key][f])
+        for obj, track in movers:
+            obj.matrix_world = Matrix(track[f])
         bpy.context.view_layer.update()
         render(os.path.join(job["out_dir"], f"frame_{f:04d}.png"))
 

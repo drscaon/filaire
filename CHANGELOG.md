@@ -13,6 +13,25 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Coiled handset cord: a straight lead of bare wire (4–8 cm, drawn per end) between
+  each RJ9 plug and the coil, as on real cords, instead of coil right up to the plug.
+  The coil opens out of the lead over about one coil diameter. The leads are physical
+  too: their joints bend and twist like the wire and do not stretch, their segments
+  weigh and collide as the wire. New `filaire:coil:coiledLength` and
+  `filaire:coil:leads`; `filaire:length` is the whole axis (coil and leads).
+- Coiled cords: the axial joints are limited (`PhysicsLimitAPI` on `transX`, read by the
+  MuJoCo and Blender importers): from 0, as a close-coiled cord does not compress (its
+  turns touch), to the stretch at which the wire is straight. Without it a released
+  coil sprang back shorter than its rest length.
+- `coarsen` (fewer, longer links for fast simulation) puts springs in series joint by
+  joint, so a cord whose joints differ (a coil and its leads) keeps its stiffness.
+- `scripts/drop_gif.py`: six 1.5 m cables, the coiled cord among them, dropped in very
+  different orientations (yaw, pitch and roll) onto a steel swing-set frame instead of
+  a bar; obstacles take an optional friction, colour and metalness. New
+  `scripts/coil_gif.py`: a coiled cord pulled down and let go. README animations
+  re-rendered.
+- README images: a factory floor (grey concrete; saw-cut joints and a lane line in the
+  animations) instead of the plain sand-coloured floor.
 - Connector looks, closer to the real parts (visual only: the colliders, masses and
   insertion results do not change):
   - panel receptacles: a metal shell around the opening of USB-C, USB-A, micro-USB,

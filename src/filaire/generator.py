@@ -17,7 +17,16 @@ from .connectors import CONNECTORS
 
 # independent random streams per cable, one per aspect: turning a variation off
 # leaves the draws of the other aspects unchanged
-_STREAMS = {"length": 0, "layout": 1, "shape": 2, "ends": 3, "color": 4, "stiffness": 5, "density": 6}
+_STREAMS = {
+    "length": 0,
+    "layout": 1,
+    "shape": 2,
+    "ends": 3,
+    "color": 4,
+    "stiffness": 5,
+    "density": 6,
+    "leads": 7,
+}
 
 
 @dataclass
@@ -134,6 +143,16 @@ def make_cable(
     d_lo, d_hi = pr["linear_density"]
     rho = _rng(seed, index, "density").uniform(d_lo, d_hi) if var.density else (d_lo + d_hi) / 2
 
+    leads = (0.0, 0.0)
+    if "coil" in pr:  # straight wire between each plug and the coil, drawn per end
+        l_lo, l_hi = pr["coil"]["leads"]
+        leads = tuple(
+            float(x) * 1e-3
+            for x in (
+                _rng(seed, index, "leads").uniform(l_lo, l_hi, 2) if var.length else ((l_lo + l_hi) / 2,) * 2
+            )
+        )
+
     return build_cable(
         name=f"{preset_key}_{index:03d}",
         preset_key=preset_key,
@@ -148,6 +167,7 @@ def make_cable(
         end_options=options,
         rng_layout=_rng(seed, index, "shape"),
         max_segments=max_segments,
+        coil_leads=leads,
     )
 
 
