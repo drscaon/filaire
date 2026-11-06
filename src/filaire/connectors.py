@@ -68,6 +68,17 @@ class ConnectorSpec:
     panel_name: str = ""
     color: str = "#202020"  # body colour of the plug and inline receptacle (sRGB)
     shell: str = ""  # colour of the metal shell / mating part, "" = same as body
+    # looks of the receptacles and plugs (visual only: the collision geometry does not change)
+    socket_shell: str = ""  # wall around the cavity, SHELL_WALL thick; "" = the receptacle's body colour
+    socket_insert: str = "#1d1f22"  # what stands inside the cavity: tongue, pins, contact insert
+    insert_metal: bool = False  # ... in metal (pins) rather than plastic (tongue, insert)
+    panel_color: str = "#2b2d31"  # the device face around a panel receptacle
+    clear: bool = False  # mating part of the plug in clear plastic (modular plugs)
+    # [(t0, t1, colour)], mm from the plug tip: insulator rings, insulated pin sleeves
+    bands: list = field(default_factory=list)
+    pin_layers: tuple = ()  # indices of mating layers that are bare metal pins (power plugs)
+    plug_insert: str = ""  # plug face: colour of the insert inside a metal rim (XLR, M12)
+    plug_rim: float = 1.0  # mm, width of that metal rim, from the outer boundary
     approximate: list = field(default_factory=list)  # dimensions that are not from a source
     sources: list = field(default_factory=list)
 
@@ -94,7 +105,12 @@ def _holes(region, *holes):
     return region
 
 
-_METAL = "#b8bcc2"
+_METAL = "#b8bcc2"  # nickel-plated steel
+_BLACK = "#1b1c1e"  # black thermoplastic (inlets, jacks, headers)
+_WALL = "#ecebe6"  # white wiring-device plastic (wall sockets)
+_GOLD = "#c9a13b"  # gold-plated contacts
+SHELL_WALL = 0.6  # mm, visible wall of a metal receptacle shell around its cavity
+METALS = {_METAL, _GOLD}
 
 # ----------------------------------------------------------------- catalogue
 
@@ -145,6 +161,9 @@ def _barrel(key: str, od: float, bore: float, length: float, sizes_source: str, 
         inline_name=f"DC jack {od:g} × {bore:g} (extension)",
         panel_name=f"DC jack {od:g} × {bore:g}",
         shell=_METAL,
+        socket_shell=_BLACK,
+        socket_insert=_METAL,
+        insert_metal=True,
         approximate=([] if length_source else [f"plug length {length:g}"]) + ["overmold and jack body"],
         sources=[f"{od:g} × {bore:g} mm: {sizes_source}"] + ([length_source] if length_source else []),
     )
@@ -168,6 +187,7 @@ CONNECTORS: dict[str, ConnectorSpec] = {
         inline_name="USB-C receptacle (extension)",
         panel_name="USB-C port",
         shell=_METAL,
+        socket_shell=_METAL,
         approximate=["plug inner cavity 6.95 × 1.00 (receptacle tongue)", "overmold 12 × 6.5 × 18"],
         sources=[
             "receptacle opening 8.34 × 2.56, plug insertion length ≈ 6.65: "
@@ -188,6 +208,7 @@ CONNECTORS: dict[str, ConnectorSpec] = {
         plug_name="USB-A plug",
         panel_name="USB-A port",
         shell=_METAL,
+        socket_shell=_METAL,
         approximate=["shell 12.0 × 4.5", "inner cavity (receptacle tongue) 11.2 × 1.85, upper half"],
         sources=["plug body length ≈ 12: https://www.accesscomms.com.au/usb-connector-dimensions/"],
     ),
@@ -206,6 +227,7 @@ CONNECTORS: dict[str, ConnectorSpec] = {
         inline_name="HDMI receptacle (extension)",
         panel_name="HDMI port",
         shell=_METAL,
+        socket_shell=_METAL,
         approximate=["bottom chamfers 1.3", "insertion depth 9.5", "inner cavity 10.9 × 1.5"],
         sources=["plug 13.9 × 4.45, receptacle 14 × 4.55: https://en.wikipedia.org/wiki/HDMI"],
     ),
@@ -224,6 +246,8 @@ CONNECTORS: dict[str, ConnectorSpec] = {
         inline_name="RJ45 coupler (inline)",
         panel_name="RJ45 jack",
         color="#d8dde3",
+        socket_shell=_METAL,
+        clear=True,
         approximate=["latch 4.2 wide", "insertion depth 14", "boot 13 × 10 × 16"],
         sources=[
             "plug 11.68 wide, 8.00 high with latch, 22.48 long; insertion height 6.60: "
@@ -243,6 +267,8 @@ CONNECTORS: dict[str, ConnectorSpec] = {
         clearance=0.1,
         plug_name="RJ9 plug",
         panel_name="RJ9 handset jack",
+        clear=True,
+        panel_color="#e6e6e2",
         color="#d8dde3",
         approximate=["height 6.60 (modular insertion height)", "latch", "insertion depth 10"],
         sources=["plug width 7.7: https://en.wikipedia.org/wiki/Modular_connector"],
@@ -261,8 +287,10 @@ CONNECTORS: dict[str, ConnectorSpec] = {
         plug_name="3.5 mm plug",
         inline_name="3.5 mm socket (extension)",
         panel_name="3.5 mm socket",
+        socket_shell=_BLACK,
+        bands=[(4.0, 5.5, _BLACK), (7.7, 9.2, _BLACK)],
         shell=_METAL,
-        approximate=["overmold Ø6 × 18"],
+        approximate=["overmold Ø6 × 18", "insulator rings at 4.0–5.5 and 7.7–9.2 from the tip"],
         sources=["Ø3.5, length 15: https://en.wikipedia.org/wiki/Phone_connector_(audio)"],
     ),
     "c13": ConnectorSpec(
@@ -280,6 +308,9 @@ CONNECTORS: dict[str, ConnectorSpec] = {
         plug_name="C13 connector",
         inline_name="C14 plug (extension)",
         panel_name="C14 inlet",
+        panel_color=_BLACK,
+        socket_insert=_METAL,
+        insert_metal=True,
         approximate=["face 24.0 × 15.5 with 4.5 chamfers", "blade holes 2.4 × 4.6", "depth 13"],
         sources=["pin centres 14 mm across, 4 mm vertical offset: https://en.wikipedia.org/wiki/IEC_60320"],
     ),
@@ -297,6 +328,9 @@ CONNECTORS: dict[str, ConnectorSpec] = {
         density=1300.0,
         plug_name="C7 connector",
         panel_name="C8 inlet",
+        panel_color=_BLACK,
+        socket_insert=_METAL,
+        insert_metal=True,
         approximate=["lobes Ø9.2", "pin holes Ø2.6"],
         sources=["pin centres 8.6 mm, C8 inlet 10 mm deep: https://en.wikipedia.org/wiki/IEC_60320"],
     ),
@@ -317,6 +351,10 @@ CONNECTORS: dict[str, ConnectorSpec] = {
         density=1200.0,
         plug_name="CEE 7/7 plug",
         panel_name="Wall socket (simplified, no earth)",
+        pin_layers=(0,),
+        panel_color=_WALL,
+        socket_insert=_METAL,
+        insert_metal=True,
         approximate=["plug face Ø36", "socket without earth pin or clips", "grip 40 × 38 × 30"],
         sources=[
             "pins 4.8 × 19 mm, 19 mm apart; CEE 7/5 recess 15 mm deep: https://en.wikipedia.org/wiki/CEE_7",
@@ -339,6 +377,9 @@ CONNECTORS: dict[str, ConnectorSpec] = {
         density=1200.0,
         plug_name="Europlug",
         panel_name="Europlug socket (simplified)",
+        pin_layers=(0,),
+        bands=[(9.0, 19.0, _BLACK)],
+        panel_color=_WALL,
         approximate=["pins Ø4.0, parallel", "body 35 × 13.5", "recess 6"],
         sources=["pin length and spacing as CEE 7/6: https://en.wikipedia.org/wiki/CEE_7"],
     ),
@@ -357,6 +398,11 @@ CONNECTORS: dict[str, ConnectorSpec] = {
         plug_name="XLR3 female (cable)",
         inline_name="XLR3 male (cable)",
         panel_name="XLR3 male (panel)",
+        socket_insert=_METAL,
+        insert_metal=True,
+        plug_insert=_BLACK,
+        plug_rim=1.0,
+        socket_shell=_METAL,
         color="#2a2d31",
         shell=_METAL,
         approximate=["insert Ø19 with 2.6 key groove", "pin positions", "depth 11", "male shell Ø23"],
@@ -376,6 +422,11 @@ CONNECTORS: dict[str, ConnectorSpec] = {
         density=2500.0,
         plug_name="M12 female (cable)",
         panel_name="M12 male (panel)",
+        socket_insert=_METAL,
+        insert_metal=True,
+        plug_insert=_BLACK,
+        plug_rim=1.2,
+        socket_shell=_METAL,
         color="#3a3f45",
         shell=_METAL,
         approximate=["insert Ø10", "key 1.6", "pins on Ø5", "nut Ø15 / bore Ø12.6"],
@@ -394,6 +445,7 @@ CONNECTORS: dict[str, ConnectorSpec] = {
         clearance=0.05,
         plug_name="Micro-B plug",
         panel_name="Micro-B port",
+        socket_shell=_METAL,
         shell=_METAL,
         approximate=[
             "plug 6.80 × 1.75 with 0.75 chamfers",
@@ -426,6 +478,9 @@ CONNECTORS: dict[str, ConnectorSpec] = {
         density=1300.0,
         plug_name="IDC socket 2×5",
         panel_name="Box header 2×5",
+        socket_shell=_BLACK,
+        socket_insert=_GOLD,
+        insert_metal=True,
         color="#2b2b2b",
         approximate=["socket 15.0 × 6.2 with key 4.6", "box header 20.3 × 8.85", "depth 6"],
         sources=["2.54 mm pin pitch (0.1 in)"],
@@ -498,6 +553,101 @@ def receptacle_parts(spec: ConnectorSpec, mount: str = "panel") -> list[Part]:
         parts.append(Part(_scale(solid), z0 * MM, z1 * MM, "mating"))
     parts.append(Part(_scale(outline), (d + c) * MM, total * MM, "body"))
     return [p for p in parts if not p.region.is_empty and p.z1 > p.z0]
+
+
+def _split_cavity_region(solid, cavity, outline, wall):
+    """A receptacle layer (outline minus cavity) in three: the shell wall around the cavity, the
+    face beyond it, and the islands standing inside the cavity (tongue, pins, insert)."""
+    from shapely.geometry import MultiPolygon
+
+    polys = list(solid.geoms) if isinstance(solid, MultiPolygon) else [solid]
+    rim = outline.exterior
+    outer = [q for q in polys if q.distance(rim) < 1e-6]
+    inner = [q for q in polys if q.distance(rim) >= 1e-6]
+    outer = g2.union(*outer) if outer else None
+    ring = outer.intersection(cavity.buffer(wall)) if outer is not None else None
+    face = outer.difference(cavity.buffer(wall)) if outer is not None else None
+    islands = g2.union(*inner) if inner else None
+    return ring, face, islands
+
+
+def receptacle_looks(spec: ConnectorSpec, mount: str = "panel") -> list[tuple]:
+    """Visual pieces of a receptacle, [(Part, colour, look)], look in {"metal", "plastic"}.
+
+    Visual only: the same solid as receptacle_parts, cut by colour (shell wall, device face,
+    tongue or pins, body). The colliders come from receptacle_parts.
+    """
+    body_color = spec.panel_color if mount == "panel" else spec.color
+    shell = spec.socket_shell or body_color
+    _, outline = spec.panel if mount == "panel" else spec.inline
+    d, c = spec.depth, spec.clearance
+    out = []
+
+    def add(region, z0, z1, color, look):
+        if region is not None and not region.is_empty and z1 > z0:
+            out.append((Part(_scale(region), z0 * MM, z1 * MM, "look"), color, look))
+
+    for p in receptacle_parts(spec, mount):
+        z0, z1 = p.z0 / MM, p.z1 / MM
+        if p.kind == "body":
+            add(outline, z0, z1, body_color, "plastic")
+            continue
+        layer = next(la for la in spec.layers if abs((d - la.t1) - z0) < 1e-9)
+        cavity = _cavity(layer.region, c)
+        solid = outline.difference(cavity)
+        ring, face, islands = _split_cavity_region(solid, cavity, outline, SHELL_WALL)
+        add(ring, z0, z1, shell, "metal" if shell in METALS else "plastic")
+        add(face, z0, z1, body_color, "plastic")
+        add(islands, z0, z1, spec.socket_insert, "metal" if spec.insert_metal else "plastic")
+    return out
+
+
+def plug_looks(spec: ConnectorSpec) -> list[tuple]:
+    """Visual pieces of a plug, [(Part, colour, look)], look in {"metal", "plastic", "clear"}.
+
+    The mating part in the shell colour (metal) or clear plastic, cut into bands where the
+    spec has some (the insulator rings of a jack plug); the body behind in the body colour.
+    """
+    d = spec.depth
+    mating = spec.shell or spec.color
+    look = "clear" if spec.clear else ("metal" if mating in METALS else "plastic")
+    out = []
+    mating_parts = [p for p in plug_parts(spec) if p.kind != "body"]
+    for p in plug_parts(spec):
+        if p.kind == "body":
+            out.append((p, spec.color, "plastic"))
+            continue
+        index = mating_parts.index(p)
+        color0, look0 = (_METAL, "metal") if index in spec.pin_layers else (mating, look)
+        if index in spec.pin_layers or not spec.plug_insert:
+            pieces = [(p.region, color0, look0)]
+        else:  # a metal rim around an insulating insert
+            from shapely.geometry import Polygon
+
+            envelope = g2.union(*[Polygon(q.exterior) for q in _polygons(p.region)])
+            core = envelope.buffer(-spec.plug_rim * MM)
+            pieces = [
+                (p.region.difference(core), color0, look0),
+                (p.region.intersection(core), spec.plug_insert, "plastic"),
+            ]
+        # p spans tip distances t in [d - z1, d - z0]; cut it at the bands
+        t_lo, t_hi = d - p.z1 / MM, d - p.z0 / MM
+        cuts = sorted({t_lo, t_hi, *[t for b in spec.bands for t in b[:2] if t_lo < t < t_hi]})
+        for a, b in zip(cuts, cuts[1:], strict=False):
+            band = next((bd for bd in spec.bands if bd[0] <= a and b <= bd[1]), None)
+            for region, color, lk in pieces:
+                if region.is_empty:
+                    continue
+                if band:
+                    color, lk = band[2], "plastic"
+                out.append((Part(region, (d - b) * MM, (d - a) * MM, "look"), color, lk))
+    return out
+
+
+def _polygons(region):
+    from shapely.geometry import MultiPolygon
+
+    return list(region.geoms) if isinstance(region, MultiPolygon) else [region]
 
 
 def part_mesh(parts: list[Part]) -> TriMesh:

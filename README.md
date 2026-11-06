@@ -200,6 +200,17 @@ long (25 cm for the ribbon and the coiled cord), rendered in Blender.*
 in front of the fixed receptacle derived from it (`sockets.usdc`), rendered
 in Blender.*
 
+**Looks of the real parts.** Ports have a metal shell around their opening
+(USB, HDMI, RJ45, XLR, M12) in a dark device face; power inlets are black
+with metal pins, DC jacks black with a metal centre pin, the IDC header black
+with gold pins, and wall sockets white. Power plugs have bare metal pins
+(the Europlug's with insulated sleeves), XLR and M12 plugs a black insert in
+their metal rim, and male XLR and M12 receptacles metal pins. The tongue or
+insert inside a receptacle has its own colour, the 3.5 mm plug its two
+insulator rings, and RJ45 and RJ9 plugs are clear plastic (UsdPreviewSurface `opacity` and `ior`).
+These looks are visual only: the same solids are cut by colour, so the
+colliders, masses and insertion results do not depend on them.
+
 | Family | Cable side (plug) | Contacts | Receptacle on a cable | Fixed receptacle | Keying | Depth |
 |---|---|---|---|---|---|---|
 | `usb_c` | USB-C plug | male | USB-C receptacle | USB-C port | reversible | 6.65 mm |
@@ -283,7 +294,7 @@ Z up, metres, kilograms, `/World` the default prim.
                                  drives rotX (twist), rotY, rotZ (bending) [, transX (coil)]
     /End_A, /End_B               filled by the selected variant:
       /Body                      rigid body of the connector or stripped end
-        /Visual                  ONE mesh, a GeomSubset per material (shell, body, cores, copper)
+        /Visual                  ONE mesh, a GeomSubset per material (shell, body, insulators, clear plastic, cores, copper)
         /Collision/hull_00 …     convex parts (MeshCollisionAPI convexHull, purpose guide)
         /MateFrame               origin on the mating plane, +Z = insertion direction
       /Attach                    PhysicsFixedJoint to the end segment

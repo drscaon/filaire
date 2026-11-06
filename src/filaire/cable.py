@@ -28,7 +28,16 @@ import numpy as np
 from . import centerline as cl
 from . import geometry2d as g2
 from .catalog import POISSON, PRESETS, end_connector
-from .connectors import CONNECTORS, MM, Part, part_mesh, plug_parts, receptacle_parts
+from .connectors import (
+    CONNECTORS,
+    MM,
+    Part,
+    part_mesh,
+    plug_looks,
+    plug_parts,
+    receptacle_looks,
+    receptacle_parts,
+)
 from .mesh3d import TriMesh, mass_properties, merge, sweep
 
 DAMPING_TIME = 0.01  # s: joint damping = stiffness × DAMPING_TIME
@@ -204,14 +213,12 @@ def connector_end(variant: str, cable_color: str) -> End:
     key, role = end_connector(variant)
     spec = CONNECTORS[key]
     parts = plug_parts(spec) if role == "plug" else receptacle_parts(spec, "inline")
-    body_color = spec.color
-    visuals = []
-    for kind in ("mating", "body"):
-        sel = [p for p in parts if p.kind == kind]
-        if not sel:
-            continue
-        color = spec.shell if (kind == "mating" and role == "plug" and spec.shell) else body_color
-        visuals.append((part_mesh(sel), color, kind))
+    # visuals by colour and look (metal, plastic, clear); the colliders below come from `parts`
+    looks = plug_looks(spec) if role == "plug" else receptacle_looks(spec, "inline")
+    groups: dict = {}
+    for part, color, look in looks:
+        groups.setdefault((color, look), []).append(part)
+    visuals = [(part_mesh(sel), color, look) for (color, look), sel in groups.items()]
     hulls = [h for p in parts for h in p.convex_hulls()]
     mp = mass_properties(part_mesh(parts), spec.density)
     return End(

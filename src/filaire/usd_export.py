@@ -53,7 +53,7 @@ from scipy.spatial import ConvexHull
 from . import __version__
 from .cable import DAMPING_TIME, Cable, End, cable_color_rgb
 from .catalog import CONNECTOR_FRICTION, JACKETS, PRESETS
-from .connectors import CONNECTORS, MM, keying_of, part_mesh, receptacle_parts
+from .connectors import CONNECTORS, MM, keying_of, part_mesh, receptacle_looks, receptacle_parts
 from .mesh3d import TriMesh, mass_properties, merge, principal_inertia, split_normals, weld
 
 _F = Sdf.ValueTypeNames
@@ -88,11 +88,15 @@ class _Looks:
         self.cache: dict = {}
         UsdGeom.Scope.Define(stage, "/World/Looks")
 
-    def get(self, color: str, roughness: float = 0.5, metallic: float = 0.0) -> UsdShade.Material:
-        key = (color, round(roughness, 2), round(metallic, 2))
+    def get(
+        self, color: str, roughness: float = 0.5, metallic: float = 0.0, opacity: float = 1.0
+    ) -> UsdShade.Material:
+        key = (color, round(roughness, 2), round(metallic, 2), round(opacity, 2))
         if key in self.cache:
             return self.cache[key]
         name = f"m_{color.lstrip('#')}_{int(roughness * 100)}_{int(metallic * 100)}"
+        if opacity < 1.0:
+            name += f"_clear{int(opacity * 100)}"
         path = f"/World/Looks/{name}"
         mat = UsdShade.Material.Define(self.stage, path)
         sh = UsdShade.Shader.Define(self.stage, f"{path}/Surface")
@@ -101,6 +105,9 @@ class _Looks:
         sh.CreateInput("diffuseColor", _F.Color3f).Set(Gf.Vec3f(*map(float, rgb)))
         sh.CreateInput("roughness", _F.Float).Set(float(roughness))
         sh.CreateInput("metallic", _F.Float).Set(float(metallic))
+        if opacity < 1.0:  # clear plastic
+            sh.CreateInput("opacity", _F.Float).Set(float(opacity))
+            sh.CreateInput("ior", _F.Float).Set(1.58)
         mat.CreateSurfaceOutput().ConnectToSource(sh.ConnectableAPI(), "surface")
         self.cache[key] = mat
         return mat
@@ -164,8 +171,10 @@ def _visual(stage, looks, path: str, parts: list) -> UsdGeom.Mesh:
     m.CreateNormalsAttr(Vt.Vec3fArray.FromNumpy(normals.astype(np.float32)))
     m.SetNormalsInterpolation(UsdGeom.Tokens.faceVarying)
     keys = []
-    for x, (_t, color, rough, metal) in zip(meshes, parts, strict=True):
-        keys += [(color, round(rough, 2), round(metal, 2))] * len(x.faces)
+    for x, part in zip(meshes, parts, strict=True):
+        _t, color, rough, metal = part[:4]
+        opacity = part[4] if len(part) > 4 else 1.0
+        keys += [(color, round(rough, 2), round(metal, 2), round(opacity, 2))] * len(x.faces)
     pv = UsdGeom.PrimvarsAPI(m).CreatePrimvar("displayColor", _F.Color3fArray, UsdGeom.Tokens.uniform)
     pv.Set([_linear(k[0]) for k in keys])
     distinct = list(dict.fromkeys(keys))
@@ -174,11 +183,13 @@ def _visual(stage, looks, path: str, parts: list) -> UsdGeom.Mesh:
         bapi.Bind(looks.get(*distinct[0]))
         return m
     idx = np.array([distinct.index(k) for k in keys])
-    for i, (color, rough, metal) in enumerate(distinct):
+    for i, (color, rough, metal, opacity) in enumerate(distinct):
         faces = np.nonzero(idx == i)[0]
-        name = f"m_{color.lstrip('#')}_{int(rough * 100)}_{int(metal * 100)}"
+        name = f"m_{color.lstrip('#')}_{int(rough * 100)}_{int(metal * 100)}" + (
+            f"_clear{int(opacity * 100)}" if opacity < 1 else ""
+        )
         sub = bapi.CreateMaterialBindSubset(name, Vt.IntArray(faces.tolist()), UsdGeom.Tokens.face)
-        UsdShade.MaterialBindingAPI.Apply(sub.GetPrim()).Bind(looks.get(color, rough, metal))
+        UsdShade.MaterialBindingAPI.Apply(sub.GetPrim()).Bind(looks.get(color, rough, metal, opacity))
     bapi.SetMaterialBindSubsetsFamilyType(UsdGeom.Tokens.partition)
     return m
 
@@ -256,13 +267,17 @@ def _other(gender: str) -> str:
     return {"male": "female", "female": "male"}.get(gender, gender)
 
 
+LOOKS = {  # look -> (roughness, metallic, opacity)
+    "metal": (0.3, 0.9, 1.0),
+    "copper": (0.3, 0.9, 1.0),
+    "plastic": (0.45, 0.0, 1.0),
+    "core": (0.45, 0.0, 1.0),
+    "clear": (0.12, 0.0, 0.45),
+}
+
+
 def _end_parts(end: End) -> list:
-    parts = []
-    for mesh, color, kind in end.visuals:
-        metal = kind == "mating" and end.role == "plug" and CONNECTORS[end.connector].shell == color
-        metal = metal or kind == "copper"
-        parts.append((mesh, color, 0.3 if metal else 0.45, 0.9 if metal else 0.0))
-    return parts
+    return [(mesh, color, *LOOKS.get(kind, LOOKS["plastic"])) for mesh, color, kind in end.visuals]
 
 
 def _end_variant(
@@ -532,8 +547,15 @@ def export_sockets(path: str | Path, keys: list[str], physics: bool = True) -> P
         x = UsdGeom.Xform.Define(stage, sp)
         _xform(x, R, origin)
         mesh = part_mesh(parts)
-        color = "#e4e6e8" if spec.key not in ("idc10",) else "#2b2b2b"
-        _visual(stage, looks, f"{sp}/Visual", [(mesh, color, 0.5, 0.0)])
+        groups: dict = {}
+        for part, color, look in receptacle_looks(spec, "panel"):
+            groups.setdefault((color, look), []).append(part)
+        _visual(
+            stage,
+            looks,
+            f"{sp}/Visual",
+            [(part_mesh(sel), color, *LOOKS[look]) for (color, look), sel in groups.items()],
+        )
         if physics:
             _collision_hulls(stage, f"{sp}/Collision", [h for p in parts for h in p.convex_hulls()], mat)
         mp = mass_properties(mesh, spec.density)
