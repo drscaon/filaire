@@ -203,9 +203,11 @@ in Blender.*
 **Looks of the real parts.** Ports have a metal shell around their opening
 (USB, HDMI, RJ45, XLR, M12) in a dark device face; power inlets are black
 with metal pins, DC jacks black with a metal centre pin, the IDC header black
-with gold pins, and wall sockets white. The tongue or insert inside a
-receptacle has its own colour, the 3.5 mm plug its two insulator rings, and
-RJ45 and RJ9 plugs are clear plastic (UsdPreviewSurface `opacity` and `ior`).
+with gold pins, and wall sockets white. Power plugs have bare metal pins
+(the Europlug's with insulated sleeves), XLR and M12 plugs a black insert in
+their metal rim, and male XLR and M12 receptacles metal pins. The tongue or
+insert inside a receptacle has its own colour, the 3.5 mm plug its two
+insulator rings, and RJ45 and RJ9 plugs are clear plastic (UsdPreviewSurface `opacity` and `ior`).
 These looks are visual only: the same solids are cut by colour, so the
 colliders, masses and insertion results do not depend on them.
 

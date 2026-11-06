@@ -74,9 +74,11 @@ class ConnectorSpec:
     insert_metal: bool = False  # ... in metal (pins) rather than plastic (tongue, insert)
     panel_color: str = "#2b2d31"  # the device face around a panel receptacle
     clear: bool = False  # mating part of the plug in clear plastic (modular plugs)
-    bands: list = field(
-        default_factory=list
-    )  # [(t0, t1, colour)], mm from the plug tip, e.g. insulator rings
+    # [(t0, t1, colour)], mm from the plug tip: insulator rings, insulated pin sleeves
+    bands: list = field(default_factory=list)
+    pin_layers: tuple = ()  # indices of mating layers that are bare metal pins (power plugs)
+    plug_insert: str = ""  # plug face: colour of the insert inside a metal rim (XLR, M12)
+    plug_rim: float = 1.0  # mm, width of that metal rim, from the outer boundary
     approximate: list = field(default_factory=list)  # dimensions that are not from a source
     sources: list = field(default_factory=list)
 
@@ -349,6 +351,7 @@ CONNECTORS: dict[str, ConnectorSpec] = {
         density=1200.0,
         plug_name="CEE 7/7 plug",
         panel_name="Wall socket (simplified, no earth)",
+        pin_layers=(0,),
         panel_color=_WALL,
         socket_insert=_METAL,
         insert_metal=True,
@@ -374,6 +377,8 @@ CONNECTORS: dict[str, ConnectorSpec] = {
         density=1200.0,
         plug_name="Europlug",
         panel_name="Europlug socket (simplified)",
+        pin_layers=(0,),
+        bands=[(9.0, 19.0, _BLACK)],
         panel_color=_WALL,
         approximate=["pins Ø4.0, parallel", "body 35 × 13.5", "recess 6"],
         sources=["pin length and spacing as CEE 7/6: https://en.wikipedia.org/wiki/CEE_7"],
@@ -393,6 +398,10 @@ CONNECTORS: dict[str, ConnectorSpec] = {
         plug_name="XLR3 female (cable)",
         inline_name="XLR3 male (cable)",
         panel_name="XLR3 male (panel)",
+        socket_insert=_METAL,
+        insert_metal=True,
+        plug_insert=_BLACK,
+        plug_rim=1.0,
         socket_shell=_METAL,
         color="#2a2d31",
         shell=_METAL,
@@ -413,6 +422,10 @@ CONNECTORS: dict[str, ConnectorSpec] = {
         density=2500.0,
         plug_name="M12 female (cable)",
         panel_name="M12 male (panel)",
+        socket_insert=_METAL,
+        insert_metal=True,
+        plug_insert=_BLACK,
+        plug_rim=1.2,
         socket_shell=_METAL,
         color="#3a3f45",
         shell=_METAL,
@@ -599,18 +612,42 @@ def plug_looks(spec: ConnectorSpec) -> list[tuple]:
     mating = spec.shell or spec.color
     look = "clear" if spec.clear else ("metal" if mating in METALS else "plastic")
     out = []
+    mating_parts = [p for p in plug_parts(spec) if p.kind != "body"]
     for p in plug_parts(spec):
         if p.kind == "body":
             out.append((p, spec.color, "plastic"))
             continue
+        index = mating_parts.index(p)
+        color0, look0 = (_METAL, "metal") if index in spec.pin_layers else (mating, look)
+        if index in spec.pin_layers or not spec.plug_insert:
+            pieces = [(p.region, color0, look0)]
+        else:  # a metal rim around an insulating insert
+            from shapely.geometry import Polygon
+
+            envelope = g2.union(*[Polygon(q.exterior) for q in _polygons(p.region)])
+            core = envelope.buffer(-spec.plug_rim * MM)
+            pieces = [
+                (p.region.difference(core), color0, look0),
+                (p.region.intersection(core), spec.plug_insert, "plastic"),
+            ]
         # p spans tip distances t in [d - z1, d - z0]; cut it at the bands
         t_lo, t_hi = d - p.z1 / MM, d - p.z0 / MM
         cuts = sorted({t_lo, t_hi, *[t for b in spec.bands for t in b[:2] if t_lo < t < t_hi]})
         for a, b in zip(cuts, cuts[1:], strict=False):
             band = next((bd for bd in spec.bands if bd[0] <= a and b <= bd[1]), None)
-            color, lk = (band[2], "plastic") if band else (mating, look)
-            out.append((Part(p.region, (d - b) * MM, (d - a) * MM, "look"), color, lk))
+            for region, color, lk in pieces:
+                if region.is_empty:
+                    continue
+                if band:
+                    color, lk = band[2], "plastic"
+                out.append((Part(region, (d - b) * MM, (d - a) * MM, "look"), color, lk))
     return out
+
+
+def _polygons(region):
+    from shapely.geometry import MultiPolygon
+
+    return list(region.geoms) if isinstance(region, MultiPolygon) else [region]
 
 
 def part_mesh(parts: list[Part]) -> TriMesh:

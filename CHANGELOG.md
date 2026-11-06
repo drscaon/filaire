@@ -21,7 +21,10 @@ and the project uses [Semantic Versioning](https://semver.org/).
     centre pin; the IDC header black with gold pins; wall sockets stay white;
   - the tongue or insert inside a receptacle has its own colour;
   - the 3.5 mm plug gets its two black insulator rings (tip, ring, sleeve);
-  - RJ45 and RJ9 plugs are clear plastic (`opacity` and `ior` in UsdPreviewSurface).
+  - RJ45 and RJ9 plugs are clear plastic (`opacity` and `ior` in UsdPreviewSurface);
+  - bare metal pins on the CEE 7/7 and Europlug plugs, the Europlug's with their
+    insulated sleeves; metal pins in the male XLR and M12 receptacles; XLR and M12
+    plugs show a black insert inside their metal rim or coupling nut.
 - README images re-rendered with these looks (hero, presets, every connector
   family, social preview), and a paragraph on the looks in the Connectors
   section. `scripts/render_blender.py` renders clear plastic as transmission
