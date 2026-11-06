@@ -228,6 +228,14 @@ def add_cable(spec, cable, prefix: str = "", dt: float = DT):
     return init
 
 
+def _stiff_contacts(spec, dt: float) -> None:
+    """Stiffer contacts than MuJoCo's default (time constant 0.02 s), on every geom, floor included
+    (a contact mixes the two geoms' values): dropped cables would sink on impact, and the light
+    plugs of thin leads (a servo or jumper wire, a few grams per metre) would rest in the floor."""
+    for g in spec.geoms:
+        g.solref = [max(4 * dt, 0.002), 1.0]
+
+
 def _spec(dt: float, floor_friction: float | None):
     spec = mujoco.MjSpec()
     spec.option.timestep = dt
@@ -243,6 +251,7 @@ def cable_model(cable, dt: float = DT, lift: float = 0.01, floor: bool = True):
     """(model, init) — init(data) sets the authored pose, lifted by `lift`."""
     spec = _spec(dt, float(cable.attrs.get("filaire:friction", 0.5)) if floor else None)
     set_pose = add_cable(spec, cable, "", dt)
+    _stiff_contacts(spec, dt)
     model = spec.compile()
 
     def init(data):
@@ -271,10 +280,7 @@ def scene_model(cables, dt: float = DT, floor_friction: float = 0.5, obstacles=(
             friction=[ob.get("friction", floor_friction), 0.005, 0.0001],
         )
     inits = [add_cable(spec, c, f"c{k}_", dt) for k, c in enumerate(cables)]
-    # stiffer contacts than MuJoCo's default (time constant 0.02 s), on every geom, floor included
-    # (a contact mixes the two geoms' values): dropped from a height, cables would sink on impact
-    for g in spec.geoms:
-        g.solref = [max(4 * dt, 0.002), 1.0]
+    _stiff_contacts(spec, dt)
     spec.memory = 256 * 2**20  # arena for contacts and constraints between the cables
     model = spec.compile()
 

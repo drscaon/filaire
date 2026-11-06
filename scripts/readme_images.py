@@ -48,9 +48,22 @@ PLUG_CABLE = {
     "xlr3": "xlr_mic",
     "m12a": "m12_sensor",
     "idc10": "ribbon_idc",
+    "dsub9": "can_bus",
+    "servo3": "servo_lead",
+    "pin_m": "jumper_wire",
+    "pin_f": "jumper_wire",
+    "batt35": "battery_lead",
+    "bal5": "balance_lead",
 }
 # how each preset is shown: length (m), layout
-SHOW = {"coiled_handset": (0.25, "straight"), "ribbon_idc": (0.25, "straight")}
+SHOW = {
+    "coiled_handset": (0.25, "straight"),
+    "ribbon_idc": (0.25, "straight"),
+    "servo_lead": (0.3, "slack"),
+    "jumper_wire": (0.2, "slack"),
+    "battery_lead": (0.2, "slack"),
+    "balance_lead": (0.15, "straight"),
+}
 SEEDS = {"usb_c": 3, "power_c13": 5, "hdmi": 7, "audio_jack": 4, "ethernet": 2}
 
 

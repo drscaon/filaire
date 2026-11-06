@@ -32,7 +32,7 @@ from .mujoco_model import add_hulls, cable_model, chain_model, coarsen
 from .usd_reader import cable_paths, end_options, read_cable, read_sockets
 
 G = 9.81
-EXPECTED = {"none": {0, 90, 180}, "reversible": {0, 180}, "keyed": {0}}
+EXPECTED = {"none": {0, 90, 180}, "square": {0, 90, 180}, "reversible": {0, 180}, "keyed": {0}}
 
 
 # ------------------------------------------------------------------ drop

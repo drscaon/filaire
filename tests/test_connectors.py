@@ -62,3 +62,19 @@ def test_micro_b_is_keyed_by_its_trapezoid():
 
     spec = CONNECTORS["usb_micro"]
     assert fits(spec, 0) and not fits(spec, 180)
+
+
+def test_robotics_connectors():
+    from filaire.connectors import fits
+
+    c = CONNECTORS
+    # a servo plug goes in one way only: its rib meets the slot's wall when turned over
+    assert fits(c["servo3"], 0) and not fits(c["servo3"], 180)
+    # square jumper pins and sockets go on at every quarter turn
+    assert keying_of(c["pin_m"]) == "square" and keying_of(c["pin_f"]) == "square"
+    # a male jumper pin goes into the female jumper socket on another wire
+    assert fits(c["pin_m"], 90, mount="inline")
+    # the battery plug and the D-sub are polarised by their outline
+    for key in ("batt35", "dsub9"):
+        assert fits(c[key], 0) and not fits(c[key], 180)
+    assert not fits(c["bal5"], 180)
