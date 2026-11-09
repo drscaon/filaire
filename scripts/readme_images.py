@@ -109,23 +109,52 @@ def blender(*args, samples: int = 96):
     subprocess.run([*BLENDER, *map(str, args)], check=True, stdout=subprocess.DEVNULL, env=env)
 
 
+HERO_LENGTHS = (0.50, 0.40, 0.30, 0.45, 0.35)  # 30 to 50 cm, in turn
+HERO_GAP = 0.012  # least free space between neighbouring cables, metres
+
+
 def hero(tmp: Path, out: Path, samples: int, size=(1600, 900)):
-    """Every preset: one cable each, in two columns, seen from above at an angle."""
+    """Every preset: one cable each, 30 to 50 cm long, lying across in two columns of up to ten,
+    seen from the front and above, close enough to see the connectors. Each cable is stacked by
+    its own width, so that no two overlap; of a few draws of each, the narrowest is kept."""
     keys = list(PRESETS)
-    args, cells = [], []
+    per_col = (len(keys) + 1) // 2
+    placed = []
     for k, key in enumerate(keys):
-        folder = write_outputs(_preset_scene(key, 0.62, same_length=True), tmp / "hero", physics=False)
-        usd = folder / f"filaire_{key}.usdc"
-        lo, hi = _bbox(usd)
-        col, row = divmod(k, (len(keys) + 1) // 2)
-        cx, cy = 0.78 * col, -0.15 * row  # cell centre
-        d = np.array([cx, cy, 0]) - (lo + hi) / 2
-        args += [usd, d[0], d[1], 0, 0]
-        cells.append((lo + d, hi + d))
+        best = None
+        for seed in range(1, 7):
+            scene = _preset_scene(key, HERO_LENGTHS[k % len(HERO_LENGTHS)], seed=seed, same_length=True)
+            folder = write_outputs(scene, tmp / "hero" / f"{key}_{seed}", physics=False)
+            usd = folder / f"filaire_{key}.usdc"
+            lo, hi = _bbox(usd)
+            if best is None or hi[1] - lo[1] < best[2][1] - best[1][1]:
+                best = (usd, lo, hi)
+        placed.append(best)
+    cols = [placed[:per_col], placed[per_col:]]
+    col_w = [max(h[0] - lo[0] for _, lo, h in col) for col in cols]
+    v = np.array([0.0, -0.75, 1.0])
+    v /= np.linalg.norm(v)
+    lens, aspect, fill = 50.0, size[0] / size[1], 1.04
+    # spread the rows to fill the frame's height: the width (two columns) sets the zoom
+    width = col_w[0] + col_w[1] + 0.06
+    tallest = max(sum(h[1] - lo[1] for _, lo, h in col) for col in cols)
+    gap = max(HERO_GAP, (width / aspect / v[2] * 0.72 - tallest) / (per_col - 1))
+    args, cells = [], []
+    for c, col in enumerate(cols):
+        x = -col_w[0] / 2 - 0.03 if c == 0 else col_w[1] / 2 + 0.03  # column centres, 6 cm apart
+        y = 0.0
+        for usd, lo, hi in col:
+            d = np.array([x - (lo[0] + hi[0]) / 2, y - hi[1], 0.0])
+            args += [usd, d[0], d[1], 0, 0]
+            cells.append((lo + d, hi + d))
+            y -= hi[1] - lo[1] + gap
     lo = np.min([c[0] for c in cells], axis=0)
     hi = np.max([c[1] for c in cells], axis=0)
-    cam = _camera_for(lo, hi, direction=(0.0, -0.75, 1.0), lens=40, aspect=size[0] / size[1], fill=1.05)
-    blender("hero", out, *size, *cam, 40, *args, samples=samples)
+    # frame what the camera sees: the depth foreshortened by the view's tilt
+    seen = max(hi[0] - lo[0], (hi[1] - lo[1]) * v[2] * aspect)
+    dist = seen * fill / 2 / (18.0 / lens)
+    c = (lo + hi) / 2
+    blender("hero", out, *size, *(c + dist * v), *c, lens, *args, samples=samples)
 
 
 def _tile(tmp: Path, name: str, args: list, cam, samples: int, size=(640, 480)) -> Path:

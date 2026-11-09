@@ -30,6 +30,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- README hero image: the cables 30 to 50 cm long, in two columns stacked by their
+  own width, seen from closer (about twice the scale), so the connectors show.
 - MuJoCo drop check: the same stiff contacts as the multi-cable scene (time constant
   max(4 dt, 2 ms) instead of MuJoCo's 20 ms). The light plugs of thin leads (a few
   grams per metre) rested up to 2 mm into the floor with the default.
