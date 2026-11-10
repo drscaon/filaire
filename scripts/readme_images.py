@@ -176,6 +176,11 @@ def preset_tiles(tmp: Path, samples: int) -> list[tuple[Path, str]]:
     return tiles
 
 
+# plug tiles seen from another side or distance: (distance in receptacle widths, view direction).
+# A BNC plug is wider than its jack: seen from the plug's side, it hides the jack.
+TILE_VIEW = {"bnc": (3.4, (0.92, -0.22, 0.42))}
+
+
 def connector_tiles(tmp: Path, samples: int) -> list[tuple[Path, str]]:
     """Each plug on a short straight cable, 15 mm in front of its fixed receptacle."""
     tiles = []
@@ -204,8 +209,8 @@ def connector_tiles(tmp: Path, samples: int) -> list[tuple[Path, str]]:
         )
         w *= 1e-3
         target = np.array([0.0, -gap * 0.8, h])
-        dist = 2.6 * w + 0.03
-        v = np.array([0.62, -0.72, 0.42])
+        dist = TILE_VIEW.get(key, (2.6, None))[0] * w + 0.03
+        v = np.array(TILE_VIEW.get(key, (None, (0.62, -0.72, 0.42)))[1] or (0.62, -0.72, 0.42))
         v /= np.linalg.norm(v)
         cam = (*(target + dist * v), *target)
         args = [folder / f"filaire_{PLUG_CABLE[key]}.usdc", *d_cable, 90, sock, *d_sock, 0]
