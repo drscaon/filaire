@@ -120,8 +120,13 @@ def convex_parts(geom, tol: float = 1e-6) -> list[Polygon]:
             merged = False
             # largest first: big convex pieces absorb their small neighbours
             pieces.sort(key=lambda p: -p.area)
+            boxes = np.array([p.bounds for p in pieces])
             for i in range(len(pieces)):
-                for j in range(i + 1, len(pieces)):
+                # only pieces whose bounding boxes touch can share an edge: same result, fewer tests
+                x0, y0, x1, y1 = boxes[i]
+                near = (boxes[:, 0] <= x1 + tol) & (boxes[:, 2] >= x0 - tol)
+                near &= (boxes[:, 1] <= y1 + tol) & (boxes[:, 3] >= y0 - tol)
+                for j in np.flatnonzero(near[i + 1 :]) + i + 1:
                     a, b = pieces[i], pieces[j]
                     shared = a.boundary.intersection(b.boundary)
                     if shared.length <= 1e-12:

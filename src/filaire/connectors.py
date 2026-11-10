@@ -794,7 +794,8 @@ def _receptacle_cavity(spec: ConnectorSpec, layer) -> object:
     if key not in _SWEPT:
         steps = max(2, int(math.ceil(abs(spec.twist) / TWIST_STEP)) + 1)
         region = g2.union(*(g2.rotate(layer.region, a) for a in np.linspace(0.0, spec.twist, steps)))
-        _SWEPT[key] = _cavity(region.simplify(1e-3), spec.clearance)
+        # simplified: the turned copies of a round outline leave many near-duplicate vertices
+        _SWEPT[key] = _cavity(region.simplify(0.01), spec.clearance)
     return _SWEPT[key]
 
 
