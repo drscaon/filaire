@@ -111,3 +111,18 @@ def test_coil_joints_neither_compress_nor_overstretch(tmp_path):
     # stretched to the limit, the axis is as long as the wire (leads included)
     total = sum(j.axial_range[1] for j in coil) + float(c.attrs["filaire:length"])
     assert total == pytest.approx(float(c.attrs["filaire:coil:wireLength"]), rel=0.1)
+
+
+def test_bnc_locks_with_a_quarter_turn():
+    """Pushed in and turned 90°, a BNC plug stays in when pulled; not turned, it comes out."""
+    from filaire.cable import connector_end
+    from filaire.sim.checks import twist_lock_suite
+    from filaire.sim.usd_reader import Body
+
+    spec = CONNECTORS["bnc"]
+    end = connector_end("bnc_plug", "#000000")
+    plug = Body("bnc", None, None, end.mass, end.com, [1e-7] * 3, None, hulls=end.hulls)
+    rec = [h for p in receptacle_parts(spec) for h in p.convex_hulls()]
+    r = twist_lock_suite(plug, rec, spec.depth * 1e-3, spec.twist)
+    assert r["passed"], r
+    assert r["turned"]["remaining"] > 0.9 and r["not_turned"]["remaining"] < 0.5

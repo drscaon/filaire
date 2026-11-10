@@ -32,7 +32,7 @@ a specific product; nothing is calibrated yet (see the README).
 
 from __future__ import annotations
 
-CATEGORIES = ["Power", "Data", "Audio", "Industrial", "Robotics", "Telephone"]
+CATEGORIES = ["Power", "Data", "Audio", "Industrial", "Robotics", "Lab", "Telephone"]
 
 POISSON = 0.45  # jacket polymers and stranded conductors, order of magnitude
 
@@ -337,6 +337,25 @@ PRESETS = {
         "linear_density": (11.0, 16.0),
         "layouts": {"slack": 0.6, "straight": 0.4},
         "ends": {"a": {"bal5_plug": 1.0}, "b": {"stripped": 0.8, "cut": 0.2}},
+    },
+    # --------------------------------------------------------------- Lab
+    "bnc_coax": {
+        "category": "Lab",
+        "label": "Coaxial lead 50 Ω (RG-58), BNC",
+        "profile": ("round", 4.95),
+        "conductors": ["#c47a3d"],
+        "jacket": "pvc",
+        "colors": ["#1c1c1c", "#2a5fa8", "#c0392b"],
+        "lengths": {0.5: 0.3, 1.0: 0.4, 2.0: 0.3},
+        "tolerance": 0.01,
+        # stiffer than most cords: solid dielectric and braided shield
+        "youngs_modulus": (150.0, 250.0),
+        "linear_density": (36.0, 42.0),
+        "layouts": {"slack": 0.6, "coil": 0.3, "straight": 0.1},
+        "ends": {
+            "a": {"bnc_plug": 1.0},
+            "b": {"bnc_plug": 0.7, "bnc_inline": 0.15, "stripped": 0.15},
+        },
     },
     # --------------------------------------------------------- Telephone
     "coiled_handset": {
