@@ -54,6 +54,7 @@ PLUG_CABLE = {
     "pin_f": "jumper_wire",
     "batt35": "battery_lead",
     "bal5": "balance_lead",
+    "bnc": "bnc_coax",
 }
 # how each preset is shown: length (m), layout
 SHOW = {

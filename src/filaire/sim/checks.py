@@ -195,6 +195,66 @@ def insertion_check(plug, receptacle_hulls, depth: float, angle_deg: float, seco
     }
 
 
+def twist_lock_check(
+    plug, receptacle_hulls, depth: float, twist_deg: float, turn: bool = True, phase: float = 0.6
+) -> dict:
+    """A bayonet: push the plug fully in, turn it by the twist (or not, turn=False), then pull it
+    back with the same 5 N. Locked when it stays in; without the turn it must come out."""
+    spec = mujoco.MjSpec()
+    spec.option.timestep = 1e-4
+    spec.option.gravity = [0, 0, 0]
+    add_hulls(spec, spec.worldbody, receptacle_hulls, "rec", 0.3, (0.8, 0.8, 0.8, 1))
+    start = -(depth + 0.002)
+    b = spec.worldbody.add_body(name="plug", pos=[0, 0, 0])
+    b.add_joint(name="slide", type=mujoco.mjtJoint.mjJNT_SLIDE, axis=[0, 0, 1], damping=2.0)
+    b.add_joint(name="turn", type=mujoco.mjtJoint.mjJNT_HINGE, axis=[0, 0, 1], damping=0.002)
+    b.explicitinertial = True
+    b.ipos = [0, 0, 0]
+    b.iquat = [1, 0, 0, 0]
+    b.mass = max(plug.mass, 1e-3)
+    b.inertia = list(np.maximum(plug.inertia, 1e-9))
+    add_hulls(spec, b, plug.hulls, "plug", 0.3)
+    for name, joint, kp, limit in (("push", "slide", 2000.0, 5.0), ("twist", "turn", 0.5, 0.05)):
+        act = spec.add_actuator(name=name, target=joint, trntype=mujoco.mjtTrn.mjTRN_JOINT)
+        act.gaintype = mujoco.mjtGain.mjGAIN_FIXED
+        act.biastype = mujoco.mjtBias.mjBIAS_AFFINE
+        act.gainprm[0] = kp
+        act.biasprm[1] = -kp
+        act.forcelimited = True
+        act.forcerange = [-limit, limit]
+    model = spec.compile()
+    data = mujoco.MjData(model)
+    qs, qt = model.joint("slide").qposadr[0], model.joint("turn").qposadr[0]
+    data.qpos[qs] = start
+    n = int(phase / model.opt.timestep)
+    twist = math.radians(twist_deg) if turn else 0.0
+    for i in range(3 * n):
+        k, f = divmod(i, n)
+        ramp = min(1.0, 1.25 * f / n)
+        if k == 0:  # push in
+            data.ctrl[:] = [start + (0.0005 - start) * ramp, 0.0]
+        elif k == 1:  # turn
+            data.ctrl[:] = [0.0005, twist * ramp]
+        else:  # pull back
+            data.ctrl[:] = [0.0005 + (start - 0.0005) * ramp, twist]
+        mujoco.mj_step(model, data)
+        if i == 2 * n - 1:
+            turned = float(data.qpos[qt])
+    remaining = float(data.qpos[qs] - start - 0.002) / depth
+    return {
+        "turned_deg": round(math.degrees(turned), 1),
+        "remaining": round(remaining, 3),
+        "locked": remaining >= 0.9,
+    }
+
+
+def twist_lock_suite(plug, receptacle_hulls, depth: float, twist_deg: float) -> dict:
+    turned = twist_lock_check(plug, receptacle_hulls, depth, twist_deg)
+    straight = twist_lock_check(plug, receptacle_hulls, depth, twist_deg, turn=False)
+    ok = turned["locked"] and turned["turned_deg"] >= 0.9 * twist_deg and not straight["locked"]
+    return {"twist_deg": twist_deg, "turned": turned, "not_turned": straight, "passed": ok}
+
+
 def insertion_suite(plug, receptacle_hulls, depth: float, keying: str) -> dict:
     expected = EXPECTED[keying]
     trials = []
@@ -278,8 +338,23 @@ def run_folder(
             s2 = "a" if inline in end_options(stage, paths[0], "a") else "b"
             rec = read_cable(stage, paths[0], {s2: inline}).ends[s2][0]
             res["inline"] = insertion_suite(plug, rec.hulls, depth, keying)
+        twist = sock["attrs"].get("filaire:lockTwist")
+        if twist:
+            mounts = {"panel": sock["hulls"]}
+            if "inline" in res:
+                mounts["inline"] = rec.hulls
+            for mount, hulls in mounts.items():
+                t = twist_lock_suite(plug, hulls, depth, float(twist))
+                res[f"lock_{mount}"] = t
+                log(
+                    f"lock      {key + ' (' + mount + ')':<20} {'pass' if t['passed'] else 'FAIL'}  "
+                    f"turned {t['turned']['turned_deg']}°, pulled with 5 N: {t['turned']['remaining']:.2f} "
+                    f"still in (not turned: {t['not_turned']['remaining']:.2f})"
+                )
         report["insertion"][key] = res
         for mount, suite in res.items():
+            if mount.startswith("lock"):
+                continue
             fr = ", ".join(f"{t['angle']}°: {t['fraction']:.2f}" for t in suite["trials"])
             log(
                 f"insertion {key + ' (' + mount + ')':<20} {'pass' if suite['passed'] else 'FAIL'}  "

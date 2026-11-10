@@ -33,6 +33,7 @@ orders of magnitude for simulation, not the drawings of the standard; the
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -81,6 +82,9 @@ class ConnectorSpec:
     plug_rim: float = 1.0  # mm, width of that metal rim, from the outer boundary
     approximate: list = field(default_factory=list)  # dimensions that are not from a source
     sources: list = field(default_factory=list)
+    # bayonet: once fully in, the plug is turned by this angle (degrees, counter-clockwise seen
+    # from the receptacle) to lock; its receptacle then keeps clear of everything the plug sweeps
+    twist: float = 0.0
 
     @property
     def depth(self) -> float:
@@ -175,6 +179,25 @@ _DSUB_ROWS += [(x, -1.42) for x in (-4.155, -1.385, 1.385, 4.155)]
 _DSUB_SOCKET = _holes(_DSUB_D, *(g2.circle(1.2, x, y) for x, y in _DSUB_ROWS))
 _DSUB_FLANGE = g2.rrect(30.81, 12.55, 1.0)
 _DSUB_HOOD = g2.rrect(31.5, 15.5, 3.0)
+
+# BNC: the plug's coupling sleeve has two bayonet slots, an axial entry from its face then a
+# quarter turn round; the jack's barrel carries two studs. Plug turned by +90° (seen from the
+# jack) to lock. Diameters (mm): barrel 9.9, sleeve 10.1 inside, 14.5 outside, pin 1.35.
+_BNC_SLOT = 2.4  # slot width, for studs of Ø2.1
+_BNC_ENTRY = 90.0  # angle of the slots' entries (and of the studs)
+
+
+def _annulus(d_out, d_in):
+    return g2.circle(d_out).difference(g2.circle(d_in))
+
+
+_BNC_SLEEVE = _annulus(14.5, 10.1)
+_BNC_CROSS = g2.rotate(g2.rect(16.0, _BNC_SLOT), _BNC_ENTRY)  # both slots, across the axis
+_BNC_ARC = g2.union(  # each slot's turn: from its entry, 90° clockwise in the plug's frame
+    *(g2.rotate(g2.rect(16.0, _BNC_SLOT), _BNC_ENTRY - a) for a in np.linspace(0.0, 90.0, 46))
+)
+_BNC_INNER = g2.circle(8.0)  # outer contact fingers and insulator, inside the jack's barrel
+_BNC_FRONT = g2.union(_BNC_SLEEVE.difference(_BNC_CROSS), _annulus(8.0, 7.0), g2.circle(1.35))
 
 
 def _barrel(key: str, od: float, bore: float, length: float, sizes_source: str, length_source: str):
@@ -675,6 +698,49 @@ CONNECTORS: dict[str, ConnectorSpec] = {
             "2.77 mm pitch: https://uk.rs-online.com/p/d-sub-connectors/2411334",
         ],
     ),
+    # ------------------------------------------------------------ lab bench
+    "bnc": ConnectorSpec(
+        key="bnc",
+        label="BNC (bayonet, 50 Ω)",
+        standard="IEC 61169-8",
+        gender="male",
+        keying="reversible",
+        twist=90.0,
+        layers=[
+            Layer(0.0, 4.95, _BNC_FRONT),  # slot entries; pin and outer contact
+            Layer(4.95, 7.05, g2.union(_BNC_SLEEVE.difference(_BNC_ARC), _BNC_INNER)),  # the turn
+            Layer(7.05, 9.2, g2.union(_BNC_SLEEVE, _BNC_INNER)),
+            Layer(9.2, 9.8, g2.union(_annulus(15.2, 10.1), _BNC_INNER)),  # grip ridges
+            Layer(9.8, 10.4, g2.union(_BNC_SLEEVE, _BNC_INNER)),
+            Layer(10.4, 11.0, g2.union(_annulus(15.2, 10.1), _BNC_INNER)),
+            Layer(11.0, 11.5, g2.union(_BNC_SLEEVE, _BNC_INNER)),
+        ],
+        body=[(8.0, g2.circle(8.6)), (14.0, g2.circle(7.2))],  # crimp ferrule, boot
+        inline=(22.0, g2.circle(12.6)),
+        panel=(3.0, g2.circle(12.6)),
+        clearance=0.1,
+        density=4500.0,
+        plug_name="BNC plug (male)",
+        inline_name="BNC jack (female, cable)",
+        panel_name="BNC jack (female, panel)",
+        shell=_METAL,
+        socket_shell=_METAL,
+        socket_insert=_METAL,
+        insert_metal=True,
+        panel_color=_METAL,
+        color=_BLACK,
+        approximate=[
+            "studs Ø2.1, 5.5 from the jack's front, out to Ø12.6",
+            "slot 2.4 wide, entry 4.95 deep",
+            "barrel 9.9 × 11.5",
+            "crimp ferrule Ø8.6 × 8, boot Ø7.2 × 14",
+        ],
+        sources=[
+            "interface (barrel 9.78–9.91, sleeve ≥ 10.52 inside, pin 1.32–1.37, 1/4 turn): "
+            "https://www.chipfind.net/static/pdf/amphenol/bnc_coaxial_connectors.pdf",
+            "coupling nut Ø14.50: https://www.milestek.com/media/descriptions/productspecs/MTCN0001.pdf",
+        ],
+    ),
 }
 
 
@@ -716,8 +782,28 @@ def plug_parts(spec: ConnectorSpec) -> list[Part]:
     return parts
 
 
+TWIST_STEP = 2.0  # degrees between the sampled positions of a bayonet's turn
+
+
+def _receptacle_cavity(spec: ConnectorSpec, layer) -> object:
+    """The cavity a receptacle keeps clear at the depth of one plug layer: the layer grown by the
+    clearance and, for a bayonet, swept through the locking turn made at full depth."""
+    if not spec.twist:
+        return _cavity(layer.region, spec.clearance)
+    key = (spec.key, layer.t0, layer.t1, spec.twist, spec.clearance)
+    if key not in _SWEPT:
+        steps = max(2, int(math.ceil(abs(spec.twist) / TWIST_STEP)) + 1)
+        region = g2.union(*(g2.rotate(layer.region, a) for a in np.linspace(0.0, spec.twist, steps)))
+        _SWEPT[key] = _cavity(region.simplify(1e-3), spec.clearance)
+    return _SWEPT[key]
+
+
+_SWEPT: dict = {}  # swept cavities of the bayonets, computed once
+
+
 def receptacle_parts(spec: ConnectorSpec, mount: str = "panel") -> list[Part]:
     """The derived receptacle: outline minus the plug grown by the clearance, layer by layer.
+    A bayonet's studs come out of it: what its plug never sweeps, pushed in and turned.
 
     mount = "panel": a block (device face, wall socket, inlet) of depth
     cavity + spec.panel[0]; mount = "inline": a receptacle body on a cable,
@@ -736,7 +822,7 @@ def receptacle_parts(spec: ConnectorSpec, mount: str = "panel") -> list[Part]:
     d, c = spec.depth, spec.clearance
     parts = []
     for layer in spec.layers:
-        solid = outline.difference(_cavity(layer.region, c))
+        solid = outline.difference(_receptacle_cavity(spec, layer))
         z0, z1 = d - layer.t1, d - layer.t0
         if layer.t0 == 0.0:
             z1 += c  # the cavity goes on past the plug tip by the clearance
@@ -770,7 +856,7 @@ def receptacle_looks(spec: ConnectorSpec, mount: str = "panel") -> list[tuple]:
     body_color = spec.panel_color if mount == "panel" else spec.color
     shell = spec.socket_shell or body_color
     _, outline = spec.panel if mount == "panel" else spec.inline
-    d, c = spec.depth, spec.clearance
+    d = spec.depth
     out = []
 
     def add(region, z0, z1, color, look):
@@ -783,7 +869,7 @@ def receptacle_looks(spec: ConnectorSpec, mount: str = "panel") -> list[tuple]:
             add(outline, z0, z1, body_color, "plastic")
             continue
         layer = next(la for la in spec.layers if abs((d - la.t1) - z0) < 1e-9)
-        cavity = _cavity(layer.region, c)
+        cavity = _receptacle_cavity(spec, layer)
         solid = outline.difference(cavity)
         ring, face, islands = _split_cavity_region(solid, cavity, outline, SHELL_WALL)
         add(ring, z0, z1, shell, "metal" if shell in METALS else "plastic")
@@ -864,7 +950,7 @@ def fits(
     """
     socket = socket or spec
     outline = socket.panel[1] if mount == "panel" else socket.inline[1]
-    solids = [outline.difference(_cavity(other.region, socket.clearance)) for other in socket.layers]
+    solids = [outline.difference(_receptacle_cavity(socket, other)) for other in socket.layers]
     for layer in spec.layers:
         turned = g2.rotate(layer.region, angle_deg)
         # every receptacle layer the turned plug layer passes through on its way in
@@ -874,6 +960,23 @@ def fits(
             if turned.intersection(solid).area > tol:
                 return False
     return True
+
+
+def locked(spec: ConnectorSpec, mount: str = "panel", tol: float = 1e-9) -> bool:
+    """A bayonet, pushed in and turned: can it no longer come straight out? Each plug layer,
+    turned by the twist, meets the receptacle's solid at some depth it would pass on its way out."""
+    if not spec.twist:
+        return False
+    outline = spec.panel[1] if mount == "panel" else spec.inline[1]
+    for layer in spec.layers:
+        turned = g2.rotate(layer.region, spec.twist)
+        for other in spec.layers:
+            if other.t0 < layer.t1 - 1e-12:
+                continue  # on the way out a layer only passes the depths nearer the front
+            solid = outline.difference(_receptacle_cavity(spec, other))
+            if turned.intersection(solid).area > tol:
+                return True
+    return False
 
 
 def _cavity(region, clearance: float):

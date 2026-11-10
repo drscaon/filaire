@@ -78,3 +78,20 @@ def test_robotics_connectors():
     for key in ("batt35", "dsub9"):
         assert fits(c[key], 0) and not fits(c[key], 180)
     assert not fits(c["bal5"], 180)
+
+
+def test_bnc_bayonet():
+    """Push in with the slots on the studs (0° or 180°), turn a quarter: it no longer comes out."""
+    from filaire.connectors import fits, locked
+
+    bnc = CONNECTORS["bnc"]
+    assert keying_of(bnc) == "reversible"
+    assert fits(bnc, 0) and fits(bnc, 180) and not fits(bnc, 90)
+    assert locked(bnc) and locked(bnc, "inline")
+    # the studs: the jack's solid at their depth is more than the bare barrel
+    parts = receptacle_parts(bnc)
+    stud_layer = parts[1].region.area
+    barrel = parts[2].region.area
+    assert stud_layer > barrel * 1.1
+    # a push-in connector is never locked
+    assert not locked(CONNECTORS["usb_c"])

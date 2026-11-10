@@ -8,6 +8,15 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `bnc_coax` (new Lab category): a stiff 50 Ω coaxial lead (RG-58, Ø4.95 mm) with BNC
+  plugs, a BNC jack on an extension, or a stripped end. The `bnc` family is the first
+  **bayonet**: the plug goes on with its slots over the jack's two studs, then turns a
+  quarter turn to lock.
+  - Receptacles of a bayonet keep clear of everything the plug sweeps, pushed in then
+    turned (`twist` on a connector spec); the studs are what is left.
+  - `locked()` checks it geometrically, and `filaire sim-test` in MuJoCo: pushed in,
+    turned 90°, pulled with 5 N, the plug stays in; not turned, it comes out.
+  - The locking turn is authored on the mate frames (`filaire:lockTwist`).
 - Robotics and drones: four presets and six connector families.
   - `servo_lead`: a 3-wire flat lead (brown, red, orange or black, red, white), with a
     3-way 2.54 mm servo plug keyed by a rib; at the other end a servo extension

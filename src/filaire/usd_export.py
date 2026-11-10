@@ -258,6 +258,8 @@ def _mate_frame(stage, path: str, spec_key: str, role: str, mount: str) -> None:
     _attr(p, "filaire:insertionDepth", _F.Float, float(spec.depth * MM))
     _attr(p, "filaire:clearance", _F.Float, float(spec.clearance * MM))
     _attr(p, "filaire:keying", _F.Token, spec.keying)
+    if spec.twist:  # bayonet: turned by this angle (degrees, about +z of the mate frame) to lock
+        _attr(p, "filaire:lockTwist", _F.Float, float(spec.twist))
     _attr(p, "filaire:standard", _F.String, spec.standard)
     name = spec.plug_name if role == "plug" else (spec.inline_name if mount == "cable" else spec.panel_name)
     _attr(p, "filaire:name", _F.String, name)
