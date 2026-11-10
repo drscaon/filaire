@@ -6,6 +6,9 @@ receptacle is **derived** from it: in each layer, the receptacle's solid is
 its outline minus the plug's cross-section grown by the clearance. So the
 two always mate, the plug's holes become the receptacle's pins or tongue,
 and the plug's key becomes the receptacle's keyway.
+A bayonet (BNC) is turned once fully in: its receptacle keeps clear of
+everything the plug sweeps on the way, so its studs are what the plug's
+slots never cover.
 
 Two words, kept apart on purpose:
 

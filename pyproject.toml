@@ -5,13 +5,13 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "filaire"
 version = "0.2.0b1"
-description = "Standard cable assets generator for Physical AI: cables of standard types (power, USB, Ethernet, HDMI, audio, industrial, ribbon, coiled) with male and female connectors, cut or stripped ends, exported to OpenUSD as UsdPhysics rigid-segment chains and checked in MuJoCo."
+description = "Standard cable assets generator for Physical AI: cables of standard types (power, USB, Ethernet, HDMI, audio, industrial, coaxial BNC, robot and drone leads, ribbon, coiled) with male and female connectors, cut or stripped ends, exported to OpenUSD as UsdPhysics rigid-segment chains and checked in MuJoCo and Blender."
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.10"
 authors = [{ name = "Daniel Régis Sarmento Caon" }]
-keywords = ["cable", "connector", "simulation", "openusd", "mujoco", "procedural", "robotics", "physical-ai", "synthetic-data", "robot-learning", "primvaria"]
+keywords = ["cable", "connector", "coaxial", "bnc", "simulation", "openusd", "mujoco", "procedural", "robotics", "physical-ai", "synthetic-data", "robot-learning", "primvaria"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",

@@ -199,7 +199,7 @@ other variant forced with `--end-a` / `--end-b`. Diameters, densities
 (2–90 g/m) and moduli (10–300 MPa, drawn per cable) are realistic orders of
 magnitude, not measurements of a specific product.
 
-![The 19 presets, one cable each](https://raw.githubusercontent.com/drscaon/filaire/main/docs/images/presets.jpg)
+![The 20 presets, one cable each](https://raw.githubusercontent.com/drscaon/filaire/main/docs/images/presets.jpg)
 
 *Each preset with its usual ends (the first variant of each end), 40 cm
 long (shorter for the ribbon, the robot leads and the jumper wire; 25 cm of coil for the
@@ -210,16 +210,18 @@ coiled cord), rendered in Blender. Flat and figure-8 cables keep a colour per wi
 
 ![Every plug on its cable, 15 mm in front of its receptacle](https://raw.githubusercontent.com/drscaon/filaire/main/docs/images/plugs.jpg)
 
-*The 23 connector families: each plug on a short piece of its cable, 15 mm
+*The 24 connector families: each plug on a short piece of its cable, 15 mm
 in front of the fixed receptacle derived from it (`sockets.usdc`), rendered
-in Blender.*
+in Blender. The BNC plug is seen from the side, its bayonet slots in line with
+the jack's studs.*
 
 **Looks of the real parts.** Ports have a metal shell around their opening
 (USB, HDMI, RJ45, XLR, M12) in a dark device face; power inlets are black
 with metal pins, DC jacks black with a metal centre pin, the IDC header black
 with gold pins, servo ports, jumper headers and D-sub panels with gold pins, the
 breadboard white, and wall sockets white. The battery plug is yellow nylon, the
-balance plug natural white. Power plugs have bare metal pins
+balance plug natural white. The BNC plug and jack are bare nickel-plated
+metal, the plug with a black boot. Power plugs have bare metal pins
 (the Europlug's with insulated sleeves), XLR and M12 plugs a black insert in
 their metal rim, and male XLR and M12 receptacles metal pins. The tongue or
 insert inside a receptacle has its own colour, the 3.5 mm plug its two
@@ -284,8 +286,10 @@ RJ9 widths and heights, 3.5 mm diameter and length, CEE 7 pins and recess
 depth, IEC 60320 pin spacing, Micro-B receptacle opening, DC barrel diameters
 and the 4.0 × 1.7 mm barrel length, D-sub shell and flange and its 2.77 mm pitch,
 2.54 mm and 2.5 mm header pitches and 0.64 mm posts, the battery plug's 7.2 mm
-pitch, the BNC barrel, sleeve, pin and coupling nut diameters and its quarter turn); the others (XLR, M12, IDC, C13 face, Micro-B chamfers, 5.5 mm barrel length,
-servo, jumper, battery and balance housings, BNC studs and slots, inner cavities, overmolds) are **approximate** and marked so in
+pitch, the BNC barrel, sleeve, pin and coupling nut diameters and its quarter
+turn); the others (XLR, M12, IDC, C13 face, Micro-B chamfers, 5.5 mm barrel
+length, servo, jumper, battery and balance housings, BNC studs and slots,
+inner cavities, overmolds) are **approximate** and marked so in
 [`connectors.py`](https://github.com/drscaon/filaire/blob/main/src/filaire/connectors.py), each with its sources. The
 standards themselves were not consulted. Connectors are simplified: no
 latches that move, no threads, no contacts inside the holes, no logos.
