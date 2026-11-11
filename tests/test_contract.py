@@ -52,6 +52,31 @@ def test_a_missing_attribute_is_reported(contract_files, key):
     assert any(f"no primvaria:{key}" in p for p in contract.conformance(stage))
 
 
+def test_assets_say_what_was_drawn(contract_files):
+    stage = _stage_with_assets(contract_files)
+    for prim in contract.asset_roots(stage):
+        drawn = contract.variation(prim)
+        assert isinstance(drawn["aspects"], list)
+        assert all(contract.VALUE_NAME.fullmatch(name) for name in drawn)
+
+
+def test_missing_aspects_are_reported(contract_files):
+    stage = _stage_with_assets(contract_files)
+    contract.asset_roots(stage)[0].GetAttribute(contract.ASPECTS).Block()
+    assert any(f"no {contract.ASPECTS}" in p for p in contract.conformance(stage))
+
+
+def test_a_variation_name_must_be_snake_case(contract_files):
+    stage = _stage_with_assets(contract_files)
+    prim = contract.asset_roots(stage)[0]
+    with pytest.raises(ValueError, match="snake_case"):
+        contract.write_variation(prim, (), {"clearanceMm": 0.1})
+    contract.write_variation(prim, ("size",), {"flags": [True, False], "names": ["a", "b"], "none": None})
+    drawn = contract.variation(prim)
+    assert drawn["aspects"] == ["size"] and drawn["flags"] == [1.0, 0.0] and drawn["names"] == ["a", "b"]
+    assert "none" not in drawn
+
+
 def test_another_generator_is_reported_only_for_own_files(contract_files):
     stage = _stage_with_assets(contract_files)
     other = next(g for g in contract.GENERATORS if g != GENERATOR)

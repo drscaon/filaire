@@ -13,12 +13,18 @@ the generator::
     set_group(scope)
     write_identity(prim, name="Grain_000", preset="beach_sand", seed=1, identifier="./file.usdc")
 
+It also carries what was drawn for it, the ground truth of the variation: the aspects that
+were switched on and every drawn value, under ``primvaria:variation:*``::
+
+    write_variation(prim, aspects=("size", "shape"), values={"diameter_m": 0.0041, "facets": 14})
+
 Checking. ``conformance(stage)`` lists how a stage departs from sections 2, 4 and 5 of the
 contract (empty: it conforms); ``python -m <generator>.conformance`` runs it on files.
 """
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from pxr import Kind, Sdf, Usd, UsdGeom, UsdPhysics
@@ -40,6 +46,9 @@ IDENTITY = {
     "seed": (Sdf.ValueTypeNames.Int, int),
 }
 ASSET_INFO = ("name", "identifier", "version")
+VARIATION = f"{NAMESPACE}:variation"
+ASPECTS = f"{VARIATION}:aspects"
+VALUE_NAME = re.compile(r"[a-z][a-z0-9_]*")  # snake_case, the unit as a suffix: clearance_mm
 
 
 def set_group(prim, assembly: bool = False) -> None:
@@ -66,6 +75,61 @@ def write_identity(prim, name: str, preset: str, seed: int, identifier: str) -> 
     }
     for key, (type_name, _) in IDENTITY.items():
         prim.CreateAttribute(f"{NAMESPACE}:{key}", type_name).Set(values[key])
+
+
+def write_variation(prim, aspects, values: dict) -> None:
+    """Write what was drawn for the asset in ``prim``: ``primvaria:variation:aspects``, the
+    aspects that were switched on, and one ``primvaria:variation:<name>`` per drawn value.
+
+    values: {name: bool, int, float, str, or a sequence of numbers or of strings}; names are
+    snake_case with the unit as a suffix (``diameter_m``); a value of None is left out."""
+    types = Sdf.ValueTypeNames
+    prim.CreateAttribute(ASPECTS, types.StringArray).Set([str(a) for a in aspects])
+    for name, value in values.items():
+        if value is None:
+            continue
+        if not VALUE_NAME.fullmatch(name):
+            raise ValueError(f"variation name {name!r} is not snake_case")
+        if hasattr(value, "tolist"):  # numpy scalars and arrays
+            value = value.tolist()
+        if isinstance(value, bool):
+            type_name = types.Bool
+        elif isinstance(value, int):
+            type_name = types.Int
+        elif isinstance(value, float):
+            type_name = types.Double
+        elif isinstance(value, str):
+            type_name = types.String
+        elif all(isinstance(x, str) for x in value):
+            type_name, value = types.StringArray, list(value)
+        else:
+            type_name, value = types.DoubleArray, [float(x) for x in value]
+        prim.CreateAttribute(f"{VARIATION}:{name}", type_name).Set(value)
+
+
+def variation(prim) -> dict:
+    """What was drawn for the asset in ``prim``: {"aspects": [...], name: value, ...}."""
+    out = {}
+    for attr in prim.GetAuthoredPropertiesInNamespace(VARIATION):
+        value = attr.Get()
+        out[attr.GetName()[len(VARIATION) + 1 :]] = (
+            list(value) if hasattr(value, "__len__") and not isinstance(value, str) else value
+        )
+    return out
+
+
+def _variation_problems(prim) -> list[str]:
+    where, problems = str(prim.GetPath()), []
+    aspects = prim.GetAttribute(ASPECTS)
+    if not aspects or not aspects.HasAuthoredValue():
+        problems.append(f"{where}: no {ASPECTS}")
+    elif aspects.GetTypeName() != Sdf.ValueTypeNames.StringArray:
+        problems.append(f"{where}: {ASPECTS} is {aspects.GetTypeName()}, not string[]")
+    for attr in prim.GetAuthoredPropertiesInNamespace(VARIATION):
+        name = attr.GetName()[len(VARIATION) + 1 :]
+        if not VALUE_NAME.fullmatch(name):
+            problems.append(f"{where}: {attr.GetName()} is not snake_case")
+    return problems
 
 
 def asset_roots(stage) -> list:
@@ -103,8 +167,8 @@ def _identity_problems(prim, own: bool) -> list[str]:
 
 
 def conformance(stage, own: bool = True) -> list[str]:
-    """How a stage departs from the contract's stage, model hierarchy and identity rules
-    (empty: it conforms).
+    """How a stage departs from the contract's stage, model hierarchy, identity and
+    variation rules (empty: it conforms).
 
     own: the stage was written by this generator, so its assets name it and its version."""
     problems = []
@@ -123,6 +187,7 @@ def conformance(stage, own: bool = True) -> list[str]:
         if not prim.IsModel():
             problems.append(f"{prim.GetPath()}: a prim above it is not a group model")
         problems += _identity_problems(prim, own)
+        problems += _variation_problems(prim)
     world = stage.GetPrimAtPath("/World")
     if roots and world and Usd.ModelAPI(world).GetKind() != Kind.Tokens.assembly:
         problems.append("/World is not of kind assembly")
