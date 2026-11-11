@@ -6,7 +6,7 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-## [0.3.0b1] - 2026-11-13 (beta)
+## [0.3.0b1] - 2026-11-11 (beta)
 
 ### Breaking changes
 
