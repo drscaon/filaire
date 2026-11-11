@@ -8,6 +8,10 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `python -m filaire.validate FILE_OR_FOLDER...`, as in the other Primvaria projects:
+  every OpenUSD validator on each file, exit 1 on any error or warning; CI uses it.
+  Each file is now also checked as authored (its default variant selections), not
+  only once per end variant.
 - `bnc_coax` (new Lab category): a stiff 50 Ω coaxial lead (RG-58, Ø4.95 mm) with BNC
   plugs, a BNC jack on an extension, or a stripped end. The `bnc` family is the first
   **bayonet**: the plug goes on with its slots over the jack's two studs, then turns a
@@ -39,6 +43,12 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- README: Isaac Sim note on the length of the cable articulations (up to 400 links)
+  and `--max-segments`.
+- `usd-core` 26.5 or later (was 24.0): the OpenUSD validators do not load from
+  earlier wheels (25.5 lacks the validator libraries, 25.8 and 25.11 the
+  UsdPreviewSurface definitions), and 24.x has no `UsdValidation` at all. A CI
+  job runs the tests on exactly 26.5.
 - README hero image: the cables 30 to 50 cm long, in two columns stacked by their
   own width, seen from closer (about twice the scale), so the connectors show.
 - MuJoCo drop check: the same stiff contacts as the multi-cable scene (time constant

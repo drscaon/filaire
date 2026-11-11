@@ -156,3 +156,18 @@ def test_striped_wires(tmp_path):
         str(sub.GetPrim().GetName()) for sub in UsdGeom.Subset.GetAllGeomSubsets(UsdGeom.Imageable(mesh))
     }
     assert {"m_7b4a2a_55_0", "m_c0392b_55_0", "m_e88a2a_55_0"} <= colors
+
+
+def test_validate_command(tmp_path, capsys):
+    """python -m filaire.validate: every OpenUSD file of a folder, exit 0 when compliant."""
+    from filaire.validate import main, usd_files
+
+    out = write_outputs(generate_scene("usb_c", 1, 1), tmp_path)
+    files = usd_files([out])
+    assert {f.name for f in files} >= {"filaire_usb_c.usdc", "sockets.usdc"}
+    assert main([str(out)]) == 0
+    assert f"{len(files)} OpenUSD files checked, 0 with issues" in capsys.readouterr().out
+    assert main([]) == 2
+    (tmp_path / "empty").mkdir()
+    assert main([str(tmp_path / "empty")]) == 1  # nothing to check is a failure
+    assert main([str(tmp_path / "missing")]) == 1

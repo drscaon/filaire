@@ -112,9 +112,14 @@ pip install -e ".[render,sim]"      # add ",dev" for tests and linting
 ```
 
 Requires Python 3.10+. Dependencies: NumPy, SciPy, Shapely 2.1+ and the
-OpenUSD bindings (`usd-core`); matplotlib for the previews, MuJoCo for the
+OpenUSD bindings (`usd-core` 26.5+); matplotlib for the previews, MuJoCo for the
 checks. The Blender checks need Blender as a Python module
 (`pip install -e ".[blender]"`, Python 3.13 only) or a Blender executable.
+
+Earlier `usd-core` wheels generate the same files, but their OpenUSD
+validators do not load (25.5 ships without the validator
+libraries, 25.8 and 25.11 without the UsdPreviewSurface definitions), and CI
+tests both 26.5 and the newest release.
 
 ## Usage
 
@@ -345,12 +350,19 @@ each cable is one mesh, `/World/Cables/<cable>/Visual`, each end a `Body`
 with its `Visual` and `MateFrame`; no rigid bodies, colliders, joints,
 physics materials, physics scene or ground. The `filaire:*` attributes stay.
 
-**OpenUSD compliance.** `filaire.validate.validate(file)` runs every
-validator of OpenUSD's `UsdValidation` registry (composition, stage
-metadata, geometry and subsets, material bindings, shaders, UsdPhysics
-bodies, colliders, joints and articulations) on each end variant of each
-cable; the tests and CI require no error and no warning, with and without
-physics.
+**OpenUSD compliance.**
+
+```bash
+python -m filaire.validate output/usb_c      # files or folders; exit 1 on any issue
+```
+
+This runs every validator of OpenUSD's `UsdValidation` registry, the checks
+`usdchecker` runs (composition, stage metadata, geometry and subsets,
+material bindings, shaders, UsdPhysics bodies, colliders, joints and
+articulations), on each file as authored and once per end variant of each
+cable, since a variant that is not selected is not composed. From Python:
+`filaire.validate.validate(file)` returns the messages. The tests and CI
+require no error and no warning, with and without physics.
 
 Selecting a variant (`end_b = "usb_c_inline"`, `"cut"`…) swaps the end, its
 collision parts and its joint. Angular drives use UsdPhysics units
@@ -559,7 +571,13 @@ chord between its joints.
   schemas (rigid bodies, D6 joints with drives, articulation root, convex
   hulls) and carry PhysX attributes; they are checked in MuJoCo and Blender
   but have not been loaded in Isaac Sim / PhysX (no NVIDIA GPU), where
-  drive units and articulation behaviour may need adjusting.
+  drive units and articulation behaviour may need adjusting. Each cable is
+  one articulation of up to 400 links (213 bodies for a 1 m servo lead), far
+  longer than a robot's. Isaac Sim once failed on articulations of more
+  than 128 bodies, a bug
+  [fixed in late 2023](https://forums.developer.nvidia.com/t/articulation-for-robot-with-large-number-of-meshes/272815);
+  if a long cable is slow or unstable there, `--max-segments` lowers the
+  count.
 - **Rest shape differs in Blender.** See [Blender](#blender): Bullet's
   springs rest in the first frame's pose, the generated one.
 - **Visual per segment.** Each segment carries its piece of tube, so a

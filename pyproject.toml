@@ -23,7 +23,7 @@ dependencies = [
     "numpy>=1.24",
     "scipy>=1.10",
     "shapely>=2.1",
-    "usd-core>=24.0",
+    "usd-core>=26.5",  # the OpenUSD validators load from 26.5 on (see README)
 ]
 
 [project.optional-dependencies]
