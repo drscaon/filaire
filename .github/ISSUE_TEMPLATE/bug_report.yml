@@ -1,0 +1,31 @@
+name: Bug report
+description: Something Filaire does wrong, or a generated file an engine rejects
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you expected and what you got. Paste the error message if there is one.
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Command or code
+      description: The exact command line or Python call, with the preset and the seed.
+      render: shell
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `filaire --version`, and your Python version and operating system.
+    validations:
+      required: true
+  - type: input
+    id: engine
+    attributes:
+      label: Engine, if the problem shows in one
+      description: Blender, MuJoCo, Isaac Sim, usdview or another, with its version.

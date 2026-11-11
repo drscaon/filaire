@@ -1,0 +1,35 @@
+name: Cable or connector request
+description: Ask for a new cable or connector family
+labels: [preset-request]
+body:
+  - type: markdown
+    attributes:
+      value: >
+        New assets enter Filaire on request. The more the request says about the real object
+        and where its dimensions come from, the sooner it can be generated, measured and tested.
+  - type: input
+    id: object
+    attributes:
+      label: The real object
+      description: What it is, with a standard or product family name if it has one.
+    validations:
+      required: true
+  - type: textarea
+    id: use
+    attributes:
+      label: What you would use it for
+      description: The task or test, and the engine you simulate in.
+    validations:
+      required: true
+  - type: textarea
+    id: sources
+    attributes:
+      label: Dimensions and properties
+      description: >
+        Sizes, masses, materials, and what varies from one instance to the next. Public
+        sources only (links welcome); no copied standards or proprietary data.
+  - type: textarea
+    id: checks
+    attributes:
+      label: How to tell it is right
+      description: A measurement or a behaviour the generated asset should reproduce.
