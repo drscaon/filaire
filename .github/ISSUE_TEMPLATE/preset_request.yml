@@ -1,5 +1,5 @@
-name: Cable or connector request
-description: Ask for a new cable or connector family
+name: "Cable or connector request"
+description: "Ask for a new cable or connector family"
 labels: [preset-request]
 body:
   - type: markdown

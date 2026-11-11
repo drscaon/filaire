@@ -1,5 +1,5 @@
 name: Bug report
-description: Something Filaire does wrong, or a generated file an engine rejects
+description: "Something Filaire does wrong, or a generated file an engine rejects"
 labels: [bug]
 body:
   - type: textarea
