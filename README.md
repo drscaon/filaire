@@ -484,7 +484,8 @@ from the OpenUSD file, rendered in Blender:
 ### Results
 
 `filaire generate --preset <p> --count 3` (1 m cables, seed 1) then
-`filaire sim-test output/<p> --cables 3`, MuJoCo 3.17, one CPU core:
+`filaire sim-test output/<p> --cables 3`, one CPU core; measured with MuJoCo
+3.17, before 4.0 (CI runs every check on MuJoCo 4):
 
 | Preset | Segments | `E·I` (N·m²) | Mass with ends (g) | Drop (max speed, penetration) | Stiffness check | Insertion |
 |---|---|---|---|---|---|---|

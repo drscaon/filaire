@@ -43,6 +43,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- MuJoCo 4 (`mujoco>=4.0`, was 3.2) for the `sim` and `dev` extras: the version CI
+  tests; MuJoCo 3 is no longer supported.
 - README: Isaac Sim note on the length of the cable articulations (up to 400 links)
   and `--max-segments`.
 - `usd-core` 26.5 or later (was 24.0): the OpenUSD validators do not load from
