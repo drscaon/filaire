@@ -33,7 +33,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.11", "3.12", "3.13"]
         include:
           # one run on each other platform, on a recent Python
           - os: macos-latest
@@ -60,7 +60,7 @@ jobs:
           filaire generate --preset power_c13 --count 2 --length 0.5 --end-a c13_plug --end-b stripped --layout coil --out ci-output
           filaire generate --preset dc_barrel --count 2 --no-physics --out ci-output
           filaire blender-addon --out ci-output/filaire_physics.zip
-          python -c "from filaire.validate import validate; import sys; m = [x for f in ('ci-output/usb_c/filaire_usb_c.usdc', 'ci-output/usb_c/sockets.usdc', 'ci-output/dc_barrel/filaire_dc_barrel.usdc') for x in validate(f)]; print(m); sys.exit(bool(m))"
+          python -m filaire.validate ci-output/usb_c ci-output/dc_barrel
           filaire preview ci-output/usb_c
 
   sim:
@@ -123,7 +123,7 @@ jobs:
       - name: Visual-only assets
         run: |
           filaire generate --preset hdmi --count 2 --no-physics --out ci-visual
-          python -c "from filaire.validate import validate; import sys; m = validate('ci-visual/hdmi/filaire_hdmi.usdc'); print(m); sys.exit(bool(m))"
+          python -m filaire.validate ci-visual/hdmi
       - uses: actions/upload-artifact@v7
         if: always()
         with:
@@ -151,18 +151,24 @@ jobs:
             filaire generate --preset "$preset" --count 1 --no-physics --out ci-usd-visual > /dev/null
           done
       - name: Validate every file (what usdchecker runs)
+        run: python -m filaire.validate ci-usd ci-usd-visual
+
+  usd-floor:
+    name: Oldest supported OpenUSD (usd-core 26.5)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Install with the lowest usd-core the package accepts
+        run: pip install -e ".[dev]" "usd-core==26.5"
+      - name: Tests (OpenUSD validators included)
         run: |
-          python - <<'PY'
-          import sys
-          from pathlib import Path
-          from filaire.validate import validate
-          files = sorted(f for d in ("ci-usd", "ci-usd-visual") for f in Path(d).rglob("*.usdc"))
-          bad = {str(f): m for f in files if (m := validate(f))}
-          for f, m in bad.items():
-              print(f, m)
-          print(f"{len(files)} OpenUSD files checked, {len(bad)} with issues")
-          sys.exit(1 if bad or not files else 0)
-          PY
+          python -c "from pxr import Usd; assert Usd.GetVersion() == (0, 26, 5), Usd.GetVersion()"
+          pytest -q
 
   build:
     name: Build packages

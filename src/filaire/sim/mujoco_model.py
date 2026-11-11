@@ -249,7 +249,7 @@ def _spec(dt: float, floor_friction: float | None):
 
 def cable_model(cable, dt: float = DT, lift: float = 0.01, floor: bool = True):
     """(model, init) — init(data) sets the authored pose, lifted by `lift`."""
-    spec = _spec(dt, float(cable.attrs.get("filaire:friction", 0.5)) if floor else None)
+    spec = _spec(dt, float(getattr(cable, "ground_friction", 0.5)) if floor else None)  # the file's ground
     set_pose = add_cable(spec, cable, "", dt)
     _stiff_contacts(spec, dt)
     model = spec.compile()

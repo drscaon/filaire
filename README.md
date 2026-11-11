@@ -10,7 +10,7 @@
 <p align="center">
   <a href="https://github.com/drscaon/filaire/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/drscaon/filaire/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://pypi.org/project/filaire/"><img alt="PyPI" src="https://img.shields.io/pypi/v/filaire"></a>
-  <img alt="Python 3.10+" src="https://img.shields.io/badge/python-3.10%2B-3776AB">
+  <img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11%2B-3776AB">
   <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green">
   <a href="https://primvaria.com"><img alt="Part of Primvaria" src="https://img.shields.io/badge/suite-Primvaria-0f6e74"></a>
 </p>
@@ -111,10 +111,15 @@ python -m venv .venv && source .venv/bin/activate
 pip install -e ".[render,sim]"      # add ",dev" for tests and linting
 ```
 
-Requires Python 3.10+. Dependencies: NumPy, SciPy, Shapely 2.1+ and the
-OpenUSD bindings (`usd-core`); matplotlib for the previews, MuJoCo for the
+Requires Python 3.11+. Dependencies: NumPy, SciPy, Shapely 2.1+ and the
+OpenUSD bindings (`usd-core` 26.5+); matplotlib for the previews, MuJoCo for the
 checks. The Blender checks need Blender as a Python module
 (`pip install -e ".[blender]"`, Python 3.13 only) or a Blender executable.
+
+Earlier `usd-core` wheels generate the same files, but their OpenUSD
+validators do not load (25.5 ships without the validator
+libraries, 25.8 and 25.11 without the UsdPreviewSurface definitions), and CI
+tests both 26.5 and the newest release.
 
 ## Usage
 
@@ -315,7 +320,7 @@ Z up, metres, kilograms, `/World` the default prim.
 
 ```
 /World
-  /PhysicsScene                  gravity
+  /PhysicsScene                  gravity (shared, see below)
   /Looks, /PhysicsMaterials      UsdPreviewSurface materials; friction and restitution
   /Cables/<cable>                Xform, PhysicsArticulationRootAPI, filaire:* attributes,
                                  variant sets "end_a" and "end_b"
@@ -330,8 +335,25 @@ Z up, metres, kilograms, `/World` the default prim.
         /Collision/hull_00 …     convex parts (MeshCollisionAPI convexHull, purpose guide)
         /MateFrame               origin on the mating plane, +Z = insertion direction
       /Attach                    PhysicsFixedJoint to the end segment
-  /Ground                        collision box, its top face at z = 0
+  /Ground                        the shared ground: a collision box, its top face at z = 0
+  /GroundMaterial                its physics material
 ```
+
+### Ground and physics scene (the same in every Primvaria project)
+
+Every file with physics carries the same two prims, so that assets from
+different generators can share one scene and every engine gets the same floor:
+
+| Prim | What it is |
+|---|---|
+| `/World/PhysicsScene` | gravity 9.81 m/s² along −Z |
+| `/World/Ground` | a static box (`UsdGeom.Cube`, `CollisionAPI`), its top face at z = 0, 2 cm thick, covering the content with 0.5 m to spare on each side (1 m × 1 m at least), grey and rendered, no PhysX attributes (engines derive their contact offsets) |
+| `/World/GroundMaterial` | its physics material: static friction 0.6, dynamic friction 0.5, restitution 0.1, a wooden or concrete floor |
+
+The code is one file, `ground.py`, identical in Granulaire, Maillage, Filaire
+and Quincaillerie; a test checks every generated file against it. The MuJoCo
+checks and the Blender rigid-body checks take the ground's friction from the
+file (Blender's cloth, in Maillage, has its own collision settings).
 
 Each rigid body has exactly one visual mesh, as in Quincaillerie: Blender
 and other DCCs import one object per body, so a rigid body set on it moves
@@ -345,12 +367,19 @@ each cable is one mesh, `/World/Cables/<cable>/Visual`, each end a `Body`
 with its `Visual` and `MateFrame`; no rigid bodies, colliders, joints,
 physics materials, physics scene or ground. The `filaire:*` attributes stay.
 
-**OpenUSD compliance.** `filaire.validate.validate(file)` runs every
-validator of OpenUSD's `UsdValidation` registry (composition, stage
-metadata, geometry and subsets, material bindings, shaders, UsdPhysics
-bodies, colliders, joints and articulations) on each end variant of each
-cable; the tests and CI require no error and no warning, with and without
-physics.
+**OpenUSD compliance.**
+
+```bash
+python -m filaire.validate output/usb_c      # files or folders; exit 1 on any issue
+```
+
+This runs every validator of OpenUSD's `UsdValidation` registry, the checks
+`usdchecker` runs (composition, stage metadata, geometry and subsets,
+material bindings, shaders, UsdPhysics bodies, colliders, joints and
+articulations), on each file as authored and once per end variant of each
+cable, since a variant that is not selected is not composed. From Python:
+`filaire.validate.validate(file)` returns the messages. The tests and CI
+require no error and no warning, with and without physics.
 
 Selecting a variant (`end_b = "usb_c_inline"`, `"cut"`…) swaps the end, its
 collision parts and its joint. Angular drives use UsdPhysics units
@@ -472,7 +501,8 @@ from the OpenUSD file, rendered in Blender:
 ### Results
 
 `filaire generate --preset <p> --count 3` (1 m cables, seed 1) then
-`filaire sim-test output/<p> --cables 3`, MuJoCo 3.17, one CPU core:
+`filaire sim-test output/<p> --cables 3`, one CPU core; measured with MuJoCo
+3.17, before 4.0 (CI runs every check on MuJoCo 4):
 
 | Preset | Segments | `E·I` (N·m²) | Mass with ends (g) | Drop (max speed, penetration) | Stiffness check | Insertion |
 |---|---|---|---|---|---|---|
@@ -559,7 +589,13 @@ chord between its joints.
   schemas (rigid bodies, D6 joints with drives, articulation root, convex
   hulls) and carry PhysX attributes; they are checked in MuJoCo and Blender
   but have not been loaded in Isaac Sim / PhysX (no NVIDIA GPU), where
-  drive units and articulation behaviour may need adjusting.
+  drive units and articulation behaviour may need adjusting. Each cable is
+  one articulation of up to 400 links (213 bodies for a 1 m servo lead), far
+  longer than a robot's. Isaac Sim once failed on articulations of more
+  than 128 bodies, a bug
+  [fixed in late 2023](https://forums.developer.nvidia.com/t/articulation-for-robot-with-large-number-of-meshes/272815);
+  if a long cable is slow or unstable there, `--max-segments` lowers the
+  count.
 - **Rest shape differs in Blender.** See [Blender](#blender): Bullet's
   springs rest in the first frame's pose, the generated one.
 - **Visual per segment.** Each segment carries its piece of tube, so a
@@ -607,7 +643,7 @@ pulled and let go).
 
 | Workflow | When | What |
 |---|---|---|
-| `ci.yml` | every push to `main`, every pull request | `ruff check` and `ruff format --check`; `pytest` on Python 3.10–3.13 (Linux) and 3.12 (macOS, Windows); a command-line smoke test with the OpenUSD validators; **the MuJoCo checks of every preset**; **the Blender checks of every preset** through the add-on (with the `bpy` module, Python 3.13), and for comparison the same with rigid bodies set by hand; reports kept as run artifacts; build the wheel and sdist, `twine check`, install the wheel in a clean environment. |
+| `ci.yml` | every push to `main`, every pull request | `ruff check` and `ruff format --check`; `pytest` on Python 3.11–3.13 (Linux) and 3.12 (macOS, Windows); a command-line smoke test with the OpenUSD validators; **the MuJoCo checks of every preset**; **the Blender checks of every preset** through the add-on (with the `bpy` module, Python 3.13), and for comparison the same with rigid bodies set by hand; reports kept as run artifacts; build the wheel and sdist, `twine check`, install the wheel in a clean environment. |
 | `release.yml` | a pushed tag `v*` | checks the tag matches the version in `pyproject.toml`, tests, builds, then creates the GitHub release with the packages and the Blender add-on attached and the notes taken from `CHANGELOG.md`. Versions with `a`, `b` or `rc` are marked as pre-releases. |
 | Dependabot | monthly | pull requests to update the GitHub Actions and the Python dependencies. |
 

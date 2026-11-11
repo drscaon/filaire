@@ -4,12 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "filaire"
-version = "0.2.0b1"
+version = "0.3.0b1"
 description = "Standard cable assets generator for Physical AI: cables of standard types (power, USB, Ethernet, HDMI, audio, industrial, coaxial BNC, robot and drone leads, ribbon, coiled) with male and female connectors, cut or stripped ends, exported to OpenUSD as UsdPhysics rigid-segment chains and checked in MuJoCo and Blender."
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 authors = [{ name = "Daniel Régis Sarmento Caon" }]
 keywords = ["cable", "connector", "coaxial", "bnc", "simulation", "openusd", "mujoco", "procedural", "robotics", "physical-ai", "synthetic-data", "robot-learning", "primvaria"]
 classifiers = [
@@ -23,15 +23,15 @@ dependencies = [
     "numpy>=1.24",
     "scipy>=1.10",
     "shapely>=2.1",
-    "usd-core>=24.0",
+    "usd-core>=26.5",  # the OpenUSD validators load from 26.5 on (see README)
 ]
 
 [project.optional-dependencies]
 render = ["matplotlib>=3.7"]
-sim = ["mujoco>=3.2"]
+sim = ["mujoco>=4.0"]
 # Blender as a Python module, for `filaire blender-test`: the bpy wheels exist for one Python version
 blender = ["bpy>=5.1; python_version == '3.13'"]
-dev = ["pytest>=7", "ruff>=0.5", "matplotlib>=3.7", "mujoco>=3.2"]
+dev = ["pytest>=7", "ruff>=0.5", "matplotlib>=3.7", "mujoco>=4.0"]
 
 [project.urls]
 Homepage = "https://github.com/drscaon/filaire"
@@ -51,7 +51,7 @@ addopts = "-q"
 
 [tool.ruff]
 line-length = 110
-target-version = "py310"
+target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B"]

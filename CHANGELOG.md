@@ -6,8 +6,32 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.0b1] - 2026-11-13 (beta)
+
+### Breaking changes
+
+- Python 3.11 or later (was 3.10): MuJoCo 4 requires it, and Python 3.10 reached
+  its end of life in October 2026.
+- `usd-core` 26.5 or later (was 24.0): the OpenUSD validators do not load from
+  earlier wheels (25.5 lacks the validator libraries, 25.8 and 25.11 the
+  UsdPreviewSurface definitions), and 24.x has no `UsdValidation` at all. A CI
+  job runs the tests on exactly 26.5.
+- MuJoCo 4 (`mujoco>=4.0`, was 3.2) for the `sim` and `dev` extras; MuJoCo 3 is no
+  longer supported.
+- The ground and physics scene are the same in every Primvaria project (`ground.py`, the
+  same file in each): `/World/PhysicsScene`, gravity 9.81 m/s² along −Z; `/World/Ground`,
+  a 2 cm box (`UsdGeom.Cube`) whose top is z = 0, covering the content with 0.5 m to
+  spare, rendered, no PhysX attributes; `/World/GroundMaterial`, static friction 0.6,
+  dynamic 0.5, restitution 0.1. A test checks every generated file against it.
+  Filaire's ground had PhysX contact offsets, a 1 m margin and no physics material,
+  and the MuJoCo floor copied each cable's friction; it now takes the file's ground.
+
 ### Added
 
+- `python -m filaire.validate FILE_OR_FOLDER...`, as in the other Primvaria projects:
+  every OpenUSD validator on each file, exit 1 on any error or warning; CI uses it.
+  Each file is now also checked as authored (its default variant selections), not
+  only once per end variant.
 - `bnc_coax` (new Lab category): a stiff 50 Ω coaxial lead (RG-58, Ø4.95 mm) with BNC
   plugs, a BNC jack on an extension, or a stripped end. The `bnc` family is the first
   **bayonet**: the plug goes on with its slots over the jack's two studs, then turns a
@@ -39,6 +63,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- README: Isaac Sim note on the length of the cable articulations (up to 400 links)
+  and `--max-segments`.
 - README hero image: the cables 30 to 50 cm long, in two columns stacked by their
   own width, seen from closer (about twice the scale), so the connectors show.
 - MuJoCo drop check: the same stiff contacts as the multi-cable scene (time constant

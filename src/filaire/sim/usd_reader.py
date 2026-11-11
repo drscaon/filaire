@@ -13,6 +13,8 @@ from pathlib import Path
 import numpy as np
 from pxr import Usd, UsdGeom, UsdPhysics
 
+from ..ground import read_ground
+
 DEG = math.pi / 180
 
 
@@ -92,6 +94,7 @@ class CableData:
     joints: list
     ends: dict  # "a"/"b" -> (Body, local pos in end segment, local rotation) or None
     variants: dict
+    ground_friction: float = 0.5  # dynamic friction of the file's ground material (ground.py)
 
 
 def _joint(prim) -> Joint:
@@ -129,7 +132,9 @@ def read_cable(stage: Usd.Stage, path: str, variants: dict | None = None) -> Cab
         lr = quat_to_matrix(attach.GetLocalRot0Attr().Get())
         ends[side] = (_body(body, cache), lp, lr)
     sel = {s: vsets.GetVariantSet(f"end_{s}").GetVariantSelection() for s in ("a", "b")}
-    return CableData(prim.GetName(), attrs, segs, joints, ends, sel)
+    g = read_ground(stage)
+    mu = g["dynamic_friction"] if g else 0.5
+    return CableData(prim.GetName(), attrs, segs, joints, ends, sel, mu)
 
 
 def cable_paths(stage: Usd.Stage) -> list[str]:
