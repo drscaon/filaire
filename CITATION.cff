@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use Filaire in your work, please cite it as below."
+title: "Filaire: cable assets generator for Physical AI"
+type: software
+authors:
+  - family-names: "Sarmento Caon"
+    given-names: "Daniel Régis"
+repository-code: "https://github.com/drscaon/filaire"
+url: "https://primvaria.com"
+license: MIT
+keywords:
+  - OpenUSD
+  - Physical AI
+  - robot learning
+  - simulation
+  - synthetic data

@@ -8,6 +8,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `CONTRIBUTING.md`, issue templates (bug report, cable or connector request),
+  `SECURITY.md` and `CITATION.cff`.
 - Primvaria OpenUSD contract, version 0
   ([docs/contract.md](https://github.com/drscaon/primvaria/blob/main/docs/contract.md)):
   every cable and every socket is an asset any tool can find without knowing Filaire: a model of kind `component` with `assetInfo` (name,
