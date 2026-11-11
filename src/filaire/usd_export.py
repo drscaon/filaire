@@ -3,7 +3,7 @@
 Cable stage (Z up, metres, kilograms), `/World` the default prim:
 
     /World
-      /PhysicsScene                   gravity
+      /PhysicsScene                   gravity 9.81 m/s² along -Z (ground.py, shared by Primvaria)
       /Looks/<colour>                 UsdPreviewSurface materials
       /PhysicsMaterials/<name>        UsdPhysics materials (friction, restitution)
       /Cables/<cable>                 Xform, PhysicsArticulationRootAPI, filaire:* attributes,
@@ -19,7 +19,8 @@ Cable stage (Z up, metres, kilograms), `/World` the default prim:
             /Collision/hull_00 …      convex parts (MeshCollisionAPI convexHull, purpose guide)
             /MateFrame                origin on the mating plane, +Z = insertion direction
           /Attach                     PhysicsFixedJoint to the end segment
-      /Ground                         collision box, its top face at z = 0
+      /Ground                         the shared ground: a 2 cm box, its top face at z = 0
+      /GroundMaterial                 its physics material
 
 One visual mesh per rigid body, as in Quincaillerie: every DCC imports one
 object per body, so a rigid body set on it (by hand, or by the Blender add-on)
@@ -54,6 +55,7 @@ from . import __version__
 from .cable import DAMPING_TIME, Cable, End, cable_color_rgb
 from .catalog import CONNECTOR_FRICTION, JACKETS, PRESETS
 from .connectors import CONNECTORS, MM, keying_of, part_mesh, receptacle_looks, receptacle_parts
+from .ground import ground, physics_scene
 from .mesh3d import TriMesh, mass_properties, merge, principal_inertia, split_normals, weld
 
 _F = Sdf.ValueTypeNames
@@ -428,19 +430,6 @@ def _cable_attrs(prim, c: Cable) -> None:
         _attr(prim, "filaire:coil:leads", _F.Float2, Gf.Vec2f(*map(float, c.coil["leads"])))
 
 
-def _ground(stage, size: float, lo=(0.0, 0.0), hi=(0.0, 0.0), thickness: float = 0.02) -> None:
-    """A collision box whose top face is the floor, z = 0 (a box rather than a plane: every engine
-    and Blender's Bullet collide robustly with it)."""
-    x0, y0, x1, y1 = lo[0] - size, lo[1] - size, hi[0] + size, hi[1] + size
-    g = UsdGeom.Cube.Define(stage, "/World/Ground")
-    g.CreateSizeAttr(1.0)
-    g.AddTranslateOp().Set(Gf.Vec3d((x0 + x1) / 2, (y0 + y1) / 2, -thickness / 2))
-    g.AddScaleOp().Set(Gf.Vec3f(x1 - x0, y1 - y0, thickness))
-    g.CreateDisplayColorAttr([Gf.Vec3f(0.5, 0.5, 0.5)])
-    UsdPhysics.CollisionAPI.Apply(g.GetPrim())
-    _physx_collision(g.GetPrim())
-
-
 def _new_stage(path: Path, physics: bool = True):
     if path.exists():
         path.unlink()
@@ -458,9 +447,7 @@ def _new_stage(path: Path, physics: bool = True):
     world.GetPrim().SetCustomDataByKey("filaire:version", __version__)
     world.GetPrim().SetCustomDataByKey("filaire:physics", bool(physics))
     if physics:
-        scene = UsdPhysics.Scene.Define(stage, "/World/PhysicsScene")
-        scene.CreateGravityDirectionAttr(Gf.Vec3f(0, 0, -1))
-        scene.CreateGravityMagnitudeAttr(9.81)
+        physics_scene(stage)
     return stage, world
 
 
@@ -522,7 +509,7 @@ def export_cables(path: str | Path, scene, physics: bool = True) -> Path:
             xs.append(s.center[0] + c.position[0])
             ys.append(s.center[1] + c.position[1])
     if physics:
-        _ground(stage, 1.0, (min(xs), min(ys)), (max(xs), max(ys)))
+        ground(stage, (min(xs), min(ys)), (max(xs), max(ys)))
     stage.GetRootLayer().Save()
     return path
 
@@ -575,6 +562,6 @@ def export_sockets(path: str | Path, keys: list[str], physics: bool = True) -> P
         _attr(x.GetPrim(), "filaire:geometricKeying", _F.Token, keying_of(spec))
         _mate_frame(stage, f"{sp}/MateFrame", key, "receptacle", "panel")
     if physics:
-        _ground(stage, 0.3, (0, 0), (max(o[2][0] for o in layout), 0))
+        ground(stage, (0, 0), (max(o[2][0] for o in layout), 0))
     stage.GetRootLayer().Save()
     return path

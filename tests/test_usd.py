@@ -81,8 +81,11 @@ def test_one_visual_mesh_per_body(folder):
         ]
         assert len(meshes) == 1, b.GetPath()
         assert "PhysxRigidBodyAPI" in _authored_schemas(b)
-    colliders = [p for p in stage.Traverse() if p.HasAPI(UsdPhysics.CollisionAPI)]
-    assert all("PhysxCollisionAPI" in _authored_schemas(p) for p in colliders)
+    # every collider of the cables; the shared ground has no PhysX attributes (ground.py)
+    colliders = [
+        p for p in stage.Traverse() if p.HasAPI(UsdPhysics.CollisionAPI) and p.GetPath() != "/World/Ground"
+    ]
+    assert colliders and all("PhysxCollisionAPI" in _authored_schemas(p) for p in colliders)
 
 
 def _authored_schemas(prim):

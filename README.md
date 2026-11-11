@@ -320,7 +320,7 @@ Z up, metres, kilograms, `/World` the default prim.
 
 ```
 /World
-  /PhysicsScene                  gravity
+  /PhysicsScene                  gravity (shared, see below)
   /Looks, /PhysicsMaterials      UsdPreviewSurface materials; friction and restitution
   /Cables/<cable>                Xform, PhysicsArticulationRootAPI, filaire:* attributes,
                                  variant sets "end_a" and "end_b"
@@ -335,8 +335,25 @@ Z up, metres, kilograms, `/World` the default prim.
         /Collision/hull_00 …     convex parts (MeshCollisionAPI convexHull, purpose guide)
         /MateFrame               origin on the mating plane, +Z = insertion direction
       /Attach                    PhysicsFixedJoint to the end segment
-  /Ground                        collision box, its top face at z = 0
+  /Ground                        the shared ground: a collision box, its top face at z = 0
+  /GroundMaterial                its physics material
 ```
+
+### Ground and physics scene (the same in every Primvaria project)
+
+Every file with physics carries the same two prims, so that assets from
+different generators can share one scene and every engine gets the same floor:
+
+| Prim | What it is |
+|---|---|
+| `/World/PhysicsScene` | gravity 9.81 m/s² along −Z |
+| `/World/Ground` | a static box (`UsdGeom.Cube`, `CollisionAPI`), its top face at z = 0, 2 cm thick, covering the content with 0.5 m to spare on each side (1 m × 1 m at least), grey and rendered, no PhysX attributes (engines derive their contact offsets) |
+| `/World/GroundMaterial` | its physics material: static friction 0.6, dynamic friction 0.5, restitution 0.1, a wooden or concrete floor |
+
+The code is one file, `ground.py`, identical in Granulaire, Maillage, Filaire
+and Quincaillerie; a test checks every generated file against it. The MuJoCo
+checks and the Blender rigid-body checks take the ground's friction from the
+file (Blender's cloth, in Maillage, has its own collision settings).
 
 Each rigid body has exactly one visual mesh, as in Quincaillerie: Blender
 and other DCCs import one object per body, so a rigid body set on it moves

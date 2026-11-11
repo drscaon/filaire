@@ -43,6 +43,12 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- The ground and physics scene shared by every Primvaria project (`ground.py`, the same
+  file in each): `/World/PhysicsScene` with gravity 9.81 m/s² along −Z; `/World/Ground`, a
+  2 cm box whose top is z = 0, covering the content with 0.5 m to spare, rendered, no
+  PhysX attributes; `/World/GroundMaterial`, static friction 0.6, dynamic 0.5, restitution
+  0.1. A test checks every generated file against it. Filaire's ground had PhysX contact offsets and no physics material, and the
+  MuJoCo floor copied each cable's friction; it now takes the file's ground.
 - Python 3.11 or later (was 3.10): MuJoCo 4 requires it, and Python 3.10 reached
   its end of life in October 2026. CI tests 3.11 to 3.13.
 - MuJoCo 4 (`mujoco>=4.0`, was 3.2) for the `sim` and `dev` extras: the version CI
