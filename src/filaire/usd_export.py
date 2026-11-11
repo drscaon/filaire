@@ -55,6 +55,7 @@ from . import __version__
 from .cable import DAMPING_TIME, Cable, End, cable_color_rgb
 from .catalog import CONNECTOR_FRICTION, JACKETS, PRESETS
 from .connectors import CONNECTORS, MM, keying_of, part_mesh, receptacle_looks, receptacle_parts
+from .contract import set_group, write_identity
 from .ground import ground, physics_scene
 from .mesh3d import TriMesh, mass_properties, merge, principal_inertia, split_normals, weld
 
@@ -444,6 +445,7 @@ def _new_stage(path: Path, physics: bool = True):
     UsdPhysics.SetStageKilogramsPerUnit(stage, 1.0)
     world = UsdGeom.Xform.Define(stage, "/World")
     stage.SetDefaultPrim(world.GetPrim())
+    set_group(world.GetPrim(), assembly=True)
     world.GetPrim().SetCustomDataByKey("filaire:version", __version__)
     world.GetPrim().SetCustomDataByKey("filaire:physics", bool(physics))
     if physics:
@@ -475,13 +477,14 @@ def export_cables(path: str | Path, scene, physics: bool = True) -> Path:
             "jacket": _physics_material(stage, "jacket", jacket["friction"], jacket["restitution"]),
             "connector": _physics_material(stage, "connector", CONNECTOR_FRICTION, 0.2),
         }
-    UsdGeom.Scope.Define(stage, "/World/Cables")
+    set_group(UsdGeom.Scope.Define(stage, "/World/Cables").GetPrim())
     xs, ys = [], []
     for c in scene.cables:
         cp = f"/World/Cables/{c.name}"
         cx = UsdGeom.Xform.Define(stage, cp)
         cx.AddTranslateOp().Set(Gf.Vec3d(*c.position))
         prim = cx.GetPrim()
+        write_identity(prim, name=c.name, preset=c.preset_key, seed=scene.seed, identifier=f"./{path.name}")
         _cable_attrs(prim, c)
         segs = [f"{cp}/Segments/seg_{i:03d}" for i in range(len(c.segments))]
         if physics:
@@ -537,13 +540,15 @@ def export_sockets(path: str | Path, keys: list[str], physics: bool = True) -> P
     if physics:
         UsdGeom.Scope.Define(stage, "/World/PhysicsMaterials")
         mat = _physics_material(stage, "connector", CONNECTOR_FRICTION, 0.2)
-    UsdGeom.Scope.Define(stage, "/World/Sockets")
+    set_group(UsdGeom.Scope.Define(stage, "/World/Sockets").GetPrim())
     layout = socket_layout(keys)
     for key, R, origin in layout:
         spec = CONNECTORS[key]
         parts = receptacle_parts(spec, "panel")
         sp = f"/World/Sockets/{key}"
         x = UsdGeom.Xform.Define(stage, sp)
+        # a receptacle is not drawn: its preset is its connector family and its seed 0
+        write_identity(x.GetPrim(), name=key, preset=key, seed=0, identifier=f"./{path.name}")
         _xform(x, R, origin)
         mesh = part_mesh(parts)
         groups: dict = {}
