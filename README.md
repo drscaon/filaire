@@ -420,6 +420,12 @@ version 0, which the four generators share. Every cable and every socket is an a
 the stage units, the model hierarchy and this identity; the tests and CI
 require it on every preset.
 
+What was drawn for each cable is in the file too, its ground truth:
+`primvaria:variation:aspects` lists the aspects that were switched on
+(`length`, `layout`, `ends`, `color`, `stiffness`, `density`) and `primvaria:variation:<name>` holds each drawn value
+(`length_m`, `nominal_length_m`, `layout`, `end_a`, `end_b`, `color`, `youngs_modulus_pa`, `linear_density_kg_per_m`). A socket draws nothing: its list of aspects is empty. An aspect that is switched off is still recorded, at its
+nominal value, and the other aspects keep their draws.
+
 ## Physics model
 
 - **Rod.** The cable is a chain of N rigid segments (length ≈ 1.5 cable

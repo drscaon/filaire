@@ -45,6 +45,7 @@ insertion axis horizontal, each with its MateFrame.
 from __future__ import annotations
 
 import math
+from dataclasses import asdict
 from pathlib import Path
 
 import numpy as np
@@ -55,7 +56,7 @@ from . import __version__
 from .cable import DAMPING_TIME, Cable, End, cable_color_rgb
 from .catalog import CONNECTOR_FRICTION, JACKETS, PRESETS
 from .connectors import CONNECTORS, MM, keying_of, part_mesh, receptacle_looks, receptacle_parts
-from .contract import set_group, write_identity
+from .contract import set_group, write_identity, write_variation
 from .ground import ground, physics_scene
 from .mesh3d import TriMesh, mass_properties, merge, principal_inertia, split_normals, weld
 
@@ -463,6 +464,24 @@ def _cable_visual(stage, looks, cp: str, c: Cable) -> None:
     _visual(stage, looks, f"{cp}/Visual", [(merge(ms), color, rough, 0.0) for color, ms in by_color.items()])
 
 
+def drawn_values(c: Cable) -> dict:
+    """What was drawn for a cable (written as primvaria:variation:*): its length, its layout,
+    its ends, its colour, its stiffness and its density."""
+    values = {
+        "nominal_length_m": float(c.nominal_length),
+        "length_m": float(c.length),
+        "layout": c.layout,
+        "end_a": c.selected["a"],
+        "end_b": c.selected["b"],
+        "color": c.color,
+        "youngs_modulus_pa": float(c.youngs_modulus),
+        "linear_density_kg_per_m": float(c.linear_density),
+    }
+    if c.coil:  # coiled cords: the straight lead between each plug and the coil
+        values["coil_leads_m"] = [float(x) for x in c.coil["leads"]]
+    return values
+
+
 def export_cables(path: str | Path, scene, physics: bool = True) -> Path:
     path = Path(path)
     stage, world = _new_stage(path, physics)
@@ -478,6 +497,7 @@ def export_cables(path: str | Path, scene, physics: bool = True) -> Path:
             "connector": _physics_material(stage, "connector", CONNECTOR_FRICTION, 0.2),
         }
     set_group(UsdGeom.Scope.Define(stage, "/World/Cables").GetPrim())
+    aspects = [name for name, on in asdict(scene.variations).items() if on]
     xs, ys = [], []
     for c in scene.cables:
         cp = f"/World/Cables/{c.name}"
@@ -485,6 +505,7 @@ def export_cables(path: str | Path, scene, physics: bool = True) -> Path:
         cx.AddTranslateOp().Set(Gf.Vec3d(*c.position))
         prim = cx.GetPrim()
         write_identity(prim, name=c.name, preset=c.preset_key, seed=scene.seed, identifier=f"./{path.name}")
+        write_variation(prim, aspects, drawn_values(c))
         _cable_attrs(prim, c)
         segs = [f"{cp}/Segments/seg_{i:03d}" for i in range(len(c.segments))]
         if physics:
@@ -549,6 +570,7 @@ def export_sockets(path: str | Path, keys: list[str], physics: bool = True) -> P
         x = UsdGeom.Xform.Define(stage, sp)
         # a receptacle is not drawn: its preset is its connector family and its seed 0
         write_identity(x.GetPrim(), name=key, preset=key, seed=0, identifier=f"./{path.name}")
+        write_variation(x.GetPrim(), (), {})  # nothing is drawn
         _xform(x, R, origin)
         mesh = part_mesh(parts)
         groups: dict = {}
