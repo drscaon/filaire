@@ -52,7 +52,6 @@ import numpy as np
 from pxr import Gf, Sdf, Usd, UsdGeom, UsdPhysics, UsdShade, Vt
 from scipy.spatial import ConvexHull
 
-from . import __version__
 from .cable import DAMPING_TIME, Cable, End, cable_color_rgb
 from .catalog import CONNECTOR_FRICTION, JACKETS, PRESETS
 from .connectors import CONNECTORS, MM, keying_of, part_mesh, receptacle_looks, receptacle_parts
@@ -400,7 +399,6 @@ def _joint(stage, path: str, s0: str, s1: str, L0: float, L1: float, cable: Cabl
 
 def _cable_attrs(prim, c: Cable) -> None:
     k = c.joint_stiffness
-    _attr(prim, "filaire:preset", _F.String, c.preset_key)
     _attr(prim, "filaire:layout", _F.Token, c.layout)
     _attr(prim, "filaire:length", _F.Float, float(c.length))
     _attr(prim, "filaire:nominalLength", _F.Float, float(c.nominal_length))
@@ -447,7 +445,6 @@ def _new_stage(path: Path, physics: bool = True):
     world = UsdGeom.Xform.Define(stage, "/World")
     stage.SetDefaultPrim(world.GetPrim())
     set_group(world.GetPrim(), assembly=True)
-    world.GetPrim().SetCustomDataByKey("filaire:version", __version__)
     world.GetPrim().SetCustomDataByKey("filaire:physics", bool(physics))
     if physics:
         physics_scene(stage)
@@ -485,8 +482,6 @@ def drawn_values(c: Cable) -> dict:
 def export_cables(path: str | Path, scene, physics: bool = True) -> Path:
     path = Path(path)
     stage, world = _new_stage(path, physics)
-    world.GetPrim().SetCustomDataByKey("filaire:preset", scene.preset["label"])
-    world.GetPrim().SetCustomDataByKey("filaire:seed", int(scene.seed))
     looks = _Looks(stage)
     mats = None
     if physics:

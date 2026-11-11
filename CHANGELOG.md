@@ -6,6 +6,13 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Breaking changes
+
+- The `filaire:preset` attribute of a cable and the custom data
+  `filaire:preset`, `filaire:version` and `filaire:seed` on `/World` are gone:
+  each cable has them as `primvaria:preset`, `primvaria:version` and
+  `primvaria:seed` (Primvaria contract). `filaire:physics` stays.
+
 ### Added
 
 - Ground truth of the variation, in the file (Primvaria contract, variation
