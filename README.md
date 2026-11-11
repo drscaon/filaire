@@ -404,6 +404,22 @@ are kept as engine-neutral attributes:
 | `filaire:insertionDepth`, `filaire:clearance`, `filaire:keying` | for insertion tasks (m) |
 | `filaire:lockTwist` | bayonets only: the turn that locks the plug once fully in (degrees, about +Z) |
 
+### Primvaria contract
+
+```bash
+python -m filaire.conformance output/usb_c
+```
+
+Filaire is part of [Primvaria](https://primvaria.com) and follows its
+[mission](https://github.com/drscaon/primvaria/blob/main/MISSION.md) and its
+[OpenUSD contract](https://github.com/drscaon/primvaria/blob/main/docs/contract.md),
+version 0, which the four generators share. Every cable and every socket is an asset any tool can find without knowing Filaire: a model of kind
+`component` with `assetInfo` (name, identifier, version) and the attributes
+`primvaria:contract`, `primvaria:generator`, `primvaria:version`,
+`primvaria:preset` and `primvaria:seed`; `/World` is an `assembly`, `/World/Cables` and `/World/Sockets` are groups; a socket is not drawn, so its preset is its connector family and its seed 0. The command above checks
+the stage units, the model hierarchy and this identity; the tests and CI
+require it on every preset.
+
 ## Physics model
 
 - **Rod.** The cable is a chain of N rigid segments (length ≈ 1.5 cable

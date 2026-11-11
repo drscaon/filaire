@@ -152,6 +152,8 @@ jobs:
           done
       - name: Validate every file (what usdchecker runs)
         run: python -m filaire.validate ci-usd ci-usd-visual
+      - name: Check every file against the Primvaria contract
+        run: python -m filaire.conformance ci-usd ci-usd-visual
 
   usd-floor:
     name: Oldest supported OpenUSD (usd-core 26.5)
