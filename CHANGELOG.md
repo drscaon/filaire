@@ -6,8 +6,25 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Breaking changes
+
+- Pack files (Primvaria contract): `cables.csv` and `summary.json` are replaced by
+  `instances.csv` and `manifest.json`, the same in the four generators. The
+  table is read back from the OpenUSD files, one row per asset: identity,
+  aspects, `variation:<name>` and `measured:<name>` columns, then the
+  generator's own; the former summary is the manifest's `summary`.
+- The `filaire:preset` attribute of a cable and the custom data
+  `filaire:preset`, `filaire:version` and `filaire:seed` on `/World` are gone:
+  each cable has them as `primvaria:preset`, `primvaria:version` and
+  `primvaria:seed` (Primvaria contract). `filaire:physics` stays.
+
 ### Added
 
+- What was measured on each cable is written in the file as
+  `primvaria:measured:<name>` (`cable_mass_kg`, `end_a_mass_kg`, `bending_stiffness_y_nm2`, `torsional_stiffness_nm2`, `segments`…).
+- `python -m filaire.conformance` also checks every pack it finds: the table must
+  say what the files say. `pack.py` and `tests/test_pack.py` are shared by the
+  four generators.
 - Ground truth of the variation, in the file (Primvaria contract, variation
   model): `primvaria:variation:aspects`, the aspects that were switched on, and
   one `primvaria:variation:<name>` per drawn value (`length_m`, `nominal_length_m`, `layout`, `end_a`, `end_b`, `color`, `youngs_modulus_pa`, `linear_density_kg_per_m`).

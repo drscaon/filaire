@@ -52,11 +52,10 @@ import numpy as np
 from pxr import Gf, Sdf, Usd, UsdGeom, UsdPhysics, UsdShade, Vt
 from scipy.spatial import ConvexHull
 
-from . import __version__
 from .cable import DAMPING_TIME, Cable, End, cable_color_rgb
 from .catalog import CONNECTOR_FRICTION, JACKETS, PRESETS
 from .connectors import CONNECTORS, MM, keying_of, part_mesh, receptacle_looks, receptacle_parts
-from .contract import set_group, write_identity, write_variation
+from .contract import set_group, write_identity, write_measured, write_variation
 from .ground import ground, physics_scene
 from .mesh3d import TriMesh, mass_properties, merge, principal_inertia, split_normals, weld
 
@@ -400,7 +399,6 @@ def _joint(stage, path: str, s0: str, s1: str, L0: float, L1: float, cable: Cabl
 
 def _cable_attrs(prim, c: Cable) -> None:
     k = c.joint_stiffness
-    _attr(prim, "filaire:preset", _F.String, c.preset_key)
     _attr(prim, "filaire:layout", _F.Token, c.layout)
     _attr(prim, "filaire:length", _F.Float, float(c.length))
     _attr(prim, "filaire:nominalLength", _F.Float, float(c.nominal_length))
@@ -447,7 +445,6 @@ def _new_stage(path: Path, physics: bool = True):
     world = UsdGeom.Xform.Define(stage, "/World")
     stage.SetDefaultPrim(world.GetPrim())
     set_group(world.GetPrim(), assembly=True)
-    world.GetPrim().SetCustomDataByKey("filaire:version", __version__)
     world.GetPrim().SetCustomDataByKey("filaire:physics", bool(physics))
     if physics:
         physics_scene(stage)
@@ -482,11 +479,30 @@ def drawn_values(c: Cable) -> dict:
     return values
 
 
+def measured_values(c: Cable) -> dict:
+    """What was measured on a generated cable: its masses, the stiffness of its cross-section and
+    its discretisation."""
+    values = {
+        "cable_mass_kg": float(c.mass),
+        "end_a_mass_kg": float(c.end_mass("a")),
+        "end_b_mass_kg": float(c.end_mass("b")),
+        "bending_stiffness_y_nm2": float(c.bending_stiffness[0]),
+        "bending_stiffness_z_nm2": float(c.bending_stiffness[1]),
+        "torsional_stiffness_nm2": float(c.torsional_stiffness),
+        "axial_stiffness_n_per_m": float(c.axial_stiffness) if c.axial_stiffness else None,
+        "segments": len(c.segments),
+        "segment_length_m": float(c.segment_length),
+        "joint_bend_y_nm_per_rad": float(c.joint_stiffness["bend_y"]),
+    }
+    if c.coil:
+        values["coil_turns"] = float(c.coil["turns"])
+        values["wire_length_m"] = float(c.coil["wire_length"])
+    return values
+
+
 def export_cables(path: str | Path, scene, physics: bool = True) -> Path:
     path = Path(path)
     stage, world = _new_stage(path, physics)
-    world.GetPrim().SetCustomDataByKey("filaire:preset", scene.preset["label"])
-    world.GetPrim().SetCustomDataByKey("filaire:seed", int(scene.seed))
     looks = _Looks(stage)
     mats = None
     if physics:
@@ -506,6 +522,7 @@ def export_cables(path: str | Path, scene, physics: bool = True) -> Path:
         prim = cx.GetPrim()
         write_identity(prim, name=c.name, preset=c.preset_key, seed=scene.seed, identifier=f"./{path.name}")
         write_variation(prim, aspects, drawn_values(c))
+        write_measured(prim, measured_values(c))
         _cable_attrs(prim, c)
         segs = [f"{cp}/Segments/seg_{i:03d}" for i in range(len(c.segments))]
         if physics:

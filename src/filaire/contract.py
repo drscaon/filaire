@@ -18,6 +18,10 @@ were switched on and every drawn value, under ``primvaria:variation:*``::
 
     write_variation(prim, aspects=("size", "shape"), values={"diameter_m": 0.0041, "facets": 14})
 
+and what was measured on it once generated, under ``primvaria:measured:*``::
+
+    write_measured(prim, {"mass_kg": 9.1e-5, "sphericity": 0.82})
+
 Checking. ``conformance(stage)`` lists how a stage departs from sections 2, 4 and 5 of the
 contract (empty: it conforms); ``python -m <generator>.conformance`` runs it on files.
 """
@@ -48,6 +52,7 @@ IDENTITY = {
 ASSET_INFO = ("name", "identifier", "version")
 VARIATION = f"{NAMESPACE}:variation"
 ASPECTS = f"{VARIATION}:aspects"
+MEASURED = f"{NAMESPACE}:measured"
 VALUE_NAME = re.compile(r"[a-z][a-z0-9_]*")  # snake_case, the unit as a suffix: clearance_mm
 
 
@@ -77,19 +82,13 @@ def write_identity(prim, name: str, preset: str, seed: int, identifier: str) -> 
         prim.CreateAttribute(f"{NAMESPACE}:{key}", type_name).Set(values[key])
 
 
-def write_variation(prim, aspects, values: dict) -> None:
-    """Write what was drawn for the asset in ``prim``: ``primvaria:variation:aspects``, the
-    aspects that were switched on, and one ``primvaria:variation:<name>`` per drawn value.
-
-    values: {name: bool, int, float, str, or a sequence of numbers or of strings}; names are
-    snake_case with the unit as a suffix (``diameter_m``); a value of None is left out."""
+def _write_values(prim, namespace: str, values: dict) -> None:
     types = Sdf.ValueTypeNames
-    prim.CreateAttribute(ASPECTS, types.StringArray).Set([str(a) for a in aspects])
     for name, value in values.items():
         if value is None:
             continue
         if not VALUE_NAME.fullmatch(name):
-            raise ValueError(f"variation name {name!r} is not snake_case")
+            raise ValueError(f"{namespace} name {name!r} is not snake_case")
         if hasattr(value, "tolist"):  # numpy scalars and arrays
             value = value.tolist()
         if isinstance(value, bool):
@@ -104,18 +103,43 @@ def write_variation(prim, aspects, values: dict) -> None:
             type_name, value = types.StringArray, list(value)
         else:
             type_name, value = types.DoubleArray, [float(x) for x in value]
-        prim.CreateAttribute(f"{VARIATION}:{name}", type_name).Set(value)
+        prim.CreateAttribute(f"{namespace}:{name}", type_name).Set(value)
+
+
+def _read_values(prim, namespace: str) -> dict:
+    out = {}
+    for attr in prim.GetAuthoredPropertiesInNamespace(namespace):
+        value = attr.Get()
+        if hasattr(value, "__len__") and not isinstance(value, str):
+            value = list(value)
+        out[attr.GetName()[len(namespace) + 1 :]] = value
+    return out
+
+
+def write_variation(prim, aspects, values: dict) -> None:
+    """Write what was drawn for the asset in ``prim``: ``primvaria:variation:aspects``, the
+    aspects that were switched on, and one ``primvaria:variation:<name>`` per drawn value.
+
+    values: {name: bool, int, float, str, or a sequence of numbers or of strings}; names are
+    snake_case with the unit as a suffix (``diameter_m``); a value of None is left out."""
+    prim.CreateAttribute(ASPECTS, Sdf.ValueTypeNames.StringArray).Set([str(a) for a in aspects])
+    _write_values(prim, VARIATION, values)
+
+
+def write_measured(prim, values: dict) -> None:
+    """Write what was measured on the generated asset in ``prim``, one
+    ``primvaria:measured:<name>`` per value (same value types and names as ``write_variation``)."""
+    _write_values(prim, MEASURED, values)
 
 
 def variation(prim) -> dict:
     """What was drawn for the asset in ``prim``: {"aspects": [...], name: value, ...}."""
-    out = {}
-    for attr in prim.GetAuthoredPropertiesInNamespace(VARIATION):
-        value = attr.Get()
-        out[attr.GetName()[len(VARIATION) + 1 :]] = (
-            list(value) if hasattr(value, "__len__") and not isinstance(value, str) else value
-        )
-    return out
+    return _read_values(prim, VARIATION)
+
+
+def measured(prim) -> dict:
+    """What was measured on the asset in ``prim``: {name: value, ...}."""
+    return _read_values(prim, MEASURED)
 
 
 def _variation_problems(prim) -> list[str]:
@@ -125,10 +149,10 @@ def _variation_problems(prim) -> list[str]:
         problems.append(f"{where}: no {ASPECTS}")
     elif aspects.GetTypeName() != Sdf.ValueTypeNames.StringArray:
         problems.append(f"{where}: {ASPECTS} is {aspects.GetTypeName()}, not string[]")
-    for attr in prim.GetAuthoredPropertiesInNamespace(VARIATION):
-        name = attr.GetName()[len(VARIATION) + 1 :]
-        if not VALUE_NAME.fullmatch(name):
-            problems.append(f"{where}: {attr.GetName()} is not snake_case")
+    for namespace in (VARIATION, MEASURED):
+        for attr in prim.GetAuthoredPropertiesInNamespace(namespace):
+            if not VALUE_NAME.fullmatch(attr.GetName()[len(namespace) + 1 :]):
+                problems.append(f"{where}: {attr.GetName()} is not snake_case")
     return problems
 
 
