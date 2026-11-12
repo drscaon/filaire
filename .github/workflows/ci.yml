@@ -18,7 +18,7 @@ jobs:
     name: Checks
     # lint and format, tests on every Python and platform, oldest OpenUSD, package build:
     # the same in the four generators, written once in the primvaria repository
-    uses: drscaon/primvaria/.github/workflows/generator-checks.yml@feat/generator-checks-workflow
+    uses: drscaon/primvaria/.github/workflows/generator-checks.yml@main
     with:
       package: filaire
       smoke: |
