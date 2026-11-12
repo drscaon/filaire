@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import csv
-import json
 from collections import Counter
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -14,6 +12,7 @@ from .cable import Cable, build_cable
 from .catalog import PRESETS, end_connector
 from .centerline import LAYOUTS
 from .connectors import CONNECTORS
+from .pack import write_pack
 
 # independent random streams per cable, one per aspect: turning a variation off
 # leaves the draws of the other aspects unchanged
@@ -242,36 +241,6 @@ def generate_scene(
 # ------------------------------------------------------------------ outputs
 
 
-def cable_row(c: Cable) -> dict:
-    k = c.joint_stiffness
-    row = {
-        "name": c.name,
-        "layout": c.layout,
-        "nominal_length_m": round(c.nominal_length, 3),
-        "length_m": round(c.length, 4),
-        "color": c.color,
-        "jacket": c.jacket,
-        "end_a": c.selected["a"],
-        "end_b": c.selected["b"],
-        "youngs_modulus_mpa": round(c.youngs_modulus / 1e6, 2),
-        "linear_density_g_per_m": round(c.linear_density * 1e3, 2),
-        "bending_stiffness_y_nm2": f"{c.bending_stiffness[0]:.4g}",
-        "bending_stiffness_z_nm2": f"{c.bending_stiffness[1]:.4g}",
-        "torsional_stiffness_nm2": f"{c.torsional_stiffness:.4g}",
-        "axial_stiffness_n_per_m": f"{c.axial_stiffness:.4g}" if c.axial_stiffness else "",
-        "segments": len(c.segments),
-        "segment_length_mm": round(c.segment_length * 1e3, 2),
-        "joint_bend_y_nm_per_rad": f"{k['bend_y']:.4g}",
-        "cable_mass_g": round(c.mass * 1e3, 2),
-        "end_a_mass_g": round(c.end_mass("a") * 1e3, 2),
-        "end_b_mass_g": round(c.end_mass("b") * 1e3, 2),
-    }
-    if c.coil:
-        row["coil_turns"] = round(c.coil["turns"], 1)
-        row["wire_length_m"] = round(c.coil["wire_length"], 3)
-    return row
-
-
 def summarize(scene: Scene) -> dict:
     cs = scene.cables
     masses = np.array([c.mass + c.end_mass("a") + c.end_mass("b") for c in cs])
@@ -298,7 +267,8 @@ def summarize(scene: Scene) -> dict:
 
 
 def write_outputs(scene: Scene, out_root: str | Path = "output", physics: bool = True) -> Path:
-    """Write the OpenUSD files, cables.csv and summary.json under out_root/<preset>.
+    """Write the OpenUSD files and the pack's table and manifest (instances.csv,
+    manifest.json) under out_root/<preset>.
 
     physics=False writes visual assets only: no rigid bodies, colliders, joints, physics
     materials, physics scene or ground (the cables keep their filaire:* attributes)."""
@@ -309,13 +279,8 @@ def write_outputs(scene: Scene, out_root: str | Path = "output", physics: bool =
     export_cables(out / f"filaire_{scene.preset_key}.usdc", scene, physics=physics)
     if scene.connectors:
         export_sockets(out / "sockets.usdc", scene.connectors, physics=physics)
-    rows = [cable_row(c) for c in scene.cables]
-    keys = list(dict.fromkeys(k for r in rows for k in r))
-    with open(out / "cables.csv", "w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=keys)
-        w.writeheader()
-        w.writerows(rows)
-    (out / "summary.json").write_text(
-        json.dumps(summarize(scene), indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
-    )
+    # instances.csv (one row per cable and per socket, read back from the files) and manifest.json
+    aspects = [name for name, on in asdict(scene.variations).items() if on]
+    extra = {c.name: {"jacket": c.jacket} for c in scene.cables}
+    write_pack(out, scene.preset_key, scene.seed, aspects, summary=summarize(scene), extra=extra)
     return out

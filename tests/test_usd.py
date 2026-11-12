@@ -15,8 +15,9 @@ def folder(tmp_path_factory):
 def test_files_written(folder):
     assert (folder / "filaire_ethernet.usdc").exists()
     assert (folder / "sockets.usdc").exists()
-    assert (folder / "cables.csv").read_text(encoding="utf-8").count("\n") == 3
-    assert json.loads((folder / "summary.json").read_text(encoding="utf-8"))["count"] == 2
+    # two cables and the socket their ends share
+    assert (folder / "instances.csv").read_text(encoding="utf-8").count("\n") == 4
+    assert json.loads((folder / "manifest.json").read_text(encoding="utf-8"))["summary"]["count"] == 2
 
 
 def test_stage_conventions(folder):

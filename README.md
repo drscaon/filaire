@@ -308,8 +308,8 @@ public dimensions.
 |---|---|
 | `filaire_<preset>.usdc` | the cables (OpenUSD, Blender: File > Import > USD) |
 | `sockets.usdc` | one fixed receptacle per connector family used by the cables |
-| `cables.csv` | per cable: layout, length, ends, colour, modulus, densities, stiffness, segments, masses |
-| `summary.json` | counts by layout, end and colour; length, mass, stiffness and segment ranges |
+| `instances.csv` | one row per cable and per socket, read back from the files: its identity, **every drawn value** (`variation:<name>`) and **every measured value** (`measured:<name>`), then the jacket: the ground truth |
+| `manifest.json` | what the pack is (contract, generator, version, preset, seed, aspects, files) and its summary: counts by layout, end and colour; length, mass, stiffness and segment ranges |
 | `sheet.png` | top view (`filaire preview`) |
 | `sim_test/sim_test.json` | MuJoCo report (`filaire sim-test`) |
 | `sim_test/blender_setup.json`, `sim_test/blender_naive.json` | Blender reports and their scenes (`filaire blender-test`) |
@@ -425,6 +425,13 @@ What was drawn for each cable is in the file too, its ground truth:
 (`length`, `layout`, `ends`, `color`, `stiffness`, `density`) and `primvaria:variation:<name>` holds each drawn value
 (`length_m`, `nominal_length_m`, `layout`, `end_a`, `end_b`, `color`, `youngs_modulus_pa`, `linear_density_kg_per_m`). A socket draws nothing: its list of aspects is empty. An aspect that is switched off is still recorded, at its
 nominal value, and the other aspects keep their draws.
+
+What was measured on each cable once generated is there as well, as
+`primvaria:measured:<name>` (`cable_mass_kg`, `end_a_mass_kg`, `bending_stiffness_y_nm2`, `torsional_stiffness_nm2`, `segments`…).
+The pack's `instances.csv` is read back from the OpenUSD files, one row per
+asset with the same names (`variation:<name>`, `measured:<name>`), and
+`manifest.json` says what the pack is; both have the same shape in the four
+generators, and the command above fails when the table and the files disagree.
 
 ## Physics model
 

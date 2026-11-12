@@ -12,3 +12,9 @@ def contract_files(tmp_path_factory):
     out = tmp_path_factory.mktemp("contract")
     folder = write_outputs(generate_scene("ethernet", count=2, seed=1, ends={"b": "rj45_inline"}), out)
     return usd_files([folder])
+
+
+@pytest.fixture(scope="session")
+def pack_folder(tmp_path_factory):
+    """A pack freshly generated: cables and their sockets."""
+    return write_outputs(generate_scene("usb_c", count=3, seed=2), tmp_path_factory.mktemp("pack"))
