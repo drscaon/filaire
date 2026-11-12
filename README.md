@@ -608,7 +608,8 @@ chord between its joints.
 
 - **Not calibrated.** Moduli and densities are orders of magnitude; no
   cable's `E·I` was measured. The sag check proves the export is consistent
-  with the model, not that the model matches a real cable.
+  with the model, not that the model matches a real cable. See
+  [Checking a preset against a real cable](#checking-a-preset-against-a-real-cable).
 - **Approximate connectors.** See [Connectors](#connectors): simplified
   outlines, no moving latches, threads or contacts; several dimensions not
   from a source.
@@ -629,6 +630,58 @@ chord between its joints.
   springs rest in the first frame's pose, the generated one.
 - **Visual per segment.** Each segment carries its piece of tube, so a
   simulated cable shows small creases at the joints when it bends.
+
+## Checking a preset against a real cable
+
+A search of the literature (November 2026) found no measured bending
+stiffness for USB, Ethernet, HDMI or power cords by type. What is published
+sits in the same range as the presets (7.6e-6 to 1.4e-2 N·m²) but does not
+calibrate any of them:
+
+| Object | `E·I` (N·m²) | Source |
+|---|---|---|
+| Optical-fibre drop cable, fibre element | 8e-5 to 5e-4 | [US 6853782](https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/6853782) |
+| Flexible cable in a robot manipulation study, 13 g/m | 2.7e-3 | [arXiv 2502.07509](https://arxiv.org/abs/2502.07509) |
+| Ropes 11–12 mm, 37–41 g/m | 1.7e-2 to 4.7e-2 | [arXiv 2605.06323](https://arxiv.org/abs/2605.06323) |
+
+A ruler is enough to measure a cable yourself (Peirce's cantilever test).
+Straighten the cable, lay it on a table and slide it over the edge until
+the line from the edge to the tip points 41.5° below horizontal. With `l`
+the overhanging length and `m` the mass per metre:
+
+```
+E·I = m · g · (l / 2)³
+```
+
+Turn the cable half a turn and repeat, to average out the curl it keeps from
+its coil. The overhang each preset predicts at its central modulus (weaker
+bending axis for flat cables; the coiled cord is left out, the test needs a
+straight cable):
+
+| Preset | `E·I` (N·m²) | Mass (g/m) | Overhang at 41.5° (cm) |
+|---|---|---|---|
+| `power_c13` | 7.3e-03 | 82.5 | 42 |
+| `power_c7` | 9.9e-04 | 35.0 | 28 |
+| `dc_barrel` | 2.4e-04 | 23.0 | 21 |
+| `usb_c` | 8.1e-04 | 37.5 | 26 |
+| `usb_micro` | 4.7e-04 | 27.5 | 24 |
+| `usb_a_to_c` | 6.6e-04 | 32.5 | 25 |
+| `ethernet` | 7.2e-03 | 47.5 | 50 |
+| `hdmi` | 1.4e-02 | 75.0 | 53 |
+| `audio_jack` | 3.6e-04 | 16.0 | 26 |
+| `xlr_mic` | 2.2e-03 | 60.0 | 31 |
+| `speaker_wire` | 6.7e-04 | 47.5 | 23 |
+| `m12_sensor` | 2.3e-03 | 42.5 | 35 |
+| `ribbon_idc` | 1.7e-04 | 10.0 | 24 |
+| `can_bus` | 4.0e-03 | 47.5 | 41 |
+| `servo_lead` | 1.2e-05 | 5.5 | 12 |
+| `jumper_wire` | 7.6e-06 | 2.5 | 14 |
+| `battery_lead` | 4.4e-04 | 72.5 | 17 |
+| `balance_lead` | 1.4e-05 | 13.5 | 9 |
+| `bnc_coax` | 5.8e-03 | 39.0 | 50 |
+
+If your cable overhangs a length `l'` instead, scale the modulus by
+`(l' / l)³` with `--modulus`.
 
 ## Roadmap
 
