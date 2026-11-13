@@ -8,7 +8,7 @@ import importlib
 from pathlib import Path
 
 import pytest
-from pxr import Usd
+from pxr import Sdf, Usd
 
 SRC = Path(__file__).parents[1] / "src"
 GENERATOR = next(p.name for p in SRC.iterdir() if (p / "contract.py").exists())
@@ -107,3 +107,30 @@ def test_command_line(contract_files, capsys):
     assert conformance.main([str(contract_files[0].parent)]) == 0
     assert "0 with issues" in capsys.readouterr().out
     assert conformance.main([]) == 2
+
+
+def test_files_hold_no_engine_data(contract_files):
+    """Contract, section 9: what only one engine reads lies in an engine layer, not in the file."""
+    files = [f for f in contract_files if not contract.is_engine_layer(f)]
+    assert files
+    for f in files:
+        assert contract.engine_data(Usd.Stage.Open(str(f))) == [], f.name
+
+
+def test_engine_data_in_a_file_is_reported(contract_files, tmp_path):
+    files = [f for f in contract_files if not contract.is_engine_layer(f)]
+    source = next(f for f in files if contract.asset_roots(Usd.Stage.Open(str(f))))
+    copy = tmp_path / "copy.usda"
+    Usd.Stage.Open(str(source)).GetRootLayer().Export(str(copy))
+    stage = Usd.Stage.Open(str(copy))
+    contract.asset_roots(stage)[0].AddAppliedSchema("PhysxRigidBodyAPI")
+    stage.GetRootLayer().Save()
+    assert any("engine data in the file" in p for p in contract.check(copy, own=False))
+
+
+def test_an_engine_layer_lies_over_its_file_only(contract_files, tmp_path):
+    for layer in (f for f in contract_files if contract.is_engine_layer(f)):
+        assert not any("engine layer" in p for p in contract.check(layer)), layer.name
+    stray = tmp_path / "nothing_physx.usda"
+    Sdf.Layer.CreateNew(str(stray)).Save()
+    assert any("only sublayer" in p for p in contract.check(stray, own=False))

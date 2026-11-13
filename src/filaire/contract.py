@@ -39,6 +39,10 @@ CONTRACT = "0"
 GENERATOR = __package__
 GENERATORS = ("granulaire", "maillage", "filaire", "quincaillerie")
 NAMESPACE = "primvaria"
+# Engine layers (contract, section 9): what only one engine reads lies in <file stem><suffix>,
+# a layer over the file, never in the file.
+ENGINE_LAYERS = ("_physx", "_omniphysics")
+ENGINE_SCHEMAS = ("Physx", "OmniPhysics")
 SUFFIXES = (".usd", ".usda", ".usdc")
 
 # attribute -> (value type, Python type of the value read back)
@@ -222,9 +226,46 @@ def conformance(stage, own: bool = True) -> list[str]:
     return problems
 
 
+def is_engine_layer(path: str | Path) -> bool:
+    """Whether a file is an engine layer, by its name: <file stem>_physx, <file stem>_omniphysics."""
+    return Path(path).stem.endswith(ENGINE_LAYERS)
+
+
+def engine_data(stage) -> list[str]:
+    """What a stage holds that only one engine reads, as 'path: name' lines: applied schemas
+    (Physx*, OmniPhysics*) and attributes (physx*:, omniphysics:). Empty for a file."""
+    found = []
+    for prim in Usd.PrimRange.AllPrims(stage.GetPseudoRoot()):
+        names = set()
+        for spec in prim.GetPrimStack():  # as authored: these schemas are not registered here
+            listed = spec.GetInfo("apiSchemas") if spec.HasInfo("apiSchemas") else None
+            names.update(listed.GetAppliedItems() if listed else ())
+        names = {n for n in names if n.startswith(ENGINE_SCHEMAS)}
+        for attr in prim.GetAttributes():
+            if attr.GetName().startswith("physx") or "omniphysics:" in attr.GetName():
+                names.add(attr.GetName())
+        found += [f"{prim.GetPath()}: {name}" for name in sorted(names)]
+    return found
+
+
 def check(path: str | Path, own: bool = True) -> list[str]:
-    """``conformance`` of a file."""
-    return conformance(Usd.Stage.Open(str(path)), own)
+    """``conformance`` of a file, and the rule of engine layers: a file holds no engine data,
+    and an engine layer lies over the file it is named after and over nothing else."""
+    path = Path(path)
+    stage = Usd.Stage.Open(str(path))
+    problems = conformance(stage, own)
+    if not is_engine_layer(path):
+        found = engine_data(stage)
+        if found:
+            problems.append(f"engine data in the file, where an engine layer belongs: {found[0]}")
+        return problems
+    stem = path.stem
+    for suffix in ENGINE_LAYERS:
+        stem = stem.removesuffix(suffix)
+    below = [Path(p).name for p in stage.GetRootLayer().subLayerPaths]
+    if len(below) != 1 or Path(below[0]).stem != stem or not (path.parent / below[0]).exists():
+        problems.append(f"an engine layer must have the file it is named after as its only sublayer: {below}")
+    return problems
 
 
 def usd_files(paths) -> list[Path]:
