@@ -179,7 +179,7 @@ Dimensions, sources, keying and what is simplified, family by family:
 | `filaire_<preset>.usdc` | the cables (OpenUSD, Blender: File > Import > USD) |
 | `sockets.usdc` | one fixed receptacle per connector family used by the cables |
 | `filaire_<preset>_physx.usda`, `sockets_physx.usda` | the same files with the PhysX settings (Isaac Sim): a layer over each file, to open instead of it, see [PhysX layer](https://github.com/drscaon/filaire/blob/main/docs/openusd.md#physx-layer) |
-| `instances.csv` | one row per cable and per socket, read back from the files: its identity, **every drawn value** (`variation:<name>`) and **every measured value** (`measured:<name>`), then the jacket: the ground truth |
+| `instances.csv` | one row per cable and per socket, read back from the files: its identity, its classes (the [semantic labels](https://github.com/drscaon/filaire/blob/main/docs/openusd.md) renderers turn into segmentation masks), **every drawn value** (`variation:<name>`) and **every measured value** (`measured:<name>`), then the jacket: the ground truth |
 | `manifest.json` | what the pack is (contract, generator, version, preset, seed, aspects, files) and its summary: counts by layout, end and colour; length, mass, stiffness and segment ranges |
 | `sheet.png` | top view (`filaire preview`) |
 | `sim_test/sim_test.json` | MuJoCo report (`filaire sim-test`) |
