@@ -6,8 +6,6 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-## [0.4.0b1] - 2026-11-13 (beta)
-
 ### Breaking changes
 
 - Pack files (Primvaria contract): `cables.csv` and `summary.json` are replaced by
