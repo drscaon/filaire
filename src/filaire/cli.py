@@ -264,6 +264,11 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    # A console that is not UTF-8 (cp1252 on Windows) has no diameter or ohm
+    # sign: print "?" in its place instead of failing.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(errors="replace")
     try:
         return args.func(args)
     except ValueError as e:

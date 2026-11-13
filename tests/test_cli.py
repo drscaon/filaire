@@ -76,3 +76,15 @@ def test_no_physics_and_addon(tmp_path, capsys):
     assert not any(p.HasAPI(UsdPhysics.RigidBodyAPI) for p in stage.Traverse())
     assert main(["blender-addon", "--out", str(tmp_path / "a.zip")]) == 0
     assert (tmp_path / "a.zip").exists()
+
+
+def test_list_prints_on_a_console_that_is_not_utf8():
+    """cp1252 has no diameter or ohm sign: the command must still print."""
+    import os
+    import subprocess
+    import sys
+
+    env = dict(os.environ, PYTHONIOENCODING="cp1252")
+    done = subprocess.run([sys.executable, "-m", "filaire", "list"], env=env, capture_output=True)
+    assert done.returncode == 0, done.stderr.decode("cp1252", "replace")
+    assert done.stdout
