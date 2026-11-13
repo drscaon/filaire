@@ -272,13 +272,19 @@ def write_outputs(scene: Scene, out_root: str | Path = "output", physics: bool =
 
     physics=False writes visual assets only: no rigid bodies, colliders, joints, physics
     materials, physics scene or ground (the cables keep their filaire:* attributes)."""
+    from .physx import overlay_path, write_overlay
     from .usd_export import export_cables, export_sockets
 
     out = Path(out_root) / scene.preset_key
     out.mkdir(parents=True, exist_ok=True)
-    export_cables(out / f"filaire_{scene.preset_key}.usdc", scene, physics=physics)
+    files = [export_cables(out / f"filaire_{scene.preset_key}.usdc", scene, physics=physics)]
     if scene.connectors:
-        export_sockets(out / "sockets.usdc", scene.connectors, physics=physics)
+        files.append(export_sockets(out / "sockets.usdc", scene.connectors, physics=physics))
+    for file in files:  # what only PhysX reads: a layer over each file (physx.py)
+        if physics:
+            write_overlay(file)
+        else:
+            overlay_path(file).unlink(missing_ok=True)
     # instances.csv (one row per cable and per socket, read back from the files) and manifest.json
     aspects = [name for name, on in asdict(scene.variations).items() if on]
     extra = {c.name: {"jacket": c.jacket} for c in scene.cables}

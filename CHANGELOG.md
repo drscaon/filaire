@@ -8,6 +8,14 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Breaking changes
 
+- The PhysX schemas and attributes (`PhysxRigidBodyAPI`, `PhysxCollisionAPI`)
+  are no longer in the files: they are a layer over each file,
+  `filaire_<preset>_physx.usda` and `sockets_physx.usda`, to open instead of
+  the file in Isaac Sim (`physx.py`, `python -m filaire.physx` to check a
+  pack). The files hold plain OpenUSD and `UsdPhysics` only. The Blender
+  add-on no longer reads its collision margin from a PhysX attribute (the
+  margin is the same, 0.05 mm).
+
 - Pack files (Primvaria contract): `cables.csv` and `summary.json` are replaced by
   `instances.csv` and `manifest.json`, the same in the four generators. The
   table is read back from the OpenUSD files, one row per asset: identity,

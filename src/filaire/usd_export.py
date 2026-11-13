@@ -8,7 +8,7 @@ Cable stage (Z up, metres, kilograms), `/World` the default prim:
       /PhysicsMaterials/<name>        UsdPhysics materials (friction, restitution)
       /Cables/<cable>                 Xform, PhysicsArticulationRootAPI, filaire:* attributes,
                                       variant sets "end_a" and "end_b"
-        /Segments/seg_000 …           rigid bodies (RigidBodyAPI, MassAPI, PhysxRigidBodyAPI)
+        /Segments/seg_000 …           rigid bodies (RigidBodyAPI, MassAPI)
           /Visual                     ONE mesh: the piece of tube this segment carries
           /Collision                  Capsule along x (round cables) or Cube (flat, figure-8), guide
         /Joints/joint_000 …           PhysicsJoint between neighbouring segments: translations
@@ -24,9 +24,9 @@ Cable stage (Z up, metres, kilograms), `/World` the default prim:
 
 One visual mesh per rigid body, as in Quincaillerie: every DCC imports one
 object per body, so a rigid body set on it (by hand, or by the Blender add-on)
-moves the whole part. Every body carries `PhysxRigidBodyAPI` and every
-collider `PhysxCollisionAPI` (contact and rest offsets), read by Isaac Sim
-and ignored by other engines.
+moves the whole part. Nothing here is specific to an engine: what only
+PhysX reads (solver iterations, contact offsets) is a layer over the file,
+`<file>_physx.usda` (physx.py).
 
 Angular drives use UsdPhysics units: stiffness per degree, damping per
 degree per second. The same values in SI units (per radian) and the rod's
@@ -61,7 +61,6 @@ from .mesh3d import TriMesh, mass_properties, merge, principal_inertia, split_no
 
 _F = Sdf.ValueTypeNames
 DEG = math.pi / 180
-CONTACT_OFFSET = 0.0005  # m, PhysX contact offset of every collider (a tenth is Blender's margin)
 CREASE = 35.0  # degrees: sharper edges between faces keep their own normals
 
 
@@ -197,25 +196,8 @@ def _visual(stage, looks, path: str, parts: list) -> UsdGeom.Mesh:
     return m
 
 
-def _physx_body(prim, position_iterations: int = 32) -> None:
-    """PhysxRigidBodyAPI (read by Isaac Sim, ignored elsewhere): solver iterations for light links."""
-    prim.AddAppliedSchema("PhysxRigidBodyAPI")
-    prim.CreateAttribute("physxRigidBody:solverPositionIterationCount", _F.Int).Set(position_iterations)
-    prim.CreateAttribute("physxRigidBody:solverVelocityIterationCount", _F.Int).Set(4)
-    prim.CreateAttribute("physxRigidBody:maxDepenetrationVelocity", _F.Float).Set(1.0)
-    prim.CreateAttribute("physxRigidBody:enableCCD", _F.Bool).Set(False)
-
-
-def _physx_collision(prim, offset: float = CONTACT_OFFSET) -> None:
-    """PhysxCollisionAPI contact and rest offsets (Isaac Sim; the Blender add-on reads its margin)."""
-    prim.AddAppliedSchema("PhysxCollisionAPI")
-    prim.CreateAttribute("physxCollision:contactOffset", _F.Float).Set(float(offset))
-    prim.CreateAttribute("physxCollision:restOffset", _F.Float).Set(0.0)
-
-
 def _collider(prim, physics_mat) -> None:
     UsdPhysics.CollisionAPI.Apply(prim)
-    _physx_collision(prim)
     _bind(prim, physics_mat, physics=True)
 
 
@@ -303,7 +285,6 @@ def _end_variant(
     if not physics:
         return
     UsdPhysics.RigidBodyAPI.Apply(bp)
-    _physx_body(bp)
     _mass(bp, end.mass, end.com, end.inertia)
     _collision_hulls(stage, f"{base}/Body/Collision", end.hulls, mats["connector"])
     j = UsdPhysics.FixedJoint.Define(stage, f"{base}/Attach")
@@ -328,7 +309,6 @@ def _segment(stage, looks, path: str, cable: Cable, seg, mats) -> None:
             [(m, c, JACKETS[cable.jacket]["roughness"], 0.0) for m, c in cable.jacket_pieces(seg.visual)],
         )
     UsdPhysics.RigidBodyAPI.Apply(p)
-    _physx_body(p)
     L = seg.length
     m = cable.segment_density(seg) * cable.segment_length  # the arc it stands for: total mass kept
     if cable.coil:

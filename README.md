@@ -69,12 +69,13 @@ and rendered with Cycles.*
 - Exports **OpenUSD**: one rigid body per segment and per connector, each
   with *one* visual mesh (so every DCC imports one object per body), mass,
   centre of mass and inertia, convex collision parts, joints with drives,
-  PhysX attributes for Isaac Sim, a variant set per end (all the end
+  a variant set per end (all the end
   variants of a cable in one asset), a `MateFrame` on each connector with
   its insertion axis, depth, clearance, keying, contact gender and, for a
   bayonet, the locking turn; and a
-  `sockets.usdc` file with the fixed receptacles. `--no-physics` writes
-  visual assets only. Every file passes the OpenUSD validators
+  `sockets.usdc` file with the fixed receptacles. The files hold nothing
+  specific to an engine: what only PhysX reads (Isaac Sim) is a layer over
+  each file, `<file>_physx.usda`. `--no-physics` writes visual assets only. Every file passes the OpenUSD validators
   (`UsdValidation`).
 - **Checks the assets in MuJoCo** (`filaire sim-test`), read back from the
   files: drop on the ground, cantilever sag against beam theory, coil
@@ -94,7 +95,7 @@ stands, as on the [Primvaria engine matrix](https://primvaria.com/#engines):
 | OpenUSD validators (`usdchecker`) | **tested**: every preset, with and without physics, in CI |
 | Blender | **tested**: every preset dropped through the add-on (`filaire blender-test`) |
 | MuJoCo | **tested**: drop, cantilever sag, coil, insertion of every preset (`filaire sim-test`) |
-| NVIDIA Isaac Sim (PhysX) | not tested yet (needs an NVIDIA RTX GPU); `UsdPhysics` joints and PhysX attributes |
+| NVIDIA Isaac Sim (PhysX) | not tested yet (needs an NVIDIA RTX GPU); `UsdPhysics` joints, PhysX settings in a layer over each file |
 
 ## Installation
 
@@ -177,6 +178,7 @@ Dimensions, sources, keying and what is simplified, family by family:
 |---|---|
 | `filaire_<preset>.usdc` | the cables (OpenUSD, Blender: File > Import > USD) |
 | `sockets.usdc` | one fixed receptacle per connector family used by the cables |
+| `filaire_<preset>_physx.usda`, `sockets_physx.usda` | the same files with the PhysX settings (Isaac Sim): a layer over each file, to open instead of it, see [PhysX layer](https://github.com/drscaon/filaire/blob/main/docs/openusd.md#physx-layer) |
 | `instances.csv` | one row per cable and per socket, read back from the files: its identity, **every drawn value** (`variation:<name>`) and **every measured value** (`measured:<name>`), then the jacket: the ground truth |
 | `manifest.json` | what the pack is (contract, generator, version, preset, seed, aspects, files) and its summary: counts by layout, end and colour; length, mass, stiffness and segment ranges |
 | `sheet.png` | top view (`filaire preview`) |
