@@ -140,3 +140,9 @@ The pack's `instances.csv` is read back from the OpenUSD files, one row per
 asset with the same names (`variation:<name>`, `measured:<name>`), and
 `manifest.json` says what the pack is; both have the same shape in the four
 generators, and the command above fails when the table and the files disagree.
+
+Each cable also says what it is with OpenUSD's own semantic labels
+(`UsdSemantics.LabelsAPI`), which renderers such as Isaac Sim turn into
+segmentation masks: `semantics:labels:class` holds `cable` and the preset (`usb_c`); for a socket, `socket` and its connector family (`rj45`), and
+`semantics:labels:instance` the asset's name. The classes are a
+column of `instances.csv` and are listed in `manifest.json`.

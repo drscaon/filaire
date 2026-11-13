@@ -22,6 +22,12 @@ and what was measured on it once generated, under ``primvaria:measured:*``::
 
     write_measured(prim, {"mass_kg": 9.1e-5, "sphericity": 0.82})
 
+It says what it is with OpenUSD's own semantic labels (``UsdSemantics.LabelsAPI``), which
+renderers turn into segmentation masks: its classes, from the kind of object to the preset,
+and its instance, the asset's name::
+
+    write_labels(prim, classes=("grain", "beach_sand"))
+
 Checking. ``conformance(stage)`` lists how a stage departs from sections 2, 4 and 5 of the
 contract (empty: it conforms); ``python -m <generator>.conformance`` runs it on files.
 """
@@ -31,7 +37,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from pxr import Kind, Sdf, Usd, UsdGeom, UsdPhysics
+from pxr import Kind, Sdf, Usd, UsdGeom, UsdPhysics, UsdSemantics
 
 from . import __version__
 
@@ -39,6 +45,10 @@ CONTRACT = "0"
 GENERATOR = __package__
 GENERATORS = ("granulaire", "maillage", "filaire", "quincaillerie")
 NAMESPACE = "primvaria"
+# Engine layers (contract, section 9): what only one engine reads lies in <file stem><suffix>,
+# a layer over the file, never in the file.
+ENGINE_LAYERS = ("_physx", "_omniphysics")
+ENGINE_SCHEMAS = ("Physx", "OmniPhysics")
 SUFFIXES = (".usd", ".usda", ".usdc")
 
 # attribute -> (value type, Python type of the value read back)
@@ -50,6 +60,8 @@ IDENTITY = {
     "seed": (Sdf.ValueTypeNames.Int, int),
 }
 ASSET_INFO = ("name", "identifier", "version")
+LABELS = ("class", "instance")  # taxonomies of the semantic labels (semantics:labels:<taxonomy>)
+LABEL = re.compile(r"[A-Za-z0-9_.-]+")  # one word: a table lists the labels of an asset in one cell
 VARIATION = f"{NAMESPACE}:variation"
 ASPECTS = f"{VARIATION}:aspects"
 MEASURED = f"{NAMESPACE}:measured"
@@ -80,6 +92,33 @@ def write_identity(prim, name: str, preset: str, seed: int, identifier: str) -> 
     }
     for key, (type_name, _) in IDENTITY.items():
         prim.CreateAttribute(f"{NAMESPACE}:{key}", type_name).Set(values[key])
+
+
+def write_labels(prim, classes, instance: str | None = None) -> None:
+    """Write the semantic labels of the asset in ``prim``: ``semantics:labels:class``, from the
+    kind of object to the preset (("grain", "beach_sand")), and ``semantics:labels:instance``,
+    the asset's name unless given."""
+    classes = [str(c) for c in classes]
+    if not classes or not all(LABEL.fullmatch(c) for c in classes):
+        raise ValueError(f"class labels must be names without spaces, at least one: {classes!r}")
+    UsdSemantics.LabelsAPI.Apply(prim, "class").CreateLabelsAttr(classes)
+    UsdSemantics.LabelsAPI.Apply(prim, "instance").CreateLabelsAttr([instance or prim.GetName()])
+
+
+def labels(prim, taxonomy: str = "class") -> list[str]:
+    """The semantic labels of ``prim`` in a taxonomy ("class" or "instance"), as written on it or
+    on what it references."""
+    attr = prim.GetAttribute(f"semantics:labels:{taxonomy}")
+    return [str(v) for v in (attr.Get() or [])] if attr else []
+
+
+def _label_problems(prim) -> list[str]:
+    where, problems = str(prim.GetPath()), []
+    if not labels(prim, "class"):
+        problems.append(f"{where}: no class label (semantics:labels:class)")
+    if labels(prim, "instance") != [prim.GetName()]:
+        problems.append(f"{where}: its instance label (semantics:labels:instance) is not its name")
+    return problems
 
 
 def _write_values(prim, namespace: str, values: dict) -> None:
@@ -212,6 +251,7 @@ def conformance(stage, own: bool = True) -> list[str]:
             problems.append(f"{prim.GetPath()}: a prim above it is not a group model")
         problems += _identity_problems(prim, own)
         problems += _variation_problems(prim)
+        problems += _label_problems(prim)
     world = stage.GetPrimAtPath("/World")
     if roots and world and Usd.ModelAPI(world).GetKind() != Kind.Tokens.assembly:
         problems.append("/World is not of kind assembly")
@@ -222,9 +262,46 @@ def conformance(stage, own: bool = True) -> list[str]:
     return problems
 
 
+def is_engine_layer(path: str | Path) -> bool:
+    """Whether a file is an engine layer, by its name: <file stem>_physx, <file stem>_omniphysics."""
+    return Path(path).stem.endswith(ENGINE_LAYERS)
+
+
+def engine_data(stage) -> list[str]:
+    """What a stage holds that only one engine reads, as 'path: name' lines: applied schemas
+    (Physx*, OmniPhysics*) and attributes (physx*:, omniphysics:). Empty for a file."""
+    found = []
+    for prim in Usd.PrimRange.AllPrims(stage.GetPseudoRoot()):
+        names = set()
+        for spec in prim.GetPrimStack():  # as authored: these schemas are not registered here
+            listed = spec.GetInfo("apiSchemas") if spec.HasInfo("apiSchemas") else None
+            names.update(listed.GetAppliedItems() if listed else ())
+        names = {n for n in names if n.startswith(ENGINE_SCHEMAS)}
+        for attr in prim.GetAttributes():
+            if attr.GetName().startswith("physx") or "omniphysics:" in attr.GetName():
+                names.add(attr.GetName())
+        found += [f"{prim.GetPath()}: {name}" for name in sorted(names)]
+    return found
+
+
 def check(path: str | Path, own: bool = True) -> list[str]:
-    """``conformance`` of a file."""
-    return conformance(Usd.Stage.Open(str(path)), own)
+    """``conformance`` of a file, and the rule of engine layers: a file holds no engine data,
+    and an engine layer lies over the file it is named after and over nothing else."""
+    path = Path(path)
+    stage = Usd.Stage.Open(str(path))
+    problems = conformance(stage, own)
+    if not is_engine_layer(path):
+        found = engine_data(stage)
+        if found:
+            problems.append(f"engine data in the file, where an engine layer belongs: {found[0]}")
+        return problems
+    stem = path.stem
+    for suffix in ENGINE_LAYERS:
+        stem = stem.removesuffix(suffix)
+    below = [Path(p).name for p in stage.GetRootLayer().subLayerPaths]
+    if len(below) != 1 or Path(below[0]).stem != stem or not (path.parent / below[0]).exists():
+        problems.append(f"an engine layer must have the file it is named after as its only sublayer: {below}")
+    return problems
 
 
 def usd_files(paths) -> list[Path]:

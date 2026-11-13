@@ -35,6 +35,8 @@ def test_manifest(pack_folder):
     assert manifest["generator"] == GENERATOR and manifest["version"] == package.__version__
     assert manifest["pack"] and isinstance(manifest["seed"], int) and isinstance(manifest["aspects"], list)
     assert manifest["table"] == pack.TABLE and manifest["assets"] == len(pack.read_table(pack_folder)) > 0
+    classes = {c for row in pack.read_table(pack_folder) for c in row["classes"].split()}
+    assert manifest["classes"] == sorted(classes) and classes  # the semantic classes of the pack
     assert all((pack_folder / f).exists() for f in manifest["files"])
 
 
@@ -48,6 +50,7 @@ def test_one_row_per_asset_with_the_common_columns_first(pack_folder):
         assert prim.GetName() == row["name"]
         assert row["generator"] == GENERATOR and row["version"] == package.__version__
         assert row["seed"] == str(prim.GetAttribute("primvaria:seed").Get())
+        assert row["classes"] == pack.cell(contract.labels(prim)) and row["preset"] in row["classes"].split()
         for key, value in contract.variation(prim).items():
             assert row["aspects" if key == "aspects" else f"variation:{key}"] == pack.cell(value)
         for key, value in contract.measured(prim).items():

@@ -21,11 +21,21 @@ from pathlib import Path
 from pxr import Usd
 
 from . import __version__
-from .contract import CONTRACT, GENERATOR, IDENTITY, NAMESPACE, SUFFIXES, asset_roots, measured, variation
+from .contract import (
+    CONTRACT,
+    GENERATOR,
+    IDENTITY,
+    NAMESPACE,
+    SUFFIXES,
+    asset_roots,
+    labels,
+    measured,
+    variation,
+)
 
 TABLE = "instances.csv"
 MANIFEST = "manifest.json"
-FIRST = ("name", "file", "prim", "generator", "version", "preset", "seed", "aspects")
+FIRST = ("name", "file", "prim", "generator", "version", "preset", "seed", "aspects", "classes")
 
 
 def cell(value) -> str:
@@ -60,6 +70,7 @@ def asset_rows(folder: Path, files) -> list[dict]:
                     row[key] = prim.GetAttribute(f"{NAMESPACE}:{key}").Get()
             drawn = variation(prim)
             row["aspects"] = drawn.pop("aspects", [])
+            row["classes"] = labels(prim, "class")
             row.update({f"variation:{k}": v for k, v in drawn.items()})
             row.update({f"measured:{k}": v for k, v in measured(prim).items()})
             rows.append({k: cell(v) for k, v in row.items()})
@@ -92,6 +103,7 @@ def write_pack(folder, pack, seed, aspects=(), summary=None, extra=None) -> Path
         "seed": int(seed),
         "aspects": [str(a) for a in aspects],
         "assets": len(rows),
+        "classes": sorted({c for row in rows for c in row["classes"].split()}),
         "table": TABLE,
         "files": files,
         "summary": summary or {},
@@ -116,7 +128,7 @@ def check_pack(folder) -> list[str]:
     if not (folder / MANIFEST).exists() or not (folder / TABLE).exists():
         return [f"no {MANIFEST} or no {TABLE}"]
     manifest, problems = read_manifest(folder), []
-    for key in ("contract", "generator", "version", "pack", "seed", "aspects", "assets", "table", "files"):
+    for key in "contract generator version pack seed aspects assets classes table files".split():
         if key not in manifest:
             problems.append(f"{MANIFEST}: no {key}")
     if problems:
