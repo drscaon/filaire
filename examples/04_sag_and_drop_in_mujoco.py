@@ -7,7 +7,7 @@ joint stiffness are read from it).
   bends under its own weight. The deflection of its tip must match beam
   theory for the bending stiffness the file states. This proves the file is
   consistent with the model; it does not prove the model matches a real cable
-  (see "Checking a preset against a real cable" in the README).
+  (see "Checking a preset against a real cable" in docs/physics.md).
 * Drop: the whole cable, with its connectors, falls on the ground and must
   come to rest without passing through it.
 
