@@ -20,6 +20,12 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `examples/`: four short scripts, each explained by its own comments (a first
+  pack and its ground truth, one aspect switched off, reading the file with
+  OpenUSD alone, the sag and drop checks in MuJoCo); a test runs each one.
+- Checking a preset against a real cable (`docs/physics.md`): the few
+  published bending stiffness values, none of them by cable type, and a ruler
+  test (Peirce's cantilever test) with the overhang each preset predicts.
 - What was measured on each cable is written in the file as
   `primvaria:measured:<name>` (`cable_mass_kg`, `end_a_mass_kg`, `bending_stiffness_y_nm2`, `torsional_stiffness_nm2`, `segments`…).
 - `python -m filaire.conformance` also checks every pack it finds: the table must
@@ -40,6 +46,22 @@ and the project uses [Semantic Versioning](https://semver.org/).
 - `python -m filaire.conformance`: checks files against the contract (stage
   units, model hierarchy, identity). Run in the tests and, in CI, on every
   preset.
+
+### Changed
+
+- The README is a third of its former length; the detail moved, unchanged, to
+  `docs/`: `usage.md`, `connectors.md`, `openusd.md`, `physics.md`,
+  `limits.md`, `development.md`.
+  [primvaria.com/filaire](https://primvaria.com/filaire/) is built from these
+  files.
+- Continuous integration runs the checks shared by the four generators
+  (Primvaria's reusable workflow).
+
+### Fixed
+
+- `filaire list` no longer fails on a console that is not UTF-8 (cp1252:
+  Windows with redirected output, Git Bash): a sign the console lacks is
+  printed as `?`.
 
 ## [0.3.0b1] - 2026-11-11 (beta)
 
