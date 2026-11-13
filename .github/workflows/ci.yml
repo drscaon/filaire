@@ -123,3 +123,5 @@ jobs:
         run: python -m filaire.validate ci-usd ci-usd-visual
       - name: Check every file against the Primvaria contract
         run: python -m filaire.conformance ci-usd ci-usd-visual
+      - name: PhysX layers (structure; not simulated)
+        run: python -m filaire.physx ci-usd

@@ -81,12 +81,8 @@ def test_one_visual_mesh_per_body(folder):
             if p.IsA(UsdGeom.Mesh) and UsdGeom.Imageable(p).ComputePurpose() != UsdGeom.Tokens.guide
         ]
         assert len(meshes) == 1, b.GetPath()
-        assert "PhysxRigidBodyAPI" in _authored_schemas(b)
-    # every collider of the cables; the shared ground has no PhysX attributes (ground.py)
-    colliders = [
-        p for p in stage.Traverse() if p.HasAPI(UsdPhysics.CollisionAPI) and p.GetPath() != "/World/Ground"
-    ]
-    assert colliders and all("PhysxCollisionAPI" in _authored_schemas(p) for p in colliders)
+        # nothing specific to an engine in the file: PhysX data is a layer over it (test_physx.py)
+        assert not any(s.startswith("Physx") for s in _authored_schemas(b))
 
 
 def _authored_schemas(prim):

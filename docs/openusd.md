@@ -14,7 +14,7 @@ Z up, metres, kilograms, `/World` the default prim.
   /Looks, /PhysicsMaterials      UsdPreviewSurface materials; friction and restitution
   /Cables/<cable>                Xform, PhysicsArticulationRootAPI, filaire:* attributes,
                                  variant sets "end_a" and "end_b"
-    /Segments/seg_000 …          rigid bodies (RigidBodyAPI, MassAPI, PhysxRigidBodyAPI), x along the cable
+    /Segments/seg_000 …          rigid bodies (RigidBodyAPI, MassAPI), x along the cable
       /Visual                    ONE mesh: the piece of tube this segment carries
       /Collision                 Capsule along x (round, coiled) or Cube (flat, figure-8), purpose guide
     /Joints/joint_000 …          PhysicsJoint: translations locked (coil: transX free between limits),
@@ -49,8 +49,26 @@ Each rigid body has exactly one visual mesh, as in Quincaillerie: Blender
 and other DCCs import one object per body, so a rigid body set on it moves
 the whole part. Each segment spans the chord between its two joints, so
 neighbouring segments meet exactly at their joint even on a tight curve.
-Every collider carries `PhysxCollisionAPI` offsets and every body
-`PhysxRigidBodyAPI` iterations, read by Isaac Sim and ignored elsewhere.
+
+## PhysX layer
+
+The files hold plain OpenUSD (`UsdGeom`, `UsdShade`, `UsdPhysics`) and
+nothing specific to an engine. What only PhysX reads is written beside each
+file as a layer over it, `filaire_<preset>_physx.usda` and
+`sockets_physx.usda`:
+
+| On | Schema | Values |
+|---|---|---|
+| every rigid body | `PhysxRigidBodyAPI` | 32 position and 4 velocity solver iterations (light links on stiff joints need many), depenetration velocity capped at 1 m/s, no CCD |
+| every collider but the ground | `PhysxCollisionAPI` | contact offset 0.5 mm, rest offset 0 |
+
+The layer has the file as its only sublayer and holds `over`s only, so
+opening it (Isaac Sim: File > Open) gives the file with these settings, and
+the file alone is still complete for every other engine. The settings of a
+connector are written inside the variant that brings it, so they follow the
+end you select. `python -m filaire.physx <folder>` checks the layers of a
+pack; the OpenUSD validators run on them in CI. Not simulated: see
+[Limits](limits.md#limits).
 
 **Without physics** (`--no-physics`, `write_outputs(…, physics=False)`):
 each cable is one mesh, `/World/Cables/<cable>/Visual`, each end a `Body`

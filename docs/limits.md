@@ -17,7 +17,7 @@ Part of the [Filaire](../README.md) documentation.
   coils), no initial tension in coiled cords, no knots.
 - **Isaac Sim not tested here.** The files follow the standard `UsdPhysics`
   schemas (rigid bodies, D6 joints with drives, articulation root, convex
-  hulls) and carry PhysX attributes; they are checked in MuJoCo and Blender
+  hulls), with the PhysX settings in a layer over each file; they are checked in MuJoCo and Blender
   but have not been loaded in Isaac Sim / PhysX (no NVIDIA GPU), where
   drive units and articulation behaviour may need adjusting. Each cable is
   one articulation of up to 400 links (213 bodies for a 1 m servo lead), far
