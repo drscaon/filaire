@@ -22,6 +22,12 @@ and what was measured on it once generated, under ``primvaria:measured:*``::
 
     write_measured(prim, {"mass_kg": 9.1e-5, "sphericity": 0.82})
 
+It says what it is with OpenUSD's own semantic labels (``UsdSemantics.LabelsAPI``), which
+renderers turn into segmentation masks: its classes, from the kind of object to the preset,
+and its instance, the asset's name::
+
+    write_labels(prim, classes=("grain", "beach_sand"))
+
 Checking. ``conformance(stage)`` lists how a stage departs from sections 2, 4 and 5 of the
 contract (empty: it conforms); ``python -m <generator>.conformance`` runs it on files.
 """
@@ -31,7 +37,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from pxr import Kind, Sdf, Usd, UsdGeom, UsdPhysics
+from pxr import Kind, Sdf, Usd, UsdGeom, UsdPhysics, UsdSemantics
 
 from . import __version__
 
@@ -54,6 +60,8 @@ IDENTITY = {
     "seed": (Sdf.ValueTypeNames.Int, int),
 }
 ASSET_INFO = ("name", "identifier", "version")
+LABELS = ("class", "instance")  # taxonomies of the semantic labels (semantics:labels:<taxonomy>)
+LABEL = re.compile(r"[A-Za-z0-9_.-]+")  # one word: a table lists the labels of an asset in one cell
 VARIATION = f"{NAMESPACE}:variation"
 ASPECTS = f"{VARIATION}:aspects"
 MEASURED = f"{NAMESPACE}:measured"
@@ -84,6 +92,33 @@ def write_identity(prim, name: str, preset: str, seed: int, identifier: str) -> 
     }
     for key, (type_name, _) in IDENTITY.items():
         prim.CreateAttribute(f"{NAMESPACE}:{key}", type_name).Set(values[key])
+
+
+def write_labels(prim, classes, instance: str | None = None) -> None:
+    """Write the semantic labels of the asset in ``prim``: ``semantics:labels:class``, from the
+    kind of object to the preset (("grain", "beach_sand")), and ``semantics:labels:instance``,
+    the asset's name unless given."""
+    classes = [str(c) for c in classes]
+    if not classes or not all(LABEL.fullmatch(c) for c in classes):
+        raise ValueError(f"class labels must be names without spaces, at least one: {classes!r}")
+    UsdSemantics.LabelsAPI.Apply(prim, "class").CreateLabelsAttr(classes)
+    UsdSemantics.LabelsAPI.Apply(prim, "instance").CreateLabelsAttr([instance or prim.GetName()])
+
+
+def labels(prim, taxonomy: str = "class") -> list[str]:
+    """The semantic labels of ``prim`` in a taxonomy ("class" or "instance"), as written on it or
+    on what it references."""
+    attr = prim.GetAttribute(f"semantics:labels:{taxonomy}")
+    return [str(v) for v in (attr.Get() or [])] if attr else []
+
+
+def _label_problems(prim) -> list[str]:
+    where, problems = str(prim.GetPath()), []
+    if not labels(prim, "class"):
+        problems.append(f"{where}: no class label (semantics:labels:class)")
+    if labels(prim, "instance") != [prim.GetName()]:
+        problems.append(f"{where}: its instance label (semantics:labels:instance) is not its name")
+    return problems
 
 
 def _write_values(prim, namespace: str, values: dict) -> None:
@@ -216,6 +251,7 @@ def conformance(stage, own: bool = True) -> list[str]:
             problems.append(f"{prim.GetPath()}: a prim above it is not a group model")
         problems += _identity_problems(prim, own)
         problems += _variation_problems(prim)
+        problems += _label_problems(prim)
     world = stage.GetPrimAtPath("/World")
     if roots and world and Usd.ModelAPI(world).GetKind() != Kind.Tokens.assembly:
         problems.append("/World is not of kind assembly")

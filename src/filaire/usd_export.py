@@ -55,7 +55,7 @@ from scipy.spatial import ConvexHull
 from .cable import DAMPING_TIME, Cable, End, cable_color_rgb
 from .catalog import CONNECTOR_FRICTION, JACKETS, PRESETS
 from .connectors import CONNECTORS, MM, keying_of, part_mesh, receptacle_looks, receptacle_parts
-from .contract import set_group, write_identity, write_measured, write_variation
+from .contract import set_group, write_identity, write_labels, write_measured, write_variation
 from .ground import ground, physics_scene
 from .mesh3d import TriMesh, mass_properties, merge, principal_inertia, split_normals, weld
 
@@ -501,6 +501,7 @@ def export_cables(path: str | Path, scene, physics: bool = True) -> Path:
         cx.AddTranslateOp().Set(Gf.Vec3d(*c.position))
         prim = cx.GetPrim()
         write_identity(prim, name=c.name, preset=c.preset_key, seed=scene.seed, identifier=f"./{path.name}")
+        write_labels(prim, ("cable", c.preset_key))
         write_variation(prim, aspects, drawn_values(c))
         write_measured(prim, measured_values(c))
         _cable_attrs(prim, c)
@@ -567,6 +568,7 @@ def export_sockets(path: str | Path, keys: list[str], physics: bool = True) -> P
         x = UsdGeom.Xform.Define(stage, sp)
         # a receptacle is not drawn: its preset is its connector family and its seed 0
         write_identity(x.GetPrim(), name=key, preset=key, seed=0, identifier=f"./{path.name}")
+        write_labels(x.GetPrim(), ("socket", key))
         write_variation(x.GetPrim(), (), {})  # nothing is drawn
         _xform(x, R, origin)
         mesh = part_mesh(parts)

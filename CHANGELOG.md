@@ -28,6 +28,12 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Semantic labels on every asset, with OpenUSD's `UsdSemantics.LabelsAPI`:
+  `semantics:labels:class` (`cable` and the preset (`usb_c`)) and
+  `semantics:labels:instance` (the asset's name). `instances.csv` gains a
+  `classes` column and `manifest.json` lists the classes of the pack; the
+  conformance check requires the labels (`contract.write_labels`,
+  `contract.labels`).
 - `python -m filaire.conformance` refuses engine data in a file (schemas and
   attributes of PhysX or OmniPhysics belong in an engine layer, contract
   section 9) and checks that an engine layer lies over the file it is named
