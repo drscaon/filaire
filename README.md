@@ -155,6 +155,11 @@ cords = generate_scene(
 write_outputs(cords, "output")
 ```
 
+Four short scripts in [`examples/`](https://github.com/drscaon/filaire/tree/main/examples)
+show the rest, each explained by its own comments: a first pack and its
+ground truth, one aspect switched off, reading the file with OpenUSD alone,
+and the sag and drop checks in MuJoCo.
+
 ### Options of `filaire generate`
 
 | Option | Default | Effect |
