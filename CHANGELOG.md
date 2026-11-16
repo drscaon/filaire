@@ -6,7 +6,22 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed values
+
+- A coiled cord records what was drawn for it: `variation:length_m` is the
+  coil's length and `variation:linear_density_kg_per_m` the wire's density,
+  instead of the axis length with its two leads and the density per metre of
+  axis. Those two are now measured: `measured:axis_length_m` and
+  `measured:axis_linear_density_kg_per_m`. The cable itself is unchanged; no
+  other preset changes (PRV-34).
+
 ### Added
+
+- `docs/variation.md`: how every drawn value follows its preset, and every
+  preset's numbers, written from `filaire/declared.py` and the presets;
+  `tests/test_distributions.py` draws 1500 cables of every preset and checks
+  that each value stays in its range and follows its rule, and builds one
+  cable of each preset to check that it records what was drawn (PRV-34).
 
 - Reproducibility references (`tests/test_golden.py`, shared by the four
   generators): four cases of fixed preset, seed and options whose pack tables

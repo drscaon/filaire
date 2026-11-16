@@ -454,7 +454,11 @@ def drawn_values(c: Cable) -> dict:
         "youngs_modulus_pa": float(c.youngs_modulus),
         "linear_density_kg_per_m": float(c.linear_density),
     }
-    if c.coil:  # coiled cords: the straight lead between each plug and the coil
+    if c.coil:  # coiled cords: what was drawn is the coil's length and the wire's density (the
+        # cable's axis, leads included, and its density per metre of axis are measured), and the
+        # straight lead between each plug and the coil, as built (whole segments)
+        values["length_m"] = float(c.coil["coiled_length"])
+        values["linear_density_kg_per_m"] = float(c.coil["wire_density"])
         values["coil_leads_m"] = [float(x) for x in c.coil["leads"]]
     return values
 
@@ -477,6 +481,8 @@ def measured_values(c: Cable) -> dict:
     if c.coil:
         values["coil_turns"] = float(c.coil["turns"])
         values["wire_length_m"] = float(c.coil["wire_length"])
+        values["axis_length_m"] = float(c.length)  # the coil and its two straight leads
+        values["axis_linear_density_kg_per_m"] = float(c.linear_density)
     return values
 
 
