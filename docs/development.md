@@ -32,6 +32,24 @@ connector family, connector sheet, GitHub social preview
 General > Social preview), `drop_gif.py` (the MuJoCo drop animation), `coil_gif.py` (the coiled cord
 pulled and let go).
 
+### Reproducibility references
+
+`tests/test_golden.py` (shared, byte for byte, by the four generators of the
+suite) runs each case of `tests/golden/cases.json` through the command line
+and compares every pack table it writes (`instances.csv`: the drawn and the
+measured values) with the reference stored in `tests/golden/<case>.json`. It
+runs on every Python and platform of the CI, so the same version, preset,
+seed and options must give the same values on Linux, macOS and Windows.
+Numbers agree to a relative 1e-7; text exactly. The generator's version is
+the only column left out.
+
+A failure means the values changed. When the change is wanted, regenerate the
+references and say so in the changelog, under *Changed values*:
+
+```bash
+PRIMVARIA_GOLDEN_UPDATE=1 pytest tests/test_golden.py
+```
+
 ### Continuous integration
 
 | Workflow | When | What |
