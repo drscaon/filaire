@@ -131,7 +131,7 @@ require it on every preset.
 What was drawn for each cable is in the file too, its ground truth:
 `primvaria:variation:aspects` lists the aspects that were switched on
 (`length`, `layout`, `ends`, `color`, `stiffness`, `density`) and `primvaria:variation:<name>` holds each drawn value
-(`length_m`, `nominal_length_m`, `layout`, `end_a`, `end_b`, `color`, `youngs_modulus_pa`, `linear_density_kg_per_m`). A socket draws nothing: its list of aspects is empty. An aspect that is switched off is still recorded, at its
+(`length_m`, `nominal_length_m`, `layout`, `end_a`, `end_b`, `color`, `youngs_modulus_pa`, `linear_density_kg_per_m`; a coiled cord also `coil_leads_m`, and its `length_m` and `linear_density_kg_per_m` are the coil's and the wire's, as drawn: the axis, leads included, is measured). How each is drawn: [variation.md](variation.md). A socket draws nothing: its list of aspects is empty. An aspect that is switched off is still recorded, at its
 nominal value, and the other aspects keep their draws.
 
 What was measured on each cable once generated is there as well, as
