@@ -6,6 +6,13 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Reproducibility references (`tests/test_golden.py`, shared by the four
+  generators): four cases of fixed preset, seed and options whose pack tables
+  must give the same drawn and measured values on every Python and platform
+  of the CI. Contract, section 6, rule 1 (PRV-32).
+
 ## [0.4.0b1] - 2026-11-13 (beta)
 
 ### Breaking changes

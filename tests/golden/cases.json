@@ -1,0 +1,54 @@
+{
+ "package": "filaire",
+ "cases": [
+  {
+   "name": "usb_c",
+   "args": [
+    "generate",
+    "--preset",
+    "usb_c",
+    "--count",
+    "3",
+    "--seed",
+    "7"
+   ]
+  },
+  {
+   "name": "ethernet",
+   "args": [
+    "generate",
+    "--preset",
+    "ethernet",
+    "--count",
+    "2",
+    "--seed",
+    "3"
+   ]
+  },
+  {
+   "name": "coiled_handset",
+   "args": [
+    "generate",
+    "--preset",
+    "coiled_handset",
+    "--count",
+    "1",
+    "--seed",
+    "5"
+   ]
+  },
+  {
+   "name": "usb_c_layout_off",
+   "args": [
+    "generate",
+    "--preset",
+    "usb_c",
+    "--count",
+    "3",
+    "--no-vary-layout",
+    "--seed",
+    "7"
+   ]
+  }
+ ]
+}
