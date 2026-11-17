@@ -28,8 +28,8 @@ and its instance, the asset's name::
 
     write_labels(prim, classes=("grain", "beach_sand"))
 
-Checking. ``conformance(stage)`` lists how a stage departs from sections 2, 4 and 5 of the
-contract (empty: it conforms); ``python -m <generator>.conformance`` runs it on files.
+Checking. ``conformance(stage)`` lists how a stage departs from sections 2, 4, 5, 7 and 8 of
+the contract (empty: it conforms); ``python -m <generator>.conformance`` runs it on files.
 """
 
 from __future__ import annotations
@@ -66,6 +66,16 @@ VARIATION = f"{NAMESPACE}:variation"
 ASPECTS = f"{VARIATION}:aspects"
 MEASURED = f"{NAMESPACE}:measured"
 VALUE_NAME = re.compile(r"[a-z][a-z0-9_]*")  # snake_case, the unit as a suffix: clearance_mm
+# section 8: what connects carries an Xform MateFrame, or MateFrame_<feature> when it has several
+MATE_FRAME = re.compile(r"MateFrame(_[a-z][a-z0-9_]*)?")
+MATE = f"{NAMESPACE}:mate:"  # common mate attributes: not in the contract yet
+# section 7: each variant set, what it means and who uses it; a name means the same in every generator
+VARIANT_SETS = {
+    "moisture": ("granulaire",),  # a water content: dry, damp, wet, saturated
+    "finish": ("quincaillerie",),  # a surface state: a library finish, or the instance's worn look
+    "end_a": ("filaire",),  # what one end of a cable carries
+    "end_b": ("filaire",),
+}
 
 
 def set_group(prim, assembly: bool = False) -> None:
@@ -229,9 +239,108 @@ def _identity_problems(prim, own: bool) -> list[str]:
     return problems
 
 
+def _identities(stage) -> dict:
+    """What identifies each asset of a stage (section 5): its kind, assetInfo, identity attributes
+    and semantic labels, by path."""
+    found = {}
+    for prim in asset_roots(stage):
+        info = Usd.ModelAPI(prim).GetAssetInfo()
+        attrs = (prim.GetAttribute(f"{NAMESPACE}:{key}") for key in IDENTITY)
+        found[str(prim.GetPath())] = (
+            tuple(str(info.get(key)) for key in ASSET_INFO),
+            tuple(a.Get() if a else None for a in attrs),
+            tuple(tuple(labels(prim, taxonomy)) for taxonomy in LABELS),
+        )
+    return found
+
+
+def _mate_frame_problems(stage) -> list[str]:
+    problems = []
+    for prim in stage.Traverse():
+        where, name = str(prim.GetPath()), prim.GetName()
+        if any(a.GetName().startswith(MATE) for a in prim.GetAuthoredAttributes()):
+            problems.append(f"{where}: {MATE}* attributes are not in the contract")
+        if not name.startswith("MateFrame"):
+            continue
+        if not MATE_FRAME.fullmatch(name):
+            problems.append(f"{where}: not named MateFrame or MateFrame_<feature>")
+        elif prim.GetTypeName() != "Xform":
+            problems.append(f"{where}: a MateFrame is an Xform, not {prim.GetTypeName() or 'typeless'}")
+        elif not any(Usd.ModelAPI(p).GetKind() == Kind.Tokens.component for p in _ancestors(prim)):
+            problems.append(f"{where}: a MateFrame outside an asset root (a prim of kind component)")
+    return problems
+
+
+def _generator_of(prim):
+    """The generator of the asset a prim is in, or None."""
+    for p in (prim, *_ancestors(prim)):
+        if Usd.ModelAPI(p).GetKind() == Kind.Tokens.component:
+            attr = p.GetAttribute(f"{NAMESPACE}:generator")
+            return attr.Get() if attr else None
+    return None
+
+
+def _ancestors(prim):
+    prim = prim.GetParent()
+    while prim and not prim.IsPseudoRoot():
+        yield prim
+        prim = prim.GetParent()
+
+
+def _variant_problems(stage) -> list[str]:
+    """Section 7 (names in snake_case, a default selection, the asset's identity kept by every
+    variant) and section 8 inside the variants that are not selected."""
+    problems, variants = [], {}
+    for prim in stage.Traverse():
+        sets = prim.GetVariantSets()
+        for name in sets.GetNames():
+            where, vset = f"{prim.GetPath()}: variant set {name}", sets.GetVariantSet(name)
+            names = vset.GetVariantNames()
+            if not VALUE_NAME.fullmatch(name):
+                problems.append(f"{where}: its name is not lowercase snake_case")
+            odd = [v for v in names if not VALUE_NAME.fullmatch(v)]
+            if odd:
+                problems.append(f"{where}: variant {odd[0]!r} is not lowercase snake_case")
+            if vset.GetVariantSelection() not in names:
+                problems.append(f"{where}: no default selection among its variants")
+            generator = _generator_of(prim)
+            if generator in GENERATORS and generator not in VARIANT_SETS.get(name, ()):
+                problems.append(f"{where}: not in the contract's section 7 for {generator}")
+            for v in names:
+                variants.setdefault((name, v), []).append(prim.GetPath())
+    if not variants:
+        return problems
+    # every variant is selected in turn on a stage of its own, so the stage checked is left as it is
+    session = Sdf.Layer.CreateAnonymous()
+    session.TransferContent(stage.GetSessionLayer())
+    probe = Usd.Stage.Open(stage.GetRootLayer(), session)
+    expected, seen = _identities(probe), set(problems)
+    for (name, variant), paths in variants.items():
+        specs = [Sdf.CreatePrimInLayer(session, path) for path in paths]
+        before = [dict(spec.variantSelections) for spec in specs]
+        with Sdf.ChangeBlock():
+            for spec in specs:
+                spec.variantSelections[name] = variant
+        found = _identities(probe)
+        changed = sorted(p for p in expected.keys() | found.keys() if expected.get(p) != found.get(p))
+        if changed:
+            problems.append(f"{changed[0]}: variant {variant} of {name} changes the asset's identity")
+        for problem in _mate_frame_problems(probe):
+            if problem not in seen:
+                seen.add(problem)
+                problems.append(f"{problem} (variant {variant} of {name})")
+        with Sdf.ChangeBlock():
+            for spec, selections in zip(specs, before, strict=True):
+                if name in selections:
+                    spec.variantSelections[name] = selections[name]
+                else:
+                    del spec.variantSelections[name]
+    return problems
+
+
 def conformance(stage, own: bool = True) -> list[str]:
-    """How a stage departs from the contract's stage, model hierarchy, identity and
-    variation rules (empty: it conforms).
+    """How a stage departs from the contract's stage, model hierarchy, identity, variation,
+    variant set and MateFrame rules (empty: it conforms).
 
     own: the stage was written by this generator, so its assets name it and its version."""
     problems = []
@@ -259,6 +368,8 @@ def conformance(stage, own: bool = True) -> list[str]:
     for prim in stage.Traverse():
         if prim.GetPath() not in root_paths and prim.GetAuthoredPropertiesInNamespace(NAMESPACE):
             problems.append(f"{prim.GetPath()}: {NAMESPACE}:* attributes on a prim that is not an asset root")
+    problems += _mate_frame_problems(stage)
+    problems += _variant_problems(stage)
     return problems
 
 

@@ -83,7 +83,8 @@ def test_another_generator_is_reported_only_for_own_files(contract_files):
     prim = contract.asset_roots(stage)[0]
     prim.GetAttribute("primvaria:generator").Set(other)
     assert any("primvaria:generator" in p for p in contract.conformance(stage))
-    assert contract.conformance(stage, own=False) == []
+    # only a variant set this generator's assets carry, which section 7 gives to no other
+    assert [p for p in contract.conformance(stage, own=False) if "section 7" not in p] == []
 
 
 def test_a_broken_model_hierarchy_is_reported(contract_files):
@@ -164,3 +165,153 @@ def test_class_labels_are_single_words(contract_files):
     for bad in ((), ("Two Words",), ("grain", "")):
         with pytest.raises(ValueError, match="class labels"):
             contract.write_labels(prim, bad)
+
+
+def _one_asset(generator=GENERATOR):
+    """A stage that conforms, with one asset /World/Part, written with the contract's own helpers
+    and said to be of ``generator``: the one a variant set of the test belongs to (section 7)."""
+    from pxr import UsdGeom, UsdPhysics
+
+    stage = Usd.Stage.CreateInMemory()
+    UsdGeom.SetStageMetersPerUnit(stage, 1.0)
+    UsdGeom.SetStageUpAxis(stage, UsdGeom.Tokens.z)
+    UsdPhysics.SetStageKilogramsPerUnit(stage, 1.0)
+    world = UsdGeom.Xform.Define(stage, "/World").GetPrim()
+    stage.SetDefaultPrim(world)
+    contract.set_group(world, assembly=True)
+    prim = UsdGeom.Xform.Define(stage, "/World/Part").GetPrim()
+    contract.write_identity(prim, name="Part", preset="test", seed=1, identifier="./part.usda")
+    contract.write_variation(prim, (), {})
+    contract.write_labels(prim, ("part", "test"))
+    prim.GetAttribute("primvaria:generator").Set(generator)
+    assert contract.conformance(stage, own=False) == []
+    return stage, prim
+
+
+def _variant_set(prim, name, variants, selection=None):
+    vset = prim.GetVariantSets().AddVariantSet(name)
+    for v in variants:
+        vset.AddVariant(v)
+    if selection:
+        vset.SetVariantSelection(selection)
+    return vset
+
+
+def test_generated_variant_sets_follow_section_7(contract_files):
+    """Contract, section 7: snake_case names and a default selection, in every generated file."""
+    for f in (f for f in contract_files if not contract.is_engine_layer(f)):
+        stage = Usd.Stage.Open(str(f))
+        for prim in stage.Traverse():
+            for name in prim.GetVariantSets().GetNames():
+                vset = prim.GetVariantSet(name)
+                assert contract.VALUE_NAME.fullmatch(name), (f.name, name)
+                assert all(contract.VALUE_NAME.fullmatch(v) for v in vset.GetVariantNames()), (f.name, name)
+                assert vset.GetVariantSelection() in vset.GetVariantNames(), (f.name, name)
+
+
+@pytest.mark.parametrize(
+    "name, variants, selection, problem",
+    [
+        ("Moisture", ["dry", "wet"], "dry", "not lowercase snake_case"),
+        ("moisture", ["dry", "Wet"], "dry", "variant 'Wet' is not lowercase snake_case"),
+        ("moisture", ["dry", "wet"], None, "no default selection"),
+    ],
+)
+def test_a_variant_set_against_section_7_is_reported(name, variants, selection, problem):
+    stage, prim = _one_asset("granulaire")
+    _variant_set(prim, name, variants, selection)
+    assert any(problem in p for p in contract.conformance(stage, own=False))
+
+
+CHANGED = "/World/Part: variant brass of finish changes the asset's identity"
+
+
+def test_a_variant_that_changes_the_identity_is_reported():
+    """A variant changes the asset's state, never what it is (section 5): its preset, its labels."""
+    stage, prim = _one_asset("quincaillerie")
+    prim.RemoveProperty("primvaria:preset")  # a local opinion is stronger than a variant's
+    vset = _variant_set(prim, "finish", ["as_generated", "brass"])
+    for variant, preset in (("as_generated", "test"), ("brass", "another")):
+        vset.SetVariantSelection(variant)
+        with vset.GetVariantEditContext():
+            prim.CreateAttribute("primvaria:preset", Sdf.ValueTypeNames.String).Set(preset)
+    vset.SetVariantSelection("as_generated")
+    assert contract.conformance(stage, own=False) == [CHANGED]
+
+    stage, prim = _one_asset("quincaillerie")
+    prim.RemoveProperty("semantics:labels:class")
+    vset = _variant_set(prim, "finish", ["as_generated", "brass"])
+    for variant, classes in (("as_generated", ["part", "test"]), ("brass", ["part", "brass"])):
+        vset.SetVariantSelection(variant)
+        with vset.GetVariantEditContext():
+            prim.CreateAttribute("semantics:labels:class", Sdf.ValueTypeNames.TokenArray).Set(classes)
+            prim.CreateAttribute("test:roughness", Sdf.ValueTypeNames.Float).Set(0.3)  # a state: allowed
+    vset.SetVariantSelection("as_generated")
+    assert contract.conformance(stage, own=False) == [CHANGED]
+
+
+def test_the_variant_check_leaves_the_stage_as_it_was():
+    stage, prim = _one_asset("granulaire")
+    vset = _variant_set(prim, "moisture", ["dry", "wet"], "dry")
+    with vset.GetVariantEditContext():
+        prim.CreateAttribute("test:water", Sdf.ValueTypeNames.Float).Set(0.0)
+    vset.SetVariantSelection("wet")
+    with vset.GetVariantEditContext():
+        prim.CreateAttribute("test:water", Sdf.ValueTypeNames.Float).Set(0.2)
+    stage.SetEditTarget(stage.GetSessionLayer())
+    vset.SetVariantSelection("dry")  # the selection of the session layer is kept as it is
+    session = stage.GetSessionLayer().ExportToString()
+    assert contract.conformance(stage, own=False) == []
+    assert stage.GetSessionLayer().ExportToString() == session
+    assert vset.GetVariantSelection() == "dry" and prim.GetAttribute("test:water").Get() == 0.0
+
+
+@pytest.mark.parametrize(
+    "generator, name",
+    [("maillage", "state"), ("quincaillerie", "moisture"), ("granulaire", "wetness")],
+)
+def test_a_variant_set_the_contract_does_not_give_its_generator_is_reported(generator, name):
+    """Section 7 says what each variant set means and who uses it: a new one, or one used by another
+    generator, is written into the contract first, so that a name means the same everywhere."""
+    stage, prim = _one_asset(generator)
+    _variant_set(prim, name, ["a", "b"], "a")
+    problems = contract.conformance(stage, own=False)
+    assert problems == [f"/World/Part: variant set {name}: not in the contract's section 7 for {generator}"]
+
+
+@pytest.mark.parametrize(
+    "path, type_name, problem",
+    [
+        ("/World/Part/MateFrameThread", "Xform", "not named MateFrame or MateFrame_<feature>"),
+        ("/World/Part/MateFrame_Thread", "Xform", "not named MateFrame or MateFrame_<feature>"),
+        ("/World/Part/MateFrame_thread", "Scope", "a MateFrame is an Xform, not Scope"),
+        ("/World/MateFrame", "Xform", "a MateFrame outside an asset root"),
+    ],
+)
+def test_a_mate_frame_against_section_8_is_reported(path, type_name, problem):
+    stage, _ = _one_asset()
+    stage.DefinePrim(path, type_name)
+    assert any(problem in p for p in contract.conformance(stage, own=False))
+
+
+def test_mate_frames_are_checked_in_every_variant():
+    """A MateFrame often comes with a variant (a connector on a cable end): each one is checked."""
+    stage, prim = _one_asset("filaire")
+    vset = _variant_set(prim, "end_a", ["cut", "plug"], "cut")
+    vset.SetVariantSelection("plug")
+    with vset.GetVariantEditContext():
+        stage.DefinePrim("/World/Part/Plug/MateFrame_Pins", "Xform")
+    vset.SetVariantSelection("cut")
+    problems = contract.conformance(stage, own=False)
+    assert any("MateFrame_Pins: not named" in p and "(variant plug of end_a)" in p for p in problems)
+
+
+def test_common_mate_attributes_are_not_written_yet():
+    """Section 8: mate attributes stay in the generator's namespace; primvaria:mate:* is not in v1."""
+    stage, prim = _one_asset()
+    frame = stage.DefinePrim("/World/Part/MateFrame", "Xform")
+    frame.CreateAttribute("test:role", Sdf.ValueTypeNames.Token).Set("plug")
+    assert contract.conformance(stage, own=False) == []
+    prim.CreateAttribute("primvaria:mate:role", Sdf.ValueTypeNames.Token).Set("plug")
+    problems = contract.conformance(stage, own=False)
+    assert any("primvaria:mate:* attributes are not in the contract" in p for p in problems)

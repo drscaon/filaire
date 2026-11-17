@@ -47,6 +47,7 @@ class Body:
     box: tuple | None = None  # (lx, ly, lz)
     hulls: list = field(default_factory=list)  # point arrays in the body frame
     attrs: dict = field(default_factory=dict)
+    mate_hulls: list = field(default_factory=list)  # the same hulls in the MateFrame, if the body has one
 
 
 def _body(prim, cache) -> Body:
@@ -75,7 +76,18 @@ def _body(prim, cache) -> Body:
     mf = prim.GetChild("MateFrame")
     if mf:
         b.attrs = {a.GetName(): a.Get() for a in mf.GetAttributes() if a.GetName().startswith("filaire:")}
+        if col and not (col.IsA(UsdGeom.Capsule) or col.IsA(UsdGeom.Cube)):
+            b.mate_hulls = [_in_frame(h, mf, cache) for h in col.GetChildren()]
     return b
+
+
+def _in_frame(mesh, frame, cache) -> np.ndarray:
+    """The points of a mesh in the coordinates of a frame (a MateFrame): where the contract places
+    two parts that mate, their frames coinciding."""
+    P = np.asarray(UsdGeom.Mesh(mesh).GetPointsAttr().Get(), float)
+    M = np.asarray(cache.GetLocalToWorldTransform(mesh), float)
+    F = np.asarray(cache.GetLocalToWorldTransform(frame), float)
+    return (P @ M[:3, :3] + M[3, :3] - F[3, :3]) @ F[:3, :3].T  # Gf rows are the axes
 
 
 @dataclass
@@ -151,11 +163,10 @@ def read_sockets(path: str | Path) -> dict:
     out = {}
     for prim in stage.GetPrimAtPath("/World/Sockets").GetChildren():
         R, t = _rt(prim, cache)
-        hulls = [
-            np.asarray(UsdGeom.Mesh(h).GetPointsAttr().Get(), float)
-            for h in prim.GetChild("Collision").GetChildren()
-        ]
         mf = prim.GetChild("MateFrame")
+        hulls = [
+            _in_frame(h, mf, cache) for h in prim.GetChild("Collision").GetChildren()
+        ]  # in the MateFrame
         attrs = {a.GetName(): a.Get() for a in mf.GetAttributes() if a.GetName().startswith("filaire:")}
         out[prim.GetName()] = {"rotation": R, "position": t, "hulls": hulls, "attrs": attrs}
     return out
