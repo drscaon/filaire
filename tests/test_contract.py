@@ -315,3 +315,17 @@ def test_common_mate_attributes_are_not_written_yet():
     prim.CreateAttribute("primvaria:mate:role", Sdf.ValueTypeNames.Token).Set("plug")
     problems = contract.conformance(stage, own=False)
     assert any("primvaria:mate:* attributes are not in the contract" in p for p in problems)
+
+
+def test_an_asset_that_points_outside_itself_is_reported():
+    """Section 4: an asset is whole on its own, so that referenced alone it keeps its materials."""
+    from pxr import UsdShade
+
+    stage, prim = _one_asset()
+    outside = UsdShade.Material.Define(stage, "/World/Looks/paint")
+    UsdShade.MaterialBindingAPI.Apply(prim).Bind(outside)
+    problems = contract.conformance(stage, own=False)
+    assert problems == ["/World/Part: material:binding points outside its asset, to /World/Looks/paint"]
+    inside = UsdShade.Material.Define(stage, "/World/Part/Looks/paint")
+    UsdShade.MaterialBindingAPI(prim).Bind(inside)
+    assert contract.conformance(stage, own=False) == []

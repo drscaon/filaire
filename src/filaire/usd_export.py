@@ -4,10 +4,11 @@ Cable stage (Z up, metres, kilograms), `/World` the default prim:
 
     /World
       /PhysicsScene                   gravity 9.81 m/s² along -Z (ground.py, shared by Primvaria)
-      /Looks/<colour>                 UsdPreviewSurface materials
-      /PhysicsMaterials/<name>        UsdPhysics materials (friction, restitution)
       /Cables/<cable>                 Xform, PhysicsArticulationRootAPI, filaire:* attributes,
                                       variant sets "end_a" and "end_b"
+        /Looks/<colour>               its UsdPreviewSurface materials, and
+        /PhysicsMaterials/<name>      its UsdPhysics materials (friction, restitution): inside the
+                                      cable, so a cable referenced alone keeps them (contract, section 4)
         /Segments/seg_000 …           rigid bodies (RigidBodyAPI, MassAPI)
           /Visual                     ONE mesh: the piece of tube this segment carries
           /Collision                  Capsule along x (round cables) or Cube (flat, figure-8), guide
@@ -85,10 +86,14 @@ def _xform(prim_xf: UsdGeom.Xformable, R: np.ndarray, t) -> None:
 
 
 class _Looks:
-    def __init__(self, stage):
-        self.stage = stage
+    """The render materials of one asset, in its own Looks scope, made once each and outside any
+    variant: an end's variant uses the cable's colours."""
+
+    def __init__(self, stage, root: str):
+        self.stage, self.root = stage, root
         self.cache: dict = {}
-        UsdGeom.Scope.Define(stage, "/World/Looks")
+        with Usd.EditContext(stage, stage.GetRootLayer()):
+            UsdGeom.Scope.Define(stage, f"{root}/Looks")
 
     def get(
         self, color: str, roughness: float = 0.5, metallic: float = 0.0, opacity: float = 1.0
@@ -99,24 +104,27 @@ class _Looks:
         name = f"m_{color.lstrip('#')}_{int(roughness * 100)}_{int(metallic * 100)}"
         if opacity < 1.0:
             name += f"_clear{int(opacity * 100)}"
-        path = f"/World/Looks/{name}"
-        mat = UsdShade.Material.Define(self.stage, path)
-        sh = UsdShade.Shader.Define(self.stage, f"{path}/Surface")
-        sh.CreateIdAttr("UsdPreviewSurface")
-        rgb = _srgb_to_linear(cable_color_rgb(color))
-        sh.CreateInput("diffuseColor", _F.Color3f).Set(Gf.Vec3f(*map(float, rgb)))
-        sh.CreateInput("roughness", _F.Float).Set(float(roughness))
-        sh.CreateInput("metallic", _F.Float).Set(float(metallic))
-        if opacity < 1.0:  # clear plastic
-            sh.CreateInput("opacity", _F.Float).Set(float(opacity))
-            sh.CreateInput("ior", _F.Float).Set(1.58)
-        mat.CreateSurfaceOutput().ConnectToSource(sh.ConnectableAPI(), "surface")
+        path = f"{self.root}/Looks/{name}"
+        with Usd.EditContext(self.stage, self.stage.GetRootLayer()):
+            mat = UsdShade.Material.Define(self.stage, path)
+            sh = UsdShade.Shader.Define(self.stage, f"{path}/Surface")
+            sh.CreateIdAttr("UsdPreviewSurface")
+            rgb = _srgb_to_linear(cable_color_rgb(color))
+            sh.CreateInput("diffuseColor", _F.Color3f).Set(Gf.Vec3f(*map(float, rgb)))
+            sh.CreateInput("roughness", _F.Float).Set(float(roughness))
+            sh.CreateInput("metallic", _F.Float).Set(float(metallic))
+            if opacity < 1.0:  # clear plastic
+                sh.CreateInput("opacity", _F.Float).Set(float(opacity))
+                sh.CreateInput("ior", _F.Float).Set(1.58)
+            mat.CreateSurfaceOutput().ConnectToSource(sh.ConnectableAPI(), "surface")
         self.cache[key] = mat
         return mat
 
 
-def _physics_material(stage, name: str, friction: float, restitution: float) -> UsdShade.Material:
-    path = f"/World/PhysicsMaterials/{name}"
+def _physics_material(stage, root: str, name: str, friction: float, restitution: float) -> UsdShade.Material:
+    """A physics material of the asset at ``root``, in its own PhysicsMaterials scope."""
+    UsdGeom.Scope.Define(stage, f"{root}/PhysicsMaterials")
+    path = f"{root}/PhysicsMaterials/{name}"
     mat = UsdShade.Material.Define(stage, path)
     api = UsdPhysics.MaterialAPI.Apply(mat.GetPrim())
     api.CreateStaticFrictionAttr(float(friction))
@@ -489,15 +497,7 @@ def measured_values(c: Cable) -> dict:
 def export_cables(path: str | Path, scene, physics: bool = True) -> Path:
     path = Path(path)
     stage, world = _new_stage(path, physics)
-    looks = _Looks(stage)
-    mats = None
-    if physics:
-        UsdGeom.Scope.Define(stage, "/World/PhysicsMaterials")
-        jacket = JACKETS[PRESETS[scene.preset_key]["jacket"]]
-        mats = {
-            "jacket": _physics_material(stage, "jacket", jacket["friction"], jacket["restitution"]),
-            "connector": _physics_material(stage, "connector", CONNECTOR_FRICTION, 0.2),
-        }
+    jacket = JACKETS[PRESETS[scene.preset_key]["jacket"]]
     set_group(UsdGeom.Scope.Define(stage, "/World/Cables").GetPrim())
     aspects = [name for name, on in asdict(scene.variations).items() if on]
     xs, ys = [], []
@@ -506,6 +506,12 @@ def export_cables(path: str | Path, scene, physics: bool = True) -> Path:
         cx = UsdGeom.Xform.Define(stage, cp)
         cx.AddTranslateOp().Set(Gf.Vec3d(*c.position))
         prim = cx.GetPrim()
+        looks, mats = _Looks(stage, cp), None
+        if physics:
+            mats = {
+                "jacket": _physics_material(stage, cp, "jacket", jacket["friction"], jacket["restitution"]),
+                "connector": _physics_material(stage, cp, "connector", CONNECTOR_FRICTION, 0.2),
+            }
         write_identity(prim, name=c.name, preset=c.preset_key, seed=scene.seed, identifier=f"./{path.name}")
         write_labels(prim, ("cable", c.preset_key))
         write_variation(prim, aspects, drawn_values(c))
@@ -561,10 +567,6 @@ def export_sockets(path: str | Path, keys: list[str], physics: bool = True) -> P
     """Fixed receptacles (device ports, inlets, wall sockets) of the given connector families."""
     path = Path(path)
     stage, _world = _new_stage(path, physics)
-    looks = _Looks(stage)
-    if physics:
-        UsdGeom.Scope.Define(stage, "/World/PhysicsMaterials")
-        mat = _physics_material(stage, "connector", CONNECTOR_FRICTION, 0.2)
     set_group(UsdGeom.Scope.Define(stage, "/World/Sockets").GetPrim())
     layout = socket_layout(keys)
     for key, R, origin in layout:
@@ -577,6 +579,9 @@ def export_sockets(path: str | Path, keys: list[str], physics: bool = True) -> P
         write_labels(x.GetPrim(), ("socket", key))
         write_variation(x.GetPrim(), (), {})  # nothing is drawn
         _xform(x, R, origin)
+        looks = _Looks(stage, sp)
+        if physics:
+            mat = _physics_material(stage, sp, "connector", CONNECTOR_FRICTION, 0.2)
         mesh = part_mesh(parts)
         groups: dict = {}
         for part, color, look in receptacle_looks(spec, "panel"):
