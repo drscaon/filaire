@@ -51,6 +51,10 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- The README's hero image shows every preset as a 15 cm cable, in rows of
+  three, framed close enough to see the connectors' details, on a plain
+  blue-grey floor that dark and white jackets both stand out from
+  (`scripts/readme_images.py`).
 - `sim-test` places plug and receptacle by their MateFrames for the insertion
   and locking checks, instead of by their bodies' origins, where the frames
   are today: a frame moved in a file is now what the check tests.
