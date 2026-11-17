@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import json
 import math
+from dataclasses import replace
 from pathlib import Path
 
 import mujoco
@@ -329,7 +330,7 @@ def run_folder(
         if plug_variant not in variants:
             continue
         cab = read_cable(stage, paths[0], {side: plug_variant})
-        plug = cab.ends[side][0]
+        plug = replace(cab.ends[side][0], hulls=cab.ends[side][0].mate_hulls)  # placed by the MateFrames
         depth = float(sock["attrs"]["filaire:insertionDepth"])
         keying = str(sock["attrs"]["filaire:keying"])
         res = {"panel": insertion_suite(plug, sock["hulls"], depth, keying)}
@@ -337,6 +338,7 @@ def run_folder(
         if inline in variants:
             s2 = "a" if inline in end_options(stage, paths[0], "a") else "b"
             rec = read_cable(stage, paths[0], {s2: inline}).ends[s2][0]
+            rec = replace(rec, hulls=rec.mate_hulls)
             res["inline"] = insertion_suite(plug, rec.hulls, depth, keying)
         twist = sock["attrs"].get("filaire:lockTwist")
         if twist:

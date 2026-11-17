@@ -17,6 +17,19 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `tests/test_mate_frames.py`: on every connector of every preset, the plug's
+  colliders reach its declared insertion depth along +Z of its MateFrame, and
+  a receptacle's, on a panel or on a cable, start on the frame's plane
+  (contract, section 8).
+- The conformance check (`contract.conformance`, `python -m filaire.conformance`,
+  shared by the four generators) checks sections 7 and 8 of the contract: a
+  variant set and its variants are named in `snake_case`, have a default
+  selection, and the set is one section 7 lists, with its meaning, for the
+  asset's generator (`contract.VARIANT_SETS`); no variant changes what identifies the asset (its `assetInfo`,
+  `primvaria:*` identity and semantic labels), each variant being selected in
+  turn on a copy of the stage; a mate frame is an `Xform` named `MateFrame` or
+  `MateFrame_<feature>`, inside an asset, in every variant; nothing is written
+  under `primvaria:mate:*`, which is not in the contract yet (PRV-35).
 - `generate --no-vary ASPECTS` and `--nominal`, as in the other generators of
   the suite: `--no-vary layout,color` keeps those aspects nominal, and an
   unknown aspect is refused. `--no-vary-layout`… still work, and are
@@ -31,6 +44,12 @@ and the project uses [Semantic Versioning](https://semver.org/).
   generators): four cases of fixed preset, seed and options whose pack tables
   must give the same drawn and measured values on every Python and platform
   of the CI. Contract, section 6, rule 1 (PRV-32).
+
+### Changed
+
+- `sim-test` places plug and receptacle by their MateFrames for the insertion
+  and locking checks, instead of by their bodies' origins, where the frames
+  are today: a frame moved in a file is now what the check tests.
 
 ## [0.4.0b1] - 2026-11-13 (beta)
 
