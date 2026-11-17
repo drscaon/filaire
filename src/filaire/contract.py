@@ -254,6 +254,26 @@ def _identities(stage) -> dict:
     return found
 
 
+def _containment_problems(stage) -> list[str]:
+    """Section 4: an asset is whole on its own. What it binds or points to (materials, physics
+    materials, joint bodies) lies inside its root, so that an asset referenced alone into another
+    stage keeps its looks and its friction."""
+    problems = []
+    for root in asset_roots(stage):
+        inside = root.GetPath()
+        for prim in Usd.PrimRange(root):
+            targets = [(r.GetName(), t) for r in prim.GetRelationships() for t in r.GetTargets()]
+            targets += [(a.GetName(), c) for a in prim.GetAttributes() for c in a.GetConnections()]
+            for name, target in targets:
+                if not target.HasPrefix(inside):
+                    problems.append(f"{prim.GetPath()}: {name} points outside its asset, to {target}")
+                    break
+            else:
+                continue
+            break  # one problem per asset says enough
+    return problems
+
+
 def _mate_frame_problems(stage) -> list[str]:
     problems = []
     for prim in stage.Traverse():
@@ -289,7 +309,7 @@ def _ancestors(prim):
 
 def _variant_problems(stage) -> list[str]:
     """Section 7 (names in snake_case, a default selection, the asset's identity kept by every
-    variant) and section 8 inside the variants that are not selected."""
+    variant), and sections 4 and 8 inside the variants that are not selected."""
     problems, variants = [], {}
     for prim in stage.Traverse():
         sets = prim.GetVariantSets()
@@ -325,7 +345,7 @@ def _variant_problems(stage) -> list[str]:
         changed = sorted(p for p in expected.keys() | found.keys() if expected.get(p) != found.get(p))
         if changed:
             problems.append(f"{changed[0]}: variant {variant} of {name} changes the asset's identity")
-        for problem in _mate_frame_problems(probe):
+        for problem in _mate_frame_problems(probe) + _containment_problems(probe):
             if problem not in seen:
                 seen.add(problem)
                 problems.append(f"{problem} (variant {variant} of {name})")
@@ -368,6 +388,7 @@ def conformance(stage, own: bool = True) -> list[str]:
     for prim in stage.Traverse():
         if prim.GetPath() not in root_paths and prim.GetAuthoredPropertiesInNamespace(NAMESPACE):
             problems.append(f"{prim.GetPath()}: {NAMESPACE}:* attributes on a prim that is not an asset root")
+    problems += _containment_problems(stage)
     problems += _mate_frame_problems(stage)
     problems += _variant_problems(stage)
     return problems

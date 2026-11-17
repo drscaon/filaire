@@ -11,9 +11,9 @@ Z up, metres, kilograms, `/World` the default prim.
 ```
 /World
   /PhysicsScene                  gravity (shared, see below)
-  /Looks, /PhysicsMaterials      UsdPreviewSurface materials; friction and restitution
   /Cables/<cable>                Xform, PhysicsArticulationRootAPI, filaire:* attributes,
                                  variant sets "end_a" and "end_b"
+    /Looks, /PhysicsMaterials    its UsdPreviewSurface materials; friction and restitution
     /Segments/seg_000 …          rigid bodies (RigidBodyAPI, MassAPI), x along the cable
       /Visual                    ONE mesh: the piece of tube this segment carries
       /Collision                 Capsule along x (round, coiled) or Cube (flat, figure-8), purpose guide
@@ -28,6 +28,10 @@ Z up, metres, kilograms, `/World` the default prim.
   /Ground                        the shared ground: a collision box, its top face at z = 0
   /GroundMaterial                its physics material
 ```
+
+A cable's materials, and a socket's, are inside it, so an asset referenced
+alone into another stage keeps its looks and its friction (contract,
+section 4).
 
 ## Ground and physics scene (the same in every Primvaria project)
 

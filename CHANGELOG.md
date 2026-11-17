@@ -17,6 +17,10 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- The conformance check (shared by the four generators) checks that an asset
+  is whole on its own (contract, section 4): every relationship or connection
+  inside an asset root (a material binding, a physics material, a joint's
+  bodies) points inside it, in every variant (PRV-40).
 - `tests/test_mate_frames.py`: on every connector of every preset, the plug's
   colliders reach its declared insertion depth along +Z of its MateFrame, and
   a receptacle's, on a panel or on a cable, start on the frame's plane
@@ -50,6 +54,15 @@ and the project uses [Semantic Versioning](https://semver.org/).
 - `sim-test` places plug and receptacle by their MateFrames for the insertion
   and locking checks, instead of by their bodies' origins, where the frames
   are today: a frame moved in a file is now what the check tests.
+
+### Breaking changes
+
+- A cable's materials, and a socket's, are inside it:
+  `/World/Cables/<cable>/Looks/…` and `…/PhysicsMaterials/jacket`,
+  `connector`, instead of `/World/Looks` and `/World/PhysicsMaterials`
+  shared by the file. A cable referenced alone into another stage lost its
+  colours and its friction; it now keeps them (PRV-40). The values are
+  unchanged.
 
 ## [0.4.0b1] - 2026-11-13 (beta)
 
