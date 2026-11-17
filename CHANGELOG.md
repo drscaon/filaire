@@ -17,6 +17,10 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `generate --no-vary ASPECTS` and `--nominal`, as in the other generators of
+  the suite: `--no-vary layout,color` keeps those aspects nominal, and an
+  unknown aspect is refused. `--no-vary-layout`… still work, and are
+  deprecated (PRV-35).
 - `docs/variation.md`: how every drawn value follows its preset, and every
   preset's numbers, written from `filaire/declared.py` and the presets;
   `tests/test_distributions.py` draws 1500 cables of every preset and checks

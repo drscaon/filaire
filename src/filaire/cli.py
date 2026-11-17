@@ -37,6 +37,21 @@ VARIATION_HELP = {
 }
 
 
+def _aspects(names):
+    """The type of --no-vary: a comma-separated list of aspect names, each one known."""
+
+    def parse(text: str) -> tuple:
+        got = tuple(t.strip() for t in text.split(",") if t.strip())
+        unknown = [t for t in got if t not in names]
+        if unknown:
+            raise argparse.ArgumentTypeError(
+                f"unknown aspect {', '.join(unknown)}: expected some of {','.join(names)}"
+            )
+        return got
+
+    return parse
+
+
 def _positive_int(text: str) -> int:
     value = int(text)
     if value < 1:
@@ -98,7 +113,8 @@ def _cmd_ends(_args) -> int:
 
 
 def _cmd_generate(args) -> int:
-    var = Variations(**{k: getattr(args, f"vary_{k}") for k in VARIATION_HELP})
+    off = set(VARIATION_HELP) if args.nominal else set(args.no_vary)
+    var = Variations(**{k: getattr(args, f"vary_{k}") and k not in off for k in VARIATION_HELP})
     ends = {k: v for k, v in (("a", args.end_a), ("b", args.end_b)) if v}
     scene = generate_scene(
         args.preset,
@@ -218,8 +234,16 @@ def build_parser() -> argparse.ArgumentParser:
             dest=f"vary_{name}",
             action=argparse.BooleanOptionalAction,
             default=True,
-            help=text,
+            help=f"{text}; deprecated, use --no-vary {name}",
         )
+    g.add_argument(
+        "--no-vary",
+        metavar="ASPECTS",
+        type=_aspects(tuple(VARIATION_HELP)),
+        default=(),
+        help="aspects that stay nominal, comma-separated: " + ",".join(VARIATION_HELP),
+    )
+    g.add_argument("--nominal", action="store_true", help="no aspect varies: the nominal cable")
     g.set_defaults(func=_cmd_generate)
 
     p = sub.add_parser("preview", help="top view of generated cables (needs matplotlib)")
