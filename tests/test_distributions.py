@@ -14,7 +14,8 @@ import pytest
 from scipy import stats
 
 from filaire import declared, generator
-from filaire.catalog import PRESETS
+from filaire.catalog import PRESETS, end_connector
+from filaire.connectors import CONNECTORS, opening_band, toleranced
 from filaire.usd_export import drawn_values
 
 N = 1500
@@ -81,6 +82,26 @@ def test_drawn_as_declared(preset, monkeypatch):
         elif kind == "pick":
             items = declared.field(p, args[0])
             chi2(column(rows, name), {c: items.count(c) for c in dict.fromkeys(items)}, what)
+        elif kind == "opening":
+            if name == "opening_m":  # the fixed receptacles: test_socket_openings_drawn_as_declared
+                continue
+            end = name[4]
+            values = np.array([r["openings"][end] for r in rows if end in r["openings"]], float)
+            keys = {
+                end_connector(v)[0]
+                for v in generator.end_variants(preset, end)
+                if end_connector(v)[1] == "inline"
+                and end_connector(v)[0]
+                and toleranced(CONNECTORS[end_connector(v)[0]])
+            }
+            if not keys:
+                assert not len(values), f"{what}: drawn, but no receptacle with a tolerance"
+                continue
+            assert len(values) == len(rows), f"{what}: not drawn for every cable"
+            for axis, (lo, hi) in enumerate(opening_band(CONNECTORS[keys.pop()])):
+                v = values[:, axis]
+                assert lo - 1e-12 <= v.min() and v.max() <= hi + 1e-12, f"{what}: outside {lo} to {hi} mm"
+                assert stats.kstest(v, stats.uniform(lo, hi - lo).cdf).pvalue > P_MIN, what
         elif kind == "tolerance":
             e = (column(rows, "length_m") / column(rows, "nominal_length_m") - 1) / p["tolerance"]
             assert np.all(np.abs(e) <= declared.CLIP + 1e-9), f"{what}: beyond ±{declared.CLIP}"
@@ -116,10 +137,27 @@ def test_recorded_is_drawn(preset, monkeypatch):
             else recorded[name] == kw[arg]
         )
     assert (recorded["end_a"], recorded["end_b"]) == (kw["selected"]["a"], kw["selected"]["b"])
+    for end, (w, h) in kw["openings"].items():  # recorded in metres, drawn in millimetres
+        assert recorded[f"end_{end}_opening_m"] == pytest.approx([w * 1e-3, h * 1e-3])
+    assert {k for k in recorded if k.endswith("_opening_m")} == {f"end_{e}_opening_m" for e in kw["openings"]}
     if "coil_leads_m" in recorded:  # rounded to whole segments when built
         seg = cable.segments[0].length
         for got, want in zip(recorded["coil_leads_m"], kw["coil_leads"], strict=True):
             assert abs(got - want) <= seg / 2 + 1e-9, f"{preset}: lead {got} m, drawn {want} m"
+
+
+def test_socket_openings_drawn_as_declared():
+    """The fixed receptacles with a published tolerance draw their opening uniformly over it."""
+    keys = [k for k in CONNECTORS if toleranced(CONNECTORS[k])]
+    assert keys
+    draws = [generator.socket_openings(keys, seed, generator.Variations()) for seed in range(N)]
+    for key in keys:
+        values = np.array([d[key] for d in draws], float)
+        for axis, (lo, hi) in enumerate(opening_band(CONNECTORS[key])):
+            v = values[:, axis]
+            assert lo - 1e-12 <= v.min() and v.max() <= hi + 1e-12, f"{key}: outside {lo} to {hi} mm"
+            assert stats.kstest(v, stats.uniform(lo, hi - lo).cdf).pvalue > P_MIN, key
+    assert generator.socket_openings(keys, 1, generator.Variations(clearance=False)) == {}
 
 
 def test_documentation_is_the_declaration():

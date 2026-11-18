@@ -55,7 +55,15 @@ from scipy.spatial import ConvexHull
 
 from .cable import DAMPING_TIME, Cable, End, cable_color_rgb
 from .catalog import CONNECTOR_FRICTION, CONNECTOR_RESTITUTION, JACKETS, PRESETS
-from .connectors import CONNECTORS, MM, keying_of, part_mesh, receptacle_looks, receptacle_parts
+from .connectors import (
+    CONNECTORS,
+    MM,
+    keying_of,
+    part_mesh,
+    receptacle_looks,
+    receptacle_parts,
+    with_opening,
+)
 from .contract import set_group, write_identity, write_labels, write_measured, write_variation
 from .ground import ground, physics_scene
 from .mesh3d import TriMesh, mass_properties, merge, principal_inertia, split_normals, weld
@@ -239,8 +247,8 @@ def _mass(prim, mass: float, com, inertia: np.ndarray) -> None:
     api.CreatePrincipalAxesAttr(_quat(axes))
 
 
-def _mate_frame(stage, path: str, spec_key: str, role: str, mount: str) -> None:
-    spec = CONNECTORS[spec_key]
+def _mate_frame(stage, path: str, spec, role: str, mount: str) -> None:
+    """The mate frame of a plug or a receptacle; spec: its own (a receptacle's drawn opening)."""
     mf = UsdGeom.Xform.Define(stage, path)
     p = mf.GetPrim()
     _attr(p, "filaire:connector", _F.String, spec.key)
@@ -292,7 +300,8 @@ def _end_variant(
     _visual(stage, looks, f"{base}/Body/Visual", _end_parts(end))
     if end.connector:
         role = "plug" if end.role == "plug" else "receptacle"
-        _mate_frame(stage, f"{base}/Body/MateFrame", end.connector, role, "cable")
+        spec = with_opening(CONNECTORS[end.connector], end.opening)
+        _mate_frame(stage, f"{base}/Body/MateFrame", spec, role, "cable")
     if not physics:
         return
     UsdPhysics.RigidBodyAPI.Apply(bp)
@@ -454,7 +463,7 @@ def _cable_visual(stage, looks, cp: str, c: Cable) -> None:
 
 def drawn_values(c: Cable) -> dict:
     """What was drawn for a cable (written as primvaria:variation:*): its length, its layout,
-    its ends, its colour, its stiffness and its density."""
+    its ends, its colour, its stiffness, its density and the opening of a receptacle on it."""
     values = {
         "nominal_length_m": float(c.nominal_length),
         "length_m": float(c.length),
@@ -471,6 +480,8 @@ def drawn_values(c: Cable) -> dict:
         values["length_m"] = float(c.coil["coiled_length"])
         values["linear_density_kg_per_m"] = float(c.coil["wire_density"])
         values["coil_leads_m"] = [float(x) for x in c.coil["leads"]]
+    for end, (w, h) in sorted(c.openings.items()):  # a receptacle on the cable: its drawn opening
+        values[f"end_{end}_opening_m"] = [float(w * MM), float(h * MM)]
     return values
 
 
@@ -519,7 +530,9 @@ def export_cables(path: str | Path, scene, physics: bool = True) -> Path:
             }
         write_identity(prim, name=c.name, preset=c.preset_key, seed=scene.seed, identifier=f"./{path.name}")
         write_labels(prim, ("cable", c.preset_key))
-        write_variation(prim, aspects, drawn_values(c))
+        # the clearance is an aspect of a cable only when it carries a receptacle with a drawn opening
+        own = [a for a in aspects if a != "clearance" or c.openings]
+        write_variation(prim, own, drawn_values(c))
         write_measured(prim, measured_values(c))
         _cable_attrs(prim, c)
         segs = [f"{cp}/Segments/seg_{i:03d}" for i in range(len(c.segments))]
@@ -553,12 +566,12 @@ def export_cables(path: str | Path, scene, physics: bool = True) -> Path:
     return path
 
 
-def socket_layout(keys: list[str]) -> list[tuple[str, np.ndarray, np.ndarray]]:
+def socket_layout(keys: list[str], openings: dict | None = None) -> list[tuple[str, np.ndarray, np.ndarray]]:
     """(key, rotation, origin) of each fixed receptacle, standing in a row, insertion along +y."""
     out, x = [], 0.0
     R = np.c_[[-1.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 1.0, 0.0]]  # X = -x, Y = up, Z = +y
     for key in keys:
-        spec = CONNECTORS[key]
+        spec = with_opening(CONNECTORS[key], (openings or {}).get(key))
         parts = receptacle_parts(spec, "panel")
         lo, hi = part_mesh(parts).bounds
         w = hi[0] - lo[0]
@@ -568,21 +581,36 @@ def socket_layout(keys: list[str]) -> list[tuple[str, np.ndarray, np.ndarray]]:
     return out
 
 
-def export_sockets(path: str | Path, keys: list[str], physics: bool = True) -> Path:
-    """Fixed receptacles (device ports, inlets, wall sockets) of the given connector families."""
+def export_sockets(
+    path: str | Path,
+    keys: list[str],
+    physics: bool = True,
+    seed: int = 0,
+    openings: dict | None = None,
+) -> Path:
+    """Fixed receptacles (device ports, inlets, wall sockets) of the given connector families.
+
+    openings: {key: (width, height) mm}, the opening drawn for a receptacle (generator.socket_openings);
+    a family not in it keeps its nominal opening. seed: the scene's, recorded on each receptacle."""
     path = Path(path)
+    openings = openings or {}
     stage, _world = _new_stage(path, physics)
     set_group(UsdGeom.Scope.Define(stage, "/World/Sockets").GetPrim())
-    layout = socket_layout(keys)
+    layout = socket_layout(keys, openings)
     for key, R, origin in layout:
-        spec = CONNECTORS[key]
+        spec = with_opening(CONNECTORS[key], openings.get(key))
         parts = receptacle_parts(spec, "panel")
         sp = f"/World/Sockets/{key}"
         x = UsdGeom.Xform.Define(stage, sp)
-        # a receptacle is not drawn: its preset is its connector family and its seed 0
-        write_identity(x.GetPrim(), name=key, preset=key, seed=0, identifier=f"./{path.name}")
+        # a receptacle's preset is its connector family; its seed is the scene's when it is drawn
+        drawn_seed = seed if key in openings else 0
+        write_identity(x.GetPrim(), name=key, preset=key, seed=drawn_seed, identifier=f"./{path.name}")
         write_labels(x.GetPrim(), ("socket", key))
-        write_variation(x.GetPrim(), (), {})  # nothing is drawn
+        if key in openings:  # its opening, drawn in the published tolerance
+            w, h = openings[key]
+            write_variation(x.GetPrim(), ("clearance",), {"opening_m": [float(w * MM), float(h * MM)]})
+        else:
+            write_variation(x.GetPrim(), (), {})  # nothing is drawn
         _xform(x, R, origin)
         looks = _Looks(stage, sp)
         if physics:
@@ -602,7 +630,7 @@ def export_sockets(path: str | Path, keys: list[str], physics: bool = True) -> P
         mp = mass_properties(mesh, spec.density)
         _attr(x.GetPrim(), "filaire:mass", _F.Float, float(mp["mass"]))
         _attr(x.GetPrim(), "filaire:geometricKeying", _F.Token, keying_of(spec))
-        _mate_frame(stage, f"{sp}/MateFrame", key, "receptacle", "panel")
+        _mate_frame(stage, f"{sp}/MateFrame", spec, "receptacle", "panel")
     if physics:
         ground(stage, (0, 0), (max(o[2][0] for o in layout), 0))
     stage.GetRootLayer().Save()

@@ -6,7 +6,7 @@ filaire generate --preset usb_c [--count 6] [--seed 1] [--length 1 | --length pr
                  [--end-a usb_c_plug] [--end-b stripped] [--layout straight|slack|coil]
                  [--color "#1c1c1c"] [--modulus 60] [--max-segments 400]
                  [--no-vary-layout] [--no-vary-ends] [--no-vary-color] [--no-vary-stiffness]
-                 [--no-vary-density] [--out output]
+                 [--no-vary-density] [--no-vary-clearance] [--out output]
 filaire preview output/usb_c
 filaire connectors [--out connectors.png]
 filaire sim-test output/usb_c [--cables 2] [--seconds 3]
@@ -34,6 +34,7 @@ VARIATION_HELP = {
     "color": "jacket colour drawn (off: first colour)",
     "stiffness": "Young's modulus drawn in the preset's range (off: middle)",
     "density": "linear density drawn in the preset's range (off: middle)",
+    "clearance": "receptacle openings drawn in their published tolerance (off: nominal)",
 }
 
 

@@ -11,7 +11,7 @@ import numpy as np
 from .cable import Cable, build_cable
 from .catalog import PRESETS, end_connector
 from .centerline import LAYOUTS
-from .connectors import CONNECTORS
+from .connectors import CONNECTORS, draw_opening, toleranced
 from .pack import write_pack
 
 # independent random streams per cable, one per aspect: turning a variation off
@@ -25,6 +25,7 @@ _STREAMS = {
     "stiffness": 5,
     "density": 6,
     "leads": 7,
+    "clearance": 8,
 }
 
 
@@ -38,6 +39,7 @@ class Variations:
     color: bool = True  # jacket colour drawn (off: first colour)
     stiffness: bool = True  # Young's modulus drawn in the preset's range (off: middle)
     density: bool = True  # linear density drawn in the range (off: middle)
+    clearance: bool = True  # receptacle openings drawn in their published tolerance (off: nominal)
 
 
 @dataclass
@@ -152,6 +154,17 @@ def make_cable(
             )
         )
 
+    # the opening of a receptacle on the cable, per end, uniform over its published tolerance
+    openings = {}
+    rng_clearance = _rng(seed, index, "clearance")
+    for end in ("a", "b"):
+        for variant in options[end]:
+            key, role = end_connector(variant)
+            if key and role == "inline" and toleranced(CONNECTORS[key]):
+                drawn_opening = draw_opening(CONNECTORS[key], rng_clearance)  # always drawn: same stream
+                if var.clearance:
+                    openings[end] = drawn_opening
+
     return build_cable(
         name=f"{preset_key}_{index:03d}",
         preset_key=preset_key,
@@ -167,6 +180,7 @@ def make_cable(
         rng_layout=_rng(seed, index, "shape"),
         max_segments=max_segments,
         coil_leads=leads,
+        openings=openings,
     )
 
 
@@ -240,6 +254,18 @@ def generate_scene(
 
 # ------------------------------------------------------------------ outputs
 
+SOCKET_INDEX = 1_000_000  # the fixed receptacles draw from their own streams, past any cable's index
+
+
+def socket_openings(keys: list[str], seed: int, var: Variations) -> dict:
+    """The opening drawn for each fixed receptacle of a scene (mm, width and height), uniform over
+    its published tolerance; families without one are not drawn."""
+    out = {}
+    for i, key in enumerate(keys):
+        if toleranced(CONNECTORS[key]) and var.clearance:
+            out[key] = draw_opening(CONNECTORS[key], _rng(seed, SOCKET_INDEX + i, "clearance"))
+    return out
+
 
 def summarize(scene: Scene) -> dict:
     cs = scene.cables
@@ -279,7 +305,8 @@ def write_outputs(scene: Scene, out_root: str | Path = "output", physics: bool =
     out.mkdir(parents=True, exist_ok=True)
     files = [export_cables(out / f"filaire_{scene.preset_key}.usdc", scene, physics=physics)]
     if scene.connectors:
-        files.append(export_sockets(out / "sockets.usdc", scene.connectors, physics=physics))
+        openings = socket_openings(scene.connectors, scene.seed, scene.variations)
+        files.append(export_sockets(out / "sockets.usdc", scene.connectors, physics, scene.seed, openings))
     for file in files:  # what only PhysX reads: a layer over each file (physx.py)
         if physics:
             write_overlay(file)

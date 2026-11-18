@@ -37,6 +37,7 @@ from .connectors import (
     plug_parts,
     receptacle_looks,
     receptacle_parts,
+    with_opening,
 )
 from .mesh3d import TriMesh, mass_properties, merge, submesh, sweep
 
@@ -126,6 +127,7 @@ class End:
     mass: float = 0.0
     com: np.ndarray = field(default_factory=lambda: np.zeros(3))
     inertia: np.ndarray = field(default_factory=lambda: np.zeros((3, 3)))
+    opening: tuple | None = None  # a receptacle's opening drawn for it (mm), None: nominal
 
 
 @dataclass
@@ -161,6 +163,8 @@ class Cable:
     selected: dict  # {"a": variant, "b": variant}
     position: tuple = (0.0, 0.0, 0.0)
     stripes: tuple | None = None  # jacket colour of each wire, across the width (flat, figure-8)
+    # {"a" | "b": (width, height) mm}: the opening drawn for an end's receptacle on the cable
+    openings: dict = field(default_factory=dict)
 
     def jacket_pieces(self, mesh: TriMesh) -> list[tuple[TriMesh, str]]:
         """A segment's tube (in the segment's frame) by colour: one piece per wire colour when the
@@ -254,10 +258,12 @@ def _hex_to_rgb(color: str) -> tuple:
     return tuple(int(c[i : i + 2], 16) / 255 for i in (0, 2, 4))
 
 
-def connector_end(variant: str, cable_color: str) -> End:
-    """Geometry of a connector variant in its own frame (origin on the mating plane)."""
+def connector_end(variant: str, cable_color: str, opening: tuple[float, float] | None = None) -> End:
+    """Geometry of a connector variant in its own frame (origin on the mating plane).
+
+    opening: a receptacle's opening (mm, width and height), drawn for it; None: the nominal one."""
     key, role = end_connector(variant)
-    spec = CONNECTORS[key]
+    spec = with_opening(CONNECTORS[key], opening if role == "inline" else None)
     parts = plug_parts(spec) if role == "plug" else receptacle_parts(spec, "inline")
     # visuals by colour and look (metal, plastic, clear); the colliders below come from `parts`
     looks = plug_looks(spec) if role == "plug" else receptacle_looks(spec, "inline")
@@ -268,7 +274,17 @@ def connector_end(variant: str, cable_color: str) -> End:
     hulls = [h for p in parts for h in p.convex_hulls()]
     mp = mass_properties(part_mesh(parts), spec.density)
     return End(
-        variant, key, role, np.eye(3), np.zeros(3), visuals, hulls, mp["mass"], mp["com"], mp["inertia"]
+        variant,
+        key,
+        role,
+        np.eye(3),
+        np.zeros(3),
+        visuals,
+        hulls,
+        mp["mass"],
+        mp["com"],
+        mp["inertia"],
+        opening if role == "inline" else None,
     )
 
 
@@ -355,6 +371,7 @@ def build_cable(
     max_segments: int = 400,
     coil_length: float | None = None,
     coil_leads: tuple = (0.0, 0.0),
+    openings: dict | None = None,
 ) -> Cable:
     pr = PRESETS[preset_key]
     stripes = pr.get("stripes", {}).get(color)
@@ -415,7 +432,7 @@ def build_cable(
         for variant in end_options[end]:
             key, role = end_connector(variant)
             if key:
-                ends[end][variant] = connector_end(variant, color)
+                ends[end][variant] = connector_end(variant, color, (openings or {}).get(end))
             elif role == "stripped":
                 ends[end][variant] = stripped_end(profile, pr["conductors"])
             else:
@@ -535,6 +552,7 @@ def build_cable(
         ends=ends,
         selected=selected,
         stripes=tuple(stripes) if stripes else None,
+        openings=dict(openings or {}),
     )
 
 

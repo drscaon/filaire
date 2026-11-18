@@ -14,9 +14,10 @@ Part of the [Filaire](../README.md) documentation.
   [Checking a preset against a real cable](physics.md#checking-a-preset-against-a-real-cable).
 - **Approximate connectors.** See [Connectors](connectors.md#connectors): simplified
   outlines, no moving latches, threads or contacts; several dimensions not
-  from a source. The clearances are fixed per family: published for the
-  opening of four families, estimates elsewhere, not drawn within a
-  tolerance yet. A real USB-A port takes up much of its 0.25 to 0.31 mm of
+  from a source. The clearance around the plug is published for four
+  families and drawn within its tolerance for two (USB-C, USB-A, each from
+  one manufacturer's drawing, the plug's own tolerance not included);
+  elsewhere it is a fixed estimate. A real USB-A port takes up much of its 0.25 to 0.31 mm of
   play with spring tabs, which are not modelled: the plug sits looser here.
 - **Elastic, straight rest shape.** No plastic set (a real cable keeps its
   coils), no initial tension in coiled cords, no knots.

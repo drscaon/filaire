@@ -17,7 +17,7 @@ Part of the [Filaire](../README.md) documentation.
 | `--modulus E` | preset's draw | effective Young's modulus of the cable in MPa (sets the stiffness) |
 | `--max-segments N` | 400 | upper bound on the rigid segments per cable (longer segments beyond it) |
 | `--no-physics` | | visual assets only: no rigid bodies, colliders, joints, physics scene or ground |
-| `--no-vary ASPECTS` | | aspects that stay nominal, comma-separated, the others unchanged: `length`, `layout`, `ends`, `color`, `stiffness`, `density` (`--no-vary-length`… still work, and are deprecated) |
+| `--no-vary ASPECTS` | | aspects that stay nominal, comma-separated, the others unchanged: `length`, `layout`, `ends`, `color`, `stiffness`, `density`, `clearance` (`--no-vary-length`… still work, and are deprecated) |
 | `--nominal` | | no aspect varies |
 
 Each random aspect has its own stream: turning one off or forcing it leaves

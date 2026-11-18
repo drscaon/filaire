@@ -47,3 +47,17 @@ def test_sockets_draw_nothing_and_coiled_cords_record_their_leads(tmp_path):
     assert all(len(d["coil_leads_m"]) == 2 for d in drawn.values())
     sockets = Usd.Stage.Open(str(folder / "sockets.usdc"))
     assert all(variation(prim) == {"aspects": []} for prim in asset_roots(sockets))
+
+
+def test_usb_c_receptacles_carry_their_drawn_opening(tmp_path):
+    """The USB-C extension's receptacle and the USB-C port draw their opening (FIL-10)."""
+    scene, folder, drawn = _drawn(tmp_path, preset="usb_c")
+    for c in scene.cables:
+        assert "clearance" in drawn[c.name]["aspects"]
+        w, h = drawn[c.name]["end_b_opening_m"]
+        assert 8.32e-3 <= w <= 8.40e-3 and 2.52e-3 <= h <= 2.60e-3
+    sockets = Usd.Stage.Open(str(folder / "sockets.usdc"))
+    port = {prim.GetName(): variation(prim) for prim in asset_roots(sockets)}["usb_c"]
+    assert port["aspects"] == ["clearance"] and len(port["opening_m"]) == 2
+    _, _, nominal = _drawn(tmp_path / "off", preset="usb_c", clearance=False)
+    assert all("end_b_opening_m" not in d and "clearance" not in d["aspects"] for d in nominal.values())

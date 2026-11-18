@@ -7,7 +7,9 @@ Every drawn value of a cable follows one rule, applied to its preset's own numbe
 * ("weights", field): one of the keys of the preset's field, with the field's values as weights;
 * ("pick", field): one of the items of the preset's list, each as likely;
 * ("uniform", field, scale): uniform between the two numbers of the preset's field, times scale;
-* ("tolerance",): the nominal length times 1 + tolerance × e, e a normal draw kept within ±2.5.
+* ("tolerance",): the nominal length times 1 + tolerance × e, e a normal draw kept within ±2.5;
+* ("opening",): a receptacle's opening, width and height each uniform over the tolerance its source
+  publishes (connectors.py, docs/sources.md), not a preset's field.
 
 Each row is (column, aspect, rule, note); a dotted field is a field of a field (ends.a).
 """
@@ -38,6 +40,14 @@ DECLARED = [
         ("uniform", "coil.leads", 1e-3),
         "coiled cords only, one per end, in mm in the preset; recorded as built: rounded to whole segments",
     ),
+    (
+        "end_a_opening_m",
+        "clearance",
+        ("opening",),
+        "width and height of a receptacle on the cable whose opening is published with a tolerance",
+    ),
+    ("end_b_opening_m", "clearance", ("opening",), "the same at end b (the `usb_c` extension)"),
+    ("opening_m", "clearance", ("opening",), "the fixed receptacles of `sockets.usdc` (USB-C, USB-A ports)"),
 ]
 
 
@@ -61,6 +71,8 @@ def rule_text(rule) -> str:
         return f"uniform over the preset's `{args[0]}`" + (f", × {args[1]:g}" if args[1] != 1 else "")
     if kind == "tolerance":
         return f"nominal × (1 + `tolerance` × e), e normal, kept within ±{CLIP:g}"
+    if kind == "opening":
+        return "uniform over the opening's published tolerance, width and height each ([Sources](sources.md))"
     raise ValueError(f"unknown rule {kind!r}")
 
 

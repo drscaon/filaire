@@ -17,6 +17,16 @@ Weights are shown as shares of their total. The stiffness and density
 ranges are realistic orders of magnitude, not measurements of real cables:
 see [limits.md](limits.md).
 
+The `clearance` aspect draws the opening of a receptacle whose opening is
+published with a tolerance: today the USB-C (8.32 to 8.40 × 2.52 to
+2.60 mm) and the USB-A (12.40 to 12.60 × 5.02 to 5.22 mm), each from one
+manufacturer's drawing ([Sources](sources.md)). Each receptacle draws its own
+width and height, uniformly over that tolerance, on its own stream: the
+USB-C extension at the end of a `usb_c` cable, and the USB-C and USB-A ports
+of `sockets.usdc`. Its cavity and its colliders follow. The plug is not
+drawn (no published tolerance), nor are the families whose opening has
+none. A cable or socket without such a receptacle does not list the aspect.
+
 <!-- declared: begin -->
 ### Rules
 
@@ -31,6 +41,9 @@ see [limits.md](limits.md).
 | `variation:youngs_modulus_pa` | stiffness | uniform over the preset's `youngs_modulus`, × 1e+06 | the preset gives MPa |
 | `variation:linear_density_kg_per_m` | density | uniform over the preset's `linear_density`, × 0.001 | the preset gives g/m |
 | `variation:coil_leads_m` | length | uniform over the preset's `coil.leads`, × 0.001 | coiled cords only, one per end, in mm in the preset; recorded as built: rounded to whole segments |
+| `variation:end_a_opening_m` | clearance | uniform over the opening's published tolerance, width and height each ([Sources](sources.md)) | width and height of a receptacle on the cable whose opening is published with a tolerance |
+| `variation:end_b_opening_m` | clearance | uniform over the opening's published tolerance, width and height each ([Sources](sources.md)) | the same at end b (the `usb_c` extension) |
+| `variation:opening_m` | clearance | uniform over the opening's published tolerance, width and height each ([Sources](sources.md)) | the fixed receptacles of `sockets.usdc` (USB-C, USB-A ports) |
 
 ### The presets' numbers
 
