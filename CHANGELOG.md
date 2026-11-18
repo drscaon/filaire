@@ -75,6 +75,9 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- README and docs images rendered again with the sourced values of PRV-33
+  (diameters, densities): the hero, the presets and plugs sheets, the social
+  preview, and the coiled-cord and drop GIFs, simulated again.
 - The README's hero image shows every preset as a 15 cm cable, in rows of
   three, framed close enough to see the connectors' details, on a plain
   blue-grey floor that dark and white jackets both stand out from
