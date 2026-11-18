@@ -6,8 +6,10 @@ Part of the [Filaire](../README.md) documentation.
 
 ## Limits
 
-- **Not calibrated.** Moduli and densities are orders of magnitude; no
-  cable's `E·I` was measured. The sag check proves the export is consistent
+- **Not calibrated.** The moduli are estimates; no cable's `E·I` was
+  measured. Diameters and weights come from the datasheet of a common cable
+  of each kind where one was found, and are estimates for the rest
+  ([Sources](sources.md)). The sag check proves the export is consistent
   with the model, not that the model matches a real cable. See
   [Checking a preset against a real cable](physics.md#checking-a-preset-against-a-real-cable).
 - **Approximate connectors.** See [Connectors](connectors.md#connectors): simplified

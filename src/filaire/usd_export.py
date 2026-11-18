@@ -54,7 +54,7 @@ from pxr import Gf, Sdf, Usd, UsdGeom, UsdPhysics, UsdShade, Vt
 from scipy.spatial import ConvexHull
 
 from .cable import DAMPING_TIME, Cable, End, cable_color_rgb
-from .catalog import CONNECTOR_FRICTION, JACKETS, PRESETS
+from .catalog import CONNECTOR_FRICTION, CONNECTOR_RESTITUTION, JACKETS, PRESETS
 from .connectors import CONNECTORS, MM, keying_of, part_mesh, receptacle_looks, receptacle_parts
 from .contract import set_group, write_identity, write_labels, write_measured, write_variation
 from .ground import ground, physics_scene
@@ -510,7 +510,9 @@ def export_cables(path: str | Path, scene, physics: bool = True) -> Path:
         if physics:
             mats = {
                 "jacket": _physics_material(stage, cp, "jacket", jacket["friction"], jacket["restitution"]),
-                "connector": _physics_material(stage, cp, "connector", CONNECTOR_FRICTION, 0.2),
+                "connector": _physics_material(
+                    stage, cp, "connector", CONNECTOR_FRICTION, CONNECTOR_RESTITUTION
+                ),
             }
         write_identity(prim, name=c.name, preset=c.preset_key, seed=scene.seed, identifier=f"./{path.name}")
         write_labels(prim, ("cable", c.preset_key))
@@ -581,7 +583,7 @@ def export_sockets(path: str | Path, keys: list[str], physics: bool = True) -> P
         _xform(x, R, origin)
         looks = _Looks(stage, sp)
         if physics:
-            mat = _physics_material(stage, sp, "connector", CONNECTOR_FRICTION, 0.2)
+            mat = _physics_material(stage, sp, "connector", CONNECTOR_FRICTION, CONNECTOR_RESTITUTION)
         mesh = part_mesh(parts)
         groups: dict = {}
         for part, color, look in receptacle_looks(spec, "panel"):

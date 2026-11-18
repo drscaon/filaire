@@ -26,8 +26,11 @@ Each preset describes *distributions*, not a single cable:
 - coil (coiled cords): mean coil diameter in mm, coiled lengths in m, pitch
   as a multiple of the wire size (close-wound ≈ 1).
 
-Values are realistic orders of magnitude for simulation, not measurements of
-a specific product; nothing is calibrated yet (see the README).
+Every number that describes a real cable names its source in sources.py
+(docs/sources.md): a manufacturer's datasheet for the diameter and the weight
+of the cables that have one, otherwise an estimate with what it rests on. The
+stiffness is an estimate for every preset: nothing is calibrated yet (see the
+README).
 """
 
 from __future__ import annotations
@@ -37,7 +40,7 @@ CATEGORIES = ["Power", "Data", "Audio", "Industrial", "Robotics", "Lab", "Teleph
 POISSON = 0.45  # jacket polymers and stranded conductors, order of magnitude
 
 JACKETS = {
-    "pvc": {"label": "PVC", "friction": 0.55, "restitution": 0.1, "roughness": 0.55},
+    "pvc": {"label": "PVC", "friction": 0.6, "restitution": 0.1, "roughness": 0.55},
     "tpe": {"label": "TPE", "friction": 0.7, "restitution": 0.15, "roughness": 0.6},
     "pur": {"label": "PUR", "friction": 0.5, "restitution": 0.1, "roughness": 0.45},
     "lszh": {"label": "LSZH", "friction": 0.6, "restitution": 0.1, "roughness": 0.6},
@@ -46,6 +49,7 @@ JACKETS = {
 
 # connector plastic and metal, for the physics material of the ends
 CONNECTOR_FRICTION = 0.4
+CONNECTOR_RESTITUTION = 0.2
 
 _POWER_CORES = ["#7b4a2a", "#2a5fa8", "#c9b52a"]  # brown, blue, green-yellow (drawn yellow)
 _BLACKS = ["#1c1c1c", "#202326"]
@@ -63,7 +67,7 @@ PRESETS = {
         "lengths": {1.0: 0.2, 1.5: 0.3, 1.8: 0.3, 2.0: 0.2},
         "tolerance": 0.01,
         "youngs_modulus": (60.0, 120.0),
-        "linear_density": (75.0, 90.0),
+        "linear_density": (60.0, 70.0),
         "layouts": {"slack": 0.6, "coil": 0.25, "straight": 0.15},
         "ends": {
             "a": {"c13_plug": 1.0},
@@ -73,14 +77,14 @@ PRESETS = {
     "power_c7": {
         "category": "Power",
         "label": "Figure-8 power cord, Europlug to IEC C7",
-        "profile": ("figure8", 3.4),
+        "profile": ("figure8", 3.2),
         "conductors": _POWER_CORES[:2],
         "jacket": "pvc",
         "colors": _BLACKS + ["#e9e9e6"],
         "lengths": {1.5: 0.6, 1.8: 0.4},
         "tolerance": 0.01,
         "youngs_modulus": (50.0, 100.0),
-        "linear_density": (30.0, 40.0),
+        "linear_density": (32.0, 40.0),
         "layouts": {"slack": 0.7, "coil": 0.15, "straight": 0.15},
         "ends": {"a": {"c7_plug": 1.0}, "b": {"cee716_plug": 0.85, "stripped": 0.15}},
     },
@@ -94,7 +98,7 @@ PRESETS = {
         "lengths": {1.0: 0.3, 1.5: 0.4, 1.8: 0.3},
         "tolerance": 0.01,
         "youngs_modulus": (50.0, 100.0),
-        "linear_density": (18.0, 28.0),
+        "linear_density": (17.0, 22.0),
         "layouts": {"slack": 0.6, "coil": 0.25, "straight": 0.15},
         # the adapter side (power brick) is not modelled: a stripped or cut end, or an extension jack
         "ends": {
@@ -113,7 +117,7 @@ PRESETS = {
         "lengths": {0.5: 0.2, 1.0: 0.5, 2.0: 0.3},
         "tolerance": 0.01,
         "youngs_modulus": (40.0, 90.0),
-        "linear_density": (30.0, 45.0),
+        "linear_density": (20.0, 30.0),
         "layouts": {"slack": 0.6, "coil": 0.2, "straight": 0.2},
         "ends": {"a": {"usb_c_plug": 1.0}, "b": {"usb_c_plug": 0.8, "usb_c_inline": 0.2}},
     },
@@ -127,7 +131,7 @@ PRESETS = {
         "lengths": {0.5: 0.3, 1.0: 0.5, 2.0: 0.2},
         "tolerance": 0.01,
         "youngs_modulus": (40.0, 90.0),
-        "linear_density": (20.0, 35.0),
+        "linear_density": (17.0, 23.0),
         "layouts": {"slack": 0.6, "coil": 0.2, "straight": 0.2},
         "ends": {"a": {"usb_a_plug": 1.0}, "b": {"usb_micro_plug": 1.0}},
     },
@@ -141,35 +145,35 @@ PRESETS = {
         "lengths": {1.0: 0.6, 2.0: 0.4},
         "tolerance": 0.01,
         "youngs_modulus": (40.0, 90.0),
-        "linear_density": (25.0, 40.0),
+        "linear_density": (18.0, 26.0),
         "layouts": {"slack": 0.6, "coil": 0.2, "straight": 0.2},
         "ends": {"a": {"usb_a_plug": 1.0}, "b": {"usb_c_plug": 1.0}},
     },
     "ethernet": {
         "category": "Data",
         "label": "Ethernet patch cord, Cat 6 RJ45",
-        "profile": ("round", 6.0),
+        "profile": ("round", 5.4),
         "conductors": _PAIRS,
         "jacket": "pvc",
         "colors": ["#2a6fbf", "#9aa0a6", "#e3c22a", "#c0392b", "#2e8b3a", "#1c1c1c"],
         "lengths": {0.5: 0.2, 1.0: 0.3, 2.0: 0.3, 3.0: 0.2},
         "tolerance": 0.005,
         "youngs_modulus": (80.0, 150.0),
-        "linear_density": (40.0, 55.0),
+        "linear_density": (30.0, 36.0),
         "layouts": {"slack": 0.6, "coil": 0.25, "straight": 0.15},
         "ends": {"a": {"rj45_plug": 1.0}, "b": {"rj45_plug": 0.85, "rj45_inline": 0.15}},
     },
     "hdmi": {
         "category": "Data",
         "label": "HDMI cable, type A",
-        "profile": ("round", 7.0),
+        "profile": ("round", 7.3),
         "conductors": ["#c0392b", "#2e8b3a", "#2a5fa8", "#f2f2f2", "#1c1c1c"],
         "jacket": "pvc",
         "colors": _BLACKS,
         "lengths": {1.0: 0.3, 1.5: 0.3, 2.0: 0.4},
         "tolerance": 0.01,
         "youngs_modulus": (80.0, 160.0),
-        "linear_density": (60.0, 90.0),
+        "linear_density": (60.0, 75.0),
         "layouts": {"slack": 0.6, "coil": 0.25, "straight": 0.15},
         "ends": {"a": {"hdmi_a_plug": 1.0}, "b": {"hdmi_a_plug": 0.85, "hdmi_a_inline": 0.15}},
     },
@@ -198,21 +202,21 @@ PRESETS = {
         "lengths": {3.0: 0.4, 5.0: 0.4, 10.0: 0.2},
         "tolerance": 0.01,
         "youngs_modulus": (20.0, 50.0),
-        "linear_density": (50.0, 70.0),
+        "linear_density": (40.0, 56.0),
         "layouts": {"coil": 0.5, "slack": 0.4, "straight": 0.1},
         "ends": {"a": {"xlr3_plug": 1.0}, "b": {"xlr3_inline": 1.0}},
     },
     "speaker_wire": {
         "category": "Audio",
         "label": "Speaker wire 2 × 1.5 mm² (zip cord)",
-        "profile": ("figure8", 3.2),
+        "profile": ("figure8", 3.0),
         "conductors": ["#c0392b", "#1c1c1c"],
         "jacket": "pvc",
         "colors": ["#d9d4c8", "#1c1c1c", "#c0392b"],
         "lengths": {2.0: 0.4, 3.0: 0.4, 5.0: 0.2},
         "tolerance": 0.02,
         "youngs_modulus": (40.0, 90.0),
-        "linear_density": (40.0, 55.0),
+        "linear_density": (34.0, 40.0),
         "layouts": {"slack": 0.6, "coil": 0.3, "straight": 0.1},
         "ends": {"a": {"stripped": 0.7, "cut": 0.3}, "b": {"stripped": 0.7, "cut": 0.3}},
     },
@@ -220,21 +224,21 @@ PRESETS = {
     "m12_sensor": {
         "category": "Industrial",
         "label": "Sensor cable, M12 A-coded female, open end",
-        "profile": ("round", 5.0),
+        "profile": ("round", 4.5),
         "conductors": ["#7b4a2a", "#f2f2f2", "#2a5fa8", "#1c1c1c"],
         "jacket": "pur",
         "colors": ["#3a3f45", "#e88a2a", "#8a8d91"],
         "lengths": {2.0: 0.5, 5.0: 0.5},
         "tolerance": 0.01,
         "youngs_modulus": (50.0, 100.0),
-        "linear_density": (35.0, 50.0),
+        "linear_density": (28.0, 36.0),
         "layouts": {"coil": 0.5, "slack": 0.4, "straight": 0.1},
         "ends": {"a": {"m12a_plug": 1.0}, "b": {"stripped": 0.8, "cut": 0.2}},
     },
     "ribbon_idc": {
         "category": "Industrial",
         "label": "Ribbon cable 10-way, IDC 2 × 5 sockets",
-        "profile": ("flat", 10, 1.27, 0.9),
+        "profile": ("flat", 10, 1.27, 0.89),
         "conductors": ["#c0392b"] + ["#9aa0a6"] * 9,
         "jacket": "pvc",
         "colors": ["#9aa0a6", "#8a8d91"],
@@ -243,21 +247,21 @@ PRESETS = {
         "lengths": {0.15: 0.4, 0.3: 0.4, 0.5: 0.2},
         "tolerance": 0.02,
         "youngs_modulus": (150.0, 300.0),
-        "linear_density": (8.0, 12.0),
+        "linear_density": (17.0, 22.0),
         "layouts": {"straight": 0.5, "slack": 0.5},
         "ends": {"a": {"idc10_plug": 1.0}, "b": {"idc10_plug": 0.9, "cut": 0.1}},
     },
     "can_bus": {
         "category": "Industrial",
         "label": "CAN bus cable, D-sub 9 female (DE-9)",
-        "profile": ("round", 5.5),
+        "profile": ("round", 8.4),
         "conductors": ["#f2f2f2", "#2a5fa8", "#c0392b", "#1c1c1c"],  # CAN_H, CAN_L, V+, V−
         "jacket": "pur",
         "colors": ["#6b4fa0", "#8a8d91", "#1c1c1c"],
         "lengths": {0.5: 0.2, 1.0: 0.3, 2.0: 0.3, 5.0: 0.2},
         "tolerance": 0.01,
         "youngs_modulus": (60.0, 120.0),
-        "linear_density": (40.0, 55.0),
+        "linear_density": (68.0, 80.0),
         "layouts": {"slack": 0.5, "coil": 0.4, "straight": 0.1},
         "ends": {
             "a": {"dsub9_plug": 1.0},
@@ -279,7 +283,7 @@ PRESETS = {
         "lengths": {0.15: 0.3, 0.3: 0.5, 0.5: 0.2},
         "tolerance": 0.02,
         "youngs_modulus": (30.0, 60.0),
-        "linear_density": (4.0, 7.0),
+        "linear_density": (6.0, 7.5),
         "layouts": {"slack": 0.6, "coil": 0.2, "straight": 0.2},
         # the servo itself is not modelled: its lead ends cut, or is an extension
         "ends": {
@@ -297,7 +301,7 @@ PRESETS = {
         "lengths": {0.1: 0.3, 0.2: 0.5, 0.3: 0.2},
         "tolerance": 0.03,
         "youngs_modulus": (30.0, 80.0),
-        "linear_density": (2.0, 3.0),
+        "linear_density": (2.4, 2.9),
         "layouts": {"slack": 0.7, "straight": 0.3},
         "ends": {
             "a": {"pin_m_plug": 0.5, "pin_f_plug": 0.5},
@@ -315,7 +319,7 @@ PRESETS = {
         "lengths": {0.1: 0.3, 0.15: 0.3, 0.3: 0.4},
         "tolerance": 0.03,
         "youngs_modulus": (10.0, 25.0),
-        "linear_density": (65.0, 80.0),
+        "linear_density": (66.0, 80.0),
         "layouts": {"slack": 0.6, "straight": 0.25, "coil": 0.15},
         # a pack's lead (female plug) soldered to the cells, or an extension with the male plug
         "ends": {
@@ -334,7 +338,7 @@ PRESETS = {
         "lengths": {0.08: 0.4, 0.1: 0.4, 0.15: 0.2},
         "tolerance": 0.03,
         "youngs_modulus": (10.0, 25.0),
-        "linear_density": (11.0, 16.0),
+        "linear_density": (18.0, 23.0),
         "layouts": {"slack": 0.6, "straight": 0.4},
         "ends": {"a": {"bal5_plug": 1.0}, "b": {"stripped": 0.8, "cut": 0.2}},
     },
@@ -350,7 +354,7 @@ PRESETS = {
         "tolerance": 0.01,
         # stiffer than most cords: solid dielectric and braided shield
         "youngs_modulus": (150.0, 250.0),
-        "linear_density": (36.0, 42.0),
+        "linear_density": (36.0, 40.0),
         "layouts": {"slack": 0.6, "coil": 0.3, "straight": 0.1},
         "ends": {
             "a": {"bnc_plug": 1.0},
@@ -368,7 +372,7 @@ PRESETS = {
         "lengths": {0.25: 0.5, 0.35: 0.5},  # coiled (relaxed) length
         "tolerance": 0.03,
         "youngs_modulus": (30.0, 60.0),
-        "linear_density": (10.0, 15.0),  # of the wire itself
+        "linear_density": (9.0, 12.0),  # of the wire itself
         "layouts": {"straight": 0.4, "slack": 0.6},
         # leads: straight wire between each plug and the coil, mm (drawn per end)
         "coil": {"diameter": 8.5, "pitch": 1.05, "leads": (40.0, 80.0)},

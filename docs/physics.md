@@ -101,25 +101,25 @@ from the OpenUSD file, rendered in Blender:
 ### Results
 
 `filaire generate --preset <p> --count 3` (1 m cables, seed 1) then
-`filaire sim-test output/<p> --cables 3`, one CPU core; measured with MuJoCo
-3.17, before 4.0 (CI runs every check on MuJoCo 4):
+`filaire sim-test output/<p> --cables 3`, one CPU core, MuJoCo 4.0.1
+(November 2026, with the values of [Sources](sources.md)):
 
 | Preset | Segments | `E·I` (N·m²) | Mass with ends (g) | Drop (max speed, penetration) | Stiffness check | Insertion |
 |---|---|---|---|---|---|---|
-| `power_c13` | 104 | 0.0049–0.0073 | 119–187 | 3/3 (0.004 m/s, 0.10 mm) | sag −0.8 % | C13 panel + inline, CEE 7/7 ✓ |
-| `power_c7` | 98 | 0.00066–0.00098 | 49–67 | 3/3 (0.002 m/s, 0.06 mm) | sag −0.8 % | C7, Europlug ✓ |
-| `dc_barrel` | 139 | 0.00016–0.00026 | 30–33 | 3/3 (0.012 m/s, 0.09 mm) | sag −0.8 % | three DC jacks ✓ |
-| `usb_c` | 167 | 0.00050–0.00080 | 46–50 | 3/3 (0.013 m/s, 0.18 mm) | sag −0.8 % | USB-C panel + inline ✓ |
-| `usb_a_to_c` | 175 | 0.00041–0.00065 | 43–46 | 3/3 (0.004 m/s, 0.18 mm) | sag −0.8 % | USB-A, USB-C ✓ |
-| `usb_micro` | 190 | 0.00029–0.00051 | 38–40 | 3/3 (0.004 m/s, 0.10 mm) | sag −0.8 % | USB-A, Micro-B ✓ |
-| `ethernet` | 111 | 0.0050–0.0072 | 61–70 | 3/3 (0.005 m/s, 0.07 mm) | sag −0.8 % | RJ45 panel + inline ✓ |
-| `hdmi` | 95 | 0.0094–0.0139 | 99–107 | 3/3 (0.005 m/s, 0.09 mm) | sag −0.8 % | HDMI panel + inline ✓ |
-| `audio_jack` | 190 | 0.00022–0.00036 | 20–22 | 3/3 (0.003 m/s, 0.13 mm) | sag −0.8 % | 3.5 mm panel + inline ✓ |
-| `xlr_mic` | 111 | 0.0013–0.0022 | 147–151 | 3/3 (0.007 m/s, 0.06 mm) | sag −0.8 % | XLR3 panel + inline ✓ |
-| `speaker_wire` | 104 | 0.00042–0.00067 | 52–55 | 3/3 (0.024 m/s, 0.07 mm) | sag −0.8 % | (stripped / cut ends) |
-| `m12_sensor` | 133 | 0.0015–0.0023 | 65–68 | 3/3 (0.004 m/s, 0.03 mm) | sag −0.8 % | M12 ✓ |
-| `ribbon_idc` | 52 | 0.00011–0.00017 | 14–16 | 3/3 (0.007 m/s, 0.06 mm) | sag −0.8 % | IDC ✓ |
-| `coiled_handset` | 59 | (coil) | 130–139 | 3/3 (0.004 m/s, 0.07 mm) | coil −0.0 % | RJ9 ✓ |
+| `power_c13` | 104 | 0.0049–0.0078 | 99–167 | 3/3 (0.003 m/s, 0.01 mm) | sag −0.8 % | C13 panel + inline, CEE 7/7 ✓ |
+| `power_c7` | 104 | 0.00052–0.00083 | 49–67 | 3/3 (0.001 m/s, 0.00 mm) | sag −0.8 % | C7, Europlug ✓ |
+| `dc_barrel` | 139 | 0.00016–0.00026 | 24–28 | 3/3 (0.001 m/s, 0.01 mm) | sag −0.8 % | three DC jacks ✓ |
+| `usb_c` | 167 | 0.0005–0.00087 | 32–35 | 3/3 (0.007 m/s, 0.03 mm) | sag −0.8 % | USB-C panel + inline ✓ |
+| `usb_a_to_c` | 175 | 0.00041–0.00071 | 30–32 | 3/3 (0.008 m/s, 0.02 mm) | sag −0.8 % | USB-A, USB-C ✓ |
+| `usb_micro` | 190 | 0.00029–0.00051 | 27–28 | 3/3 (0.010 m/s, 0.02 mm) | sag −0.8 % | USB-A, Micro-B ✓ |
+| `ethernet` | 123 | 0.0033–0.005 | 44–51 | 3/3 (0.005 m/s, 0.02 mm) | sag −0.8 % | RJ45 panel + inline ✓ |
+| `hdmi` | 91 | 0.011–0.018 | 87–93 | 3/3 (0.003 m/s, 0.02 mm) | sag −0.8 % | HDMI panel + inline ✓ |
+| `audio_jack` | 190 | 0.00022–0.00039 | 20–22 | 3/3 (0.007 m/s, 0.02 mm) | sag −0.8 % | 3.5 mm panel + inline ✓ |
+| `xlr_mic` | 111 | 0.0013–0.0024 | 134–137 | 3/3 (0.018 m/s, 0.01 mm) | sag −0.8 % | XLR3 panel + inline ✓ |
+| `speaker_wire` | 111 | 0.00032–0.00056 | 39–40 | 3/3 (0.015 m/s, 0.02 mm) | sag −0.8 % | (stripped / cut ends) |
+| `m12_sensor` | 148 | 0.001–0.0016 | 52–54 | 3/3 (0.009 m/s, 0.01 mm) | sag −0.8 % | M12 ✓ |
+| `ribbon_idc` | 52 | 0.00011–0.00017 | 24–26 | 3/3 (0.004 m/s, 0.00 mm) | sag −0.8 % | IDC ✓ |
+| `coiled_handset` | 66 | (coil) | 108–114 | 3/3 (0.001 m/s, 0.00 mm) | sag −0.8 % | RJ9 ✓ |
 
 Every keyed connector was stopped at 90° and 180° (at most 12 % of its
 depth, the IDC socket's flat face entering a little before its key meets the
@@ -127,7 +127,7 @@ header), every reversible one went in at 180°, the 3.5 mm jack at every
 angle, like the DC barrels. The sag is 0.8 % under the linear beam formula for every cable: the
 geometric nonlinearity of a 10 % deflection, the same for all since the
 sample length is scaled to the stiffness. Generation takes 1–4 s per
-preset (3 cables), the checks 15–30 s (a minute for the coiled cords).
+preset (3 cables), the checks 15–45 s.
 
 ### Blender checks
 
@@ -147,24 +147,25 @@ reports how far neighbouring pieces drift apart.
 
 `filaire generate --preset <p> --count 2` (1 m cables, seed 1), then
 `filaire blender-test output/<p> --cables 2` and `--mode naive` on the
-first cable, Blender 5.2 (`bpy`), one CPU core:
+first cable, Blender 5.3 (`bpy`), one CPU core (November 2026, with the
+values of [Sources](sources.md)):
 
 | Preset | Through the add-on | Bodies | Widest joint gap (mm) | Lowest point (mm) | Rigid bodies by hand: pieces drifted apart (mm) | Time per cable (s) |
 |---|---|---|---|---|---|---|
-| `power_c13` | 2/2 | 106 | 0.005 | −0.09 | 145 | 18 |
-| `power_c7` | 2/2 | 100 | 0.006 | +0.02 | 180 | 17 |
-| `dc_barrel` | 2/2 | 141 | 0.009 | +0.05 | 174 | 30 |
-| `usb_c` | 2/2 | 169 | 0.005 | +0.04 | 58 | 42 |
-| `usb_a_to_c` | 2/2 | 177 | 0.005 | +0.04 | 32 | 44 |
-| `usb_micro` | 2/2 | 192 | 0.006 | +0.04 | 35 | 47 |
-| `ethernet` | 2/2 | 113 | 0.005 | +0.01 | 40 | 21 |
-| `hdmi` | 2/2 | 97 | 0.002 | +0.03 | 40 | 16 |
-| `audio_jack` | 2/2 | 192 | 0.006 | +0.04 | 162 | 48 |
-| `xlr_mic` | 2/2 | 113 | 0.008 | −0.03 | 1634 | 21 |
-| `speaker_wire` | 2/2 | 105 | < 0.001 | +0.05 | 10 | 18 |
-| `m12_sensor` | 2/2 | 135 | 0.007 | +0.02 | 818 | 25 |
-| `ribbon_idc` | 2/2 | 54 | < 0.001 | −0.05 | 1240 | 7 |
-| `coiled_handset` | 2/2 | 61 | 0.104 (axial spring) | −0.10 | 2193 | 10 |
+| `power_c13` | 2/2 | 106 | 0.005 | −0.07 | 134 | 25 |
+| `power_c7` | 2/2 | 106 | 0.006 | −0.01 | 277 | 26 |
+| `dc_barrel` | 2/2 | 141 | 0.008 | +0.04 | 214 | 40 |
+| `usb_c` | 2/2 | 169 | 0.005 | +0.04 | 86 | 47 |
+| `usb_a_to_c` | 2/2 | 177 | 0.005 | +0.04 | 28 | 48 |
+| `usb_micro` | 2/2 | 192 | 0.006 | +0.05 | 24 | 52 |
+| `ethernet` | 2/2 | 125 | 0.006 | +0.02 | 44 | 29 |
+| `hdmi` | 2/2 | 93 | 0.002 | +0.02 | 70 | 20 |
+| `audio_jack` | 2/2 | 192 | 0.006 | +0.04 | 49 | 54 |
+| `xlr_mic` | 2/2 | 113 | 0.007 | −0.03 | 1625 | 23 |
+| `speaker_wire` | 2/2 | 112 | < 0.001 | +0.08 | 10 | 24 |
+| `m12_sensor` | 2/2 | 150 | 0.008 | +0.02 | 318 | 34 |
+| `ribbon_idc` | 2/2 | 54 | < 0.001 | −0.08 | 1265 | 9 |
+| `coiled_handset` | 2/2 | 68 | 0.098 (axial spring) | −0.09 | 5876 | 14 |
 
 Through the add-on every cable holds together and comes to rest (a coiled
 cord's joints stretch along its axial spring, by design). Set up by hand,
@@ -179,7 +180,7 @@ chord between its joints.
 
 A search of the literature (November 2026) found no measured bending
 stiffness for USB, Ethernet, HDMI or power cords by type. What is published
-sits in the same range as the presets (7.6e-6 to 1.4e-2 N·m²) but does not
+sits in the same range as the presets (7.6e-6 to 2.2e-2 N·m²) but does not
 calibrate any of them:
 
 | Object | `E·I` (N·m²) | Source |
@@ -204,25 +205,25 @@ straight cable):
 
 | Preset | `E·I` (N·m²) | Mass (g/m) | Overhang at 41.5° (cm) |
 |---|---|---|---|
-| `power_c13` | 7.3e-03 | 82.5 | 42 |
-| `power_c7` | 9.9e-04 | 35.0 | 28 |
-| `dc_barrel` | 2.4e-04 | 23.0 | 21 |
-| `usb_c` | 8.1e-04 | 37.5 | 26 |
-| `usb_micro` | 4.7e-04 | 27.5 | 24 |
-| `usb_a_to_c` | 6.6e-04 | 32.5 | 25 |
-| `ethernet` | 7.2e-03 | 47.5 | 50 |
-| `hdmi` | 1.4e-02 | 75.0 | 53 |
+| `power_c13` | 7.3e-03 | 65.0 | 45 |
+| `power_c7` | 7.7e-04 | 36.0 | 26 |
+| `dc_barrel` | 2.4e-04 | 19.5 | 22 |
+| `usb_c` | 8.1e-04 | 25.0 | 30 |
+| `usb_micro` | 4.7e-04 | 20.0 | 27 |
+| `usb_a_to_c` | 6.6e-04 | 22.0 | 29 |
+| `ethernet` | 4.7e-03 | 33.0 | 49 |
+| `hdmi` | 1.7e-02 | 67.5 | 58 |
 | `audio_jack` | 3.6e-04 | 16.0 | 26 |
-| `xlr_mic` | 2.2e-03 | 60.0 | 31 |
-| `speaker_wire` | 6.7e-04 | 47.5 | 23 |
-| `m12_sensor` | 2.3e-03 | 42.5 | 35 |
-| `ribbon_idc` | 1.7e-04 | 10.0 | 24 |
-| `can_bus` | 4.0e-03 | 47.5 | 41 |
-| `servo_lead` | 1.2e-05 | 5.5 | 12 |
-| `jumper_wire` | 7.6e-06 | 2.5 | 14 |
-| `battery_lead` | 4.4e-04 | 72.5 | 17 |
-| `balance_lead` | 1.4e-05 | 13.5 | 9 |
-| `bnc_coax` | 5.8e-03 | 39.0 | 50 |
+| `xlr_mic` | 2.2e-03 | 48.0 | 33 |
+| `speaker_wire` | 5.2e-04 | 37.0 | 23 |
+| `m12_sensor` | 1.5e-03 | 32.0 | 34 |
+| `ribbon_idc` | 1.6e-04 | 19.5 | 19 |
+| `can_bus` | 2.2e-02 | 74.0 | 62 |
+| `servo_lead` | 1.2e-05 | 6.8 | 11 |
+| `jumper_wire` | 7.6e-06 | 2.6 | 13 |
+| `battery_lead` | 4.4e-04 | 73.0 | 17 |
+| `balance_lead` | 1.4e-05 | 20.5 | 8 |
+| `bnc_coax` | 5.8e-03 | 38.0 | 50 |
 
 If your cable overhangs a length `l'` instead, scale the modulus by
 `(l' / l)³` with `--modulus`.
