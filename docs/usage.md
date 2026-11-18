@@ -29,19 +29,19 @@ other ends…).
 | Category | Preset | Cross-section | End A | End B (default draw) |
 |---|---|---|---|---|
 | Power | `power_c13` | round Ø6.4 mm, 3 cores | C13 | CEE 7/7 plug, C14 (extension), stripped |
-| | `power_c7` | figure-8, 2 × Ø3.4 mm | C7 | Europlug, stripped |
+| | `power_c7` | figure-8, 2 × Ø3.2 mm | C7 | Europlug, stripped |
 | | `dc_barrel` | figure-8, 2 × Ø2.4 mm | DC plug 5.5 × 2.1, 5.5 × 2.5 or 4.0 × 1.7 | stripped, cut, DC jack (extension) |
 | Data | `usb_c` | round Ø4.0 mm | USB-C plug | USB-C plug, USB-C receptacle (extension) |
 | | `usb_a_to_c` | round Ø3.8 mm | USB-A plug | USB-C plug |
 | | `usb_micro` | round Ø3.5 mm | USB-A plug | Micro-B plug |
-| | `ethernet` | round Ø6.0 mm, 4 pairs | RJ45 plug | RJ45 plug, RJ45 coupler |
-| | `hdmi` | round Ø7.0 mm | HDMI plug | HDMI plug, HDMI receptacle (extension) |
+| | `ethernet` | round Ø5.4 mm, 4 pairs | RJ45 plug | RJ45 plug, RJ45 coupler |
+| | `hdmi` | round Ø7.3 mm | HDMI plug | HDMI plug, HDMI receptacle (extension) |
 | Audio | `audio_jack` | round Ø3.5 mm | 3.5 mm plug | 3.5 mm plug, 3.5 mm socket (extension) |
 | | `xlr_mic` | round Ø6.0 mm | XLR3 female | XLR3 male |
-| | `speaker_wire` | figure-8, 2 × Ø3.2 mm | stripped, cut | stripped, cut |
-| Industrial | `m12_sensor` | round Ø5.0 mm, PUR | M12 female | stripped, cut |
+| | `speaker_wire` | figure-8, 2 × Ø3.0 mm | stripped, cut | stripped, cut |
+| Industrial | `m12_sensor` | round Ø4.5 mm, PUR | M12 female | stripped, cut |
 | | `ribbon_idc` | flat, 10 × 1.27 mm, wire 1 red | IDC socket 2 × 5 | IDC socket, cut |
-| | `can_bus` | round Ø5.5 mm, PUR | DE-9 female | DE-9 female, DE-9 male (extension), stripped |
+| | `can_bus` | round Ø8.4 mm, PUR, shielded | DE-9 female | DE-9 female, DE-9 male (extension), stripped |
 | Robotics | `servo_lead` | flat, 3 × 1.05 mm: brown, red, orange (or black, red, white) | servo plug (3 sockets) | servo extension (3 pins), cut, stripped |
 | | `jumper_wire` | round Ø1.3 mm | jumper pin or socket | jumper pin, jumper socket |
 | | `battery_lead` | figure-8, 2 × Ø4.0 mm silicone, red and black | battery plug, female (3.5 mm bullets) | stripped, battery plug male (extension) |
@@ -50,9 +50,11 @@ other ends…).
 | Telephone | `coiled_handset` | coil Ø8.5 mm of Ø2.8 mm wire, straight 4–8 cm leads | RJ9 plug | RJ9 plug |
 
 Every cable also carries `cut` and `stripped` variants on both ends, and any
-other variant forced with `--end-a` / `--end-b`. Diameters, densities
-(2–90 g/m) and moduli (10–300 MPa, drawn per cable) are realistic orders of
-magnitude, not measurements of a specific product.
+other variant forced with `--end-a` / `--end-b`. Diameters and densities
+(2–80 g/m) come from the datasheets of common cables of each kind where one
+was found, and are estimates otherwise; the moduli (10–300 MPa, drawn per
+cable) are estimates for every preset. Each value and its source:
+[Sources](sources.md).
 
 ![The 20 presets, one cable each](https://raw.githubusercontent.com/drscaon/filaire/main/docs/images/presets.jpg)
 

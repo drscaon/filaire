@@ -8,6 +8,22 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Changed values
 
+- Every physical value of the catalogue now names its source (PRV-33), and
+  the values that did not match theirs were corrected. Diameters: `power_c7`
+  2 × Ø3.4 → 2 × Ø3.2 mm (H03VVH2-F 2 × 0.75 mm²), `ethernet` Ø6.0 → Ø5.4 mm
+  (a Cat.6 patch cable), `hdmi` Ø7.0 → Ø7.3 mm, `speaker_wire` 2 × Ø3.2 →
+  2 × Ø3.0 mm, `m12_sensor` Ø5.0 → Ø4.5 mm (PUR 4 × 0.34 mm²), `can_bus`
+  Ø5.5 → Ø8.4 mm (a shielded 2 × 2 × 0.25 mm² PUR cable), the ribbon 0.90 →
+  0.89 mm thick (3M 3365). Linear densities (g/m): `power_c13` 75–90 → 60–70,
+  `power_c7` 30–40 → 32–40, `dc_barrel` 18–28 → 17–22, `usb_c` 30–45 →
+  20–30, `usb_micro` 20–35 → 17–23, `usb_a_to_c` 25–40 → 18–26, `ethernet`
+  40–55 → 30–36, `hdmi` 60–90 → 60–75, `xlr_mic` 50–70 → 40–56,
+  `speaker_wire` 40–55 → 34–40, `m12_sensor` 35–50 → 28–36, `ribbon_idc`
+  8–12 → 17–22, `can_bus` 40–55 → 68–80, `servo_lead` 4–7 → 6–7.5,
+  `jumper_wire` 2–3 → 2.4–2.9, `battery_lead` 65–80 → 66–80, `balance_lead`
+  11–16 → 18–23, `bnc_coax` 36–42 → 36–40, `coiled_handset` 10–15 → 9–12.
+  A PVC jacket's friction 0.55 → 0.6 (soft plastic on concrete or wood).
+  The moduli are unchanged: they stay estimates.
 - A coiled cord records what was drawn for it: `variation:length_m` is the
   coil's length and `variation:linear_density_kg_per_m` the wire's density,
   instead of the axis length with its two leads and the density per metre of
@@ -17,6 +33,14 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `docs/sources.md` and `filaire/sources.py`: the source of every physical
+  value (cable datasheets, a friction table, or an estimate with what it
+  rests on), the range each source gives, and each connector family's
+  published figures and approximate dimensions. `tests/test_sources.py` fails
+  on a value with no source, on a value or a drawn cable outside its source's
+  range, and when the page is not the module's tables (PRV-33).
+- `CONNECTOR_RESTITUTION` in `filaire.catalog`: the connectors' restitution,
+  0.2, was a number written in the export code.
 - The conformance check (shared by the four generators) checks that an asset
   is whole on its own (contract, section 4): every relationship or connection
   inside an asset root (a material binding, a physics material, a joint's

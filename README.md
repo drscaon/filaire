@@ -189,8 +189,9 @@ Dimensions, sources, keying and what is simplified, family by family:
 
 The short version; the full list is in [Limits and roadmap](https://github.com/drscaon/filaire/blob/main/docs/limits.md).
 
-- Stiffness and density are orders of magnitude, **not calibrated**: no
-  cable's `E·I` was measured. A ruler is enough to
+- Stiffness is an estimate, **not calibrated**: no cable's `E·I` was
+  measured. Diameters and weights come from cable datasheets where one was
+  found ([Sources](https://github.com/drscaon/filaire/blob/main/docs/sources.md)). A ruler is enough to
   [check a preset against a real cable](https://github.com/drscaon/filaire/blob/main/docs/physics.md#checking-a-preset-against-a-real-cable).
 - Connectors are simplified outlines: no moving latches, threads or contacts.
 - Cables are elastic with a straight rest shape: no plastic set.
@@ -214,6 +215,7 @@ Conventions and continuous integration: [Development](https://github.com/drscaon
 | [Connectors](https://github.com/drscaon/filaire/blob/main/docs/connectors.md) | The 24 connector families and their end variants: dimensions, sources, keying, and what is simplified. |
 | [OpenUSD layout and contract](https://github.com/drscaon/filaire/blob/main/docs/openusd.md) | How a cable is laid out in the file, the ground and physics scene, and what the Primvaria contract writes on every cable. |
 | [What each cable draws](https://github.com/drscaon/filaire/blob/main/docs/variation.md) | How every drawn value follows its preset, and every preset's numbers, checked by a test against what the generator draws. |
+| [Sources of the physical values](https://github.com/drscaon/filaire/blob/main/docs/sources.md) | Where every diameter, weight, stiffness and friction comes from (a cable datasheet, a table, or an estimate and what it rests on), checked by a test. |
 | [Physics: model and checks](https://github.com/drscaon/filaire/blob/main/docs/physics.md) | The rod model, the Blender add-on, the MuJoCo and Blender checks with their results, and how to check a preset against a real cable. |
 | [Limits and roadmap](https://github.com/drscaon/filaire/blob/main/docs/limits.md) | Everything Filaire does not do or has not verified, stated plainly, and what comes next. |
 | [Development](https://github.com/drscaon/filaire/blob/main/docs/development.md) | Branch and release conventions, continuous integration. |
