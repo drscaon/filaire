@@ -61,7 +61,11 @@ the shell of the male. `filaire:contactGender` and `filaire:role` say both.
 cross-sections, layer by layer from the tip (a CEE 7/7 plug: two pins, then
 the round face that enters the socket's recess). In each layer, the
 receptacle's solid is its outline minus the plug's cross-section grown by
-the clearance (0.05–0.3 mm). The plug's holes become the receptacle's pins
+the clearance (0.05–0.3 mm). Where a receptacle's opening is published
+(USB-C, USB-A, HDMI Type A, 3.5 mm jack), the clearance around the plug's
+outline comes from it, per axis: USB-C 0.045 mm across and 0.08 mm up and
+down, USB-A 0.25 and 0.31 mm ([Sources](sources.md)); the tongue or pins
+inside keep the family's own clearance, an estimate. The plug's holes become the receptacle's pins
 or tongue, the plug's key becomes the keyway, and the two always mate. The
 keying is then *found* by turning the plug in 15° steps and testing for
 overlap, and a test checks it against the standard's.

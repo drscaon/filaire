@@ -10,7 +10,7 @@
    "measured:bending_stiffness_z_nm2": "0.000927655702",
    "measured:cable_mass_kg": "0.0212219997",
    "measured:end_a_mass_kg": "0.00193712769",
-   "measured:end_b_mass_kg": "0.00296470715",
+   "measured:end_b_mass_kg": "0.0029604125",
    "measured:joint_bend_y_nm_per_rad": "0.154918502",
    "measured:segment_length_m": "0.00598802395",
    "measured:segments": "167",

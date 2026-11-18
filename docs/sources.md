@@ -230,16 +230,24 @@ Part of the [Filaire](../README.md) documentation.
 | `cable.STRIP_COPPER` | 6 | mm |  | [strip](#strip) |
 | `CONNECTORS.usb_c.density` | 1400 | kg/m³ |  | [connector_body](#connector_body) |
 | `CONNECTORS.usb_c.clearance` | 0.05 | mm |  | [connector_body](#connector_body) |
+| `CONNECTORS.usb_c.clearance_width` | 0.045 | mm | 0.035 to 0.075 | [usb_c_receptacle](#usb_c_receptacle) |
+| `CONNECTORS.usb_c.clearance_height` | 0.08 | mm | 0.06 to 0.1 | [usb_c_receptacle](#usb_c_receptacle) |
 | `CONNECTORS.usb_a.density` | 1400 | kg/m³ |  | [connector_body](#connector_body) |
 | `CONNECTORS.usb_a.clearance` | 0.08 | mm |  | [connector_body](#connector_body) |
+| `CONNECTORS.usb_a.clearance_width` | 0.25 | mm | 0.2 to 0.3 | [usb_a_interface](#usb_a_interface) |
+| `CONNECTORS.usb_a.clearance_height` | 0.31 | mm | 0.26 to 0.36 | [usb_a_interface](#usb_a_interface) |
 | `CONNECTORS.hdmi_a.density` | 1400 | kg/m³ |  | [connector_body](#connector_body) |
 | `CONNECTORS.hdmi_a.clearance` | 0.05 | mm |  | [connector_body](#connector_body) |
+| `CONNECTORS.hdmi_a.clearance_width` | 0.05 | mm | 0.05 to 0.05 | [hdmi_interface](#hdmi_interface) |
+| `CONNECTORS.hdmi_a.clearance_height` | 0.05 | mm | 0.05 to 0.05 | [hdmi_interface](#hdmi_interface) |
 | `CONNECTORS.rj45.density` | 1400 | kg/m³ |  | [connector_body](#connector_body) |
 | `CONNECTORS.rj45.clearance` | 0.1 | mm |  | [connector_body](#connector_body) |
 | `CONNECTORS.rj9.density` | 1400 | kg/m³ |  | [connector_body](#connector_body) |
 | `CONNECTORS.rj9.clearance` | 0.1 | mm |  | [connector_body](#connector_body) |
 | `CONNECTORS.jack35.density` | 1400 | kg/m³ |  | [connector_body](#connector_body) |
 | `CONNECTORS.jack35.clearance` | 0.05 | mm |  | [connector_body](#connector_body) |
+| `CONNECTORS.jack35.clearance_width` | 0.05 | mm | 0.05 to 0.05 | [jack35_socket](#jack35_socket) |
+| `CONNECTORS.jack35.clearance_height` | 0.05 | mm | 0.05 to 0.05 | [jack35_socket](#jack35_socket) |
 | `CONNECTORS.c13.density` | 1300 | kg/m³ |  | [connector_body](#connector_body) |
 | `CONNECTORS.c13.clearance` | 0.2 | mm |  | [connector_body](#connector_body) |
 | `CONNECTORS.c7.density` | 1300 | kg/m³ |  | [connector_body](#connector_body) |
@@ -281,12 +289,12 @@ Part of the [Filaire](../README.md) documentation.
 
 | Family | Standard | Published figures used | Not from a source |
 |---|---|---|---|
-| `usb_c` | USB Type-C Cable and Connector Specification | receptacle opening 8.34 × 2.56, plug insertion length ≈ 6.65: https://www.accesscomms.com.au/usb-connector-dimensions/ | plug inner cavity 6.95 × 1.00 (receptacle tongue); overmold 12 × 6.5 × 18 |
-| `usb_a` | USB 2.0 Specification (Standard-A) | plug body length ≈ 12: https://www.accesscomms.com.au/usb-connector-dimensions/ | shell 12.0 × 4.5; inner cavity (receptacle tongue) 11.2 × 1.85, upper half |
+| `usb_c` | USB Type-C Cable and Connector Specification | receptacle opening 8.34 × 2.56, plug insertion length ≈ 6.65: https://www.accesscomms.com.au/usb-connector-dimensions/; receptacle opening 8.34 +0.06/−0.02 × 2.56 ± 0.04: GCT USB4900 drawing, https://www.mouser.lt/datasheet/3/1507/1/usb4900.pdf | plug inner cavity 6.95 × 1.00 (receptacle tongue); overmold 12 × 6.5 × 18 |
+| `usb_a` | USB 2.0 Specification (Standard-A) | plug body length ≈ 12: https://www.accesscomms.com.au/usb-connector-dimensions/; plug shell 12.00 × 4.50, receptacle opening 12.50 × 5.12: Adam Tech USB-A drawings, https://dtsheet.com/doc/1419227/usb-connector; receptacle opening 12.50 ± 0.10 × 5.12 ± 0.10: TE Connectivity 108-1586, https://en.eeworld.com.cn/datasheet/view/3886042.html | inner cavity (receptacle tongue) 11.2 × 1.85, upper half |
 | `hdmi_a` | HDMI Specification (Type A) | plug 13.9 × 4.45, receptacle 14 × 4.55: https://en.wikipedia.org/wiki/HDMI | bottom chamfers 1.3; insertion depth 9.5; inner cavity 10.9 × 1.5 |
 | `rj45` | IEC 60603-7 (8-way modular) | plug 11.68 wide, 8.00 high with latch, 22.48 long; insertion height 6.60: https://en.wikipedia.org/wiki/Modular_connector | latch 4.2 wide; insertion depth 14; boot 13 × 10 × 16 |
 | `rj9` | 4-way modular (handset) | plug width 7.7: https://en.wikipedia.org/wiki/Modular_connector | height 6.60 (modular insertion height); latch; insertion depth 10 |
-| `jack35` | IEC 60603-11 (3.5 mm) | Ø3.5, length 15: https://en.wikipedia.org/wiki/Phone_connector_(audio) | overmold Ø6 × 18; insulator rings at 4.0–5.5 and 7.7–9.2 from the tip |
+| `jack35` | IEC 60603-11 (3.5 mm) | Ø3.5, length 15: https://en.wikipedia.org/wiki/Phone_connector_(audio); socket bore Ø3.60: Same Sky SJ3-35083D, https://www.digikey.com/en/products/detail/same-sky-formerly-cui-devices/SJ3-35083D-TR/24627981 | overmold Ø6 × 18; insulator rings at 4.0–5.5 and 7.7–9.2 from the tip |
 | `c13` | IEC 60320-1 | pin centres 14 mm across, 4 mm vertical offset: https://en.wikipedia.org/wiki/IEC_60320 | face 24.0 × 15.5 with 4.5 chamfers; blade holes 2.4 × 4.6; depth 13 |
 | `c7` | IEC 60320-1 | pin centres 8.6 mm, C8 inlet 10 mm deep: https://en.wikipedia.org/wiki/IEC_60320 | lobes Ø9.2; pin holes Ø2.6 |
 | `cee77` | CEE 7 | pins 4.8 × 19 mm, 19 mm apart; CEE 7/5 recess 15 mm deep: https://en.wikipedia.org/wiki/CEE_7 | plug face Ø36; socket without earth pin or clips; grip 40 × 38 × 30 |
@@ -331,7 +339,11 @@ Part of the [Filaire](../README.md) documentation.
 - <a id="length_tolerance"></a>**length_tolerance** (estimate): spread of a cable's length around its nominal length (relative standard deviation). Estimate: cable datasheets give length tolerances of 0.4 % to 2.5 % (USB-C 4000 ± 15 mm and 500 ± 15 mm, HDMI 7500 ± 80 mm); 0.5 % to 3 % of standard deviation, wider for hand-made hobby leads. <https://cdn.iceshop.nl/objects/mmo_114675195_1694772804_3444_50.pdf>, <https://www.secomp.de/media/pdf/s11/11995740_en_data_scmp.pdf>
 - <a id="retail_lengths"></a>**retail_lengths** (estimate): nominal lengths of each kind of cable. Estimate: the lengths cables of the kind are commonly sold in; their weights are a choice, not a statistic.
 - <a id="coiled_cord"></a>**coiled_cord** (estimate): coil diameter, pitch and straight leads of a coiled handset cord. Estimate: measured on photographs of handset cords: close-wound, about 8 to 9 mm across, 4 to 8 cm of straight cord at each end.
-- <a id="connector_body"></a>**connector_body** (estimate): effective density of a connector (plastic body with metal parts) and its clearance in its receptacle. Estimate: between plastic (1.0 to 1.4 g/cm³) and brass or steel, by the share of metal: 1.2 to 1.4 g/cm³ for moulded plugs, 2.2 to 2.5 for metal-shelled ones, 4.5 for a BNC; clearances of 0.05 to 0.3 mm, tighter for the small precise connectors.
+- <a id="usb_c_receptacle"></a>**usb_c_receptacle** (datasheet): USB Type-C receptacle opening 8.34 +0.06/−0.02 × 2.56 ± 0.04 mm (GCT USB4900); the plug's shell 8.25 × 2.40 mm. One manufacturer's tolerance: the plug's own is not included. <https://www.mouser.lt/datasheet/3/1507/1/usb4900.pdf>
+- <a id="usb_a_interface"></a>**usb_a_interface** (datasheet): USB 2.0 Standard-A receptacle opening 12.50 ± 0.10 × 5.12 ± 0.10 mm (TE Connectivity 108-1586), plug shell 12.00 × 4.50 mm (Adam Tech). The receptacle's spring tabs, which take up part of this play on a real port, are not modelled. <https://en.eeworld.com.cn/datasheet/view/3886042.html>, <https://dtsheet.com/doc/1419227/usb-connector>
+- <a id="hdmi_interface"></a>**hdmi_interface** (handbook): HDMI Type A plug 13.9 × 4.45 mm, receptacle 14 × 4.55 mm (nominal, no tolerance given). <https://en.wikipedia.org/wiki/HDMI>, <https://uk.rs-online.com/web/content/product-knowledge/computing-networking/display-video-technology/hdmi-connectors-guide>
+- <a id="jack35_socket"></a>**jack35_socket** (datasheet): 3.5 mm socket bore Ø3.60 mm (Same Sky SJ3-35083D, Adam Tech ASJ series) for a Ø3.5 mm plug (nominal, no tolerance given). <https://www.digikey.com/en/products/detail/same-sky-formerly-cui-devices/SJ3-35083D-TR/24627981>, <https://zenode.ai/parts/pxm2n5epom>
+- <a id="connector_body"></a>**connector_body** (estimate): effective density of a connector (plastic body with metal parts) and its clearance in its receptacle (where no opening is published: around the outline; else inside and at the tip). Estimate: between plastic (1.0 to 1.4 g/cm³) and brass or steel, by the share of metal: 1.2 to 1.4 g/cm³ for moulded plugs, 2.2 to 2.5 for metal-shelled ones, 4.5 for a BNC; clearances of 0.05 to 0.3 mm, tighter for the small precise connectors.
 - <a id="strip"></a>**strip** (estimate): length of insulated core and of bare copper at a stripped end. Estimate: 12 mm of core out of the jacket and 6 mm of bare copper, as for a screw terminal.
 
 ### Numbers that are not physical values

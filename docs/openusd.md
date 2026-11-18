@@ -114,6 +114,7 @@ are kept as engine-neutral attributes:
 | `filaire:connector`, `filaire:name`, `filaire:standard` | family and name (`usb_c`, "USB-C plug") |
 | `filaire:role`, `filaire:mount`, `filaire:contactGender` | plug / receptacle, cable / panel, male / female |
 | `filaire:insertionDepth`, `filaire:clearance`, `filaire:keying` | for insertion tasks (m) |
+| `filaire:clearanceWidth`, `filaire:clearanceHeight` | clearance around the plug's outline, across its width and its height (m); `filaire:clearance` is then the one inside and at the tip |
 | `filaire:lockTwist` | bayonets only: the turn that locks the plug once fully in (degrees, about +Z) |
 
 ## Primvaria contract
