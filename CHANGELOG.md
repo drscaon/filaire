@@ -8,6 +8,11 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Changed values
 
+- `usb_c`: every cable lists the aspect `clearance` and records its USB-C
+  extension's drawn opening; the extension's mass follows its opening
+  (golden reference updated); the USB-C port of `sockets.usdc` records the
+  scene's seed instead of 0.
+
 - Receptacle clearances from published openings (FIL-10), per axis around
   the plug's outline: USB-C 0.05 → 0.045 mm across and 0.05 → 0.08 mm up
   and down (receptacle opening 8.34 × 2.56 mm), USB-A 0.08 → 0.25 and
@@ -41,6 +46,13 @@ and the project uses [Semantic Versioning](https://semver.org/).
   other preset changes (PRV-34).
 
 ### Added
+
+- Aspect `clearance` (FIL-10): a receptacle whose opening is published with
+  a tolerance draws its own width and height, uniformly over it, and its
+  cavity and colliders follow. Today the USB-C extension at the end of a
+  `usb_c` cable (`variation:end_b_opening_m`) and the USB-C and USB-A ports
+  of `sockets.usdc` (`variation:opening_m`, seed: the scene's).
+  `--no-vary clearance` keeps the nominal opening.
 
 - `filaire:clearanceWidth` and `filaire:clearanceHeight` on every mate
   frame: the clearance around the plug's outline, across its width and its

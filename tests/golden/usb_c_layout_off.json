@@ -1,7 +1,7 @@
 {
  "usb_c/instances.csv": [
   {
-   "aspects": "length ends color stiffness density",
+   "aspects": "length ends color stiffness density clearance",
    "classes": "cable usb_c",
    "file": "filaire_usb_c.usdc",
    "generator": "filaire",
@@ -10,7 +10,7 @@
    "measured:bending_stiffness_z_nm2": "0.000927655702",
    "measured:cable_mass_kg": "0.0212219997",
    "measured:end_a_mass_kg": "0.00193712769",
-   "measured:end_b_mass_kg": "0.0029604125",
+   "measured:end_b_mass_kg": "0.00296251113",
    "measured:joint_bend_y_nm_per_rad": "0.154918502",
    "measured:segment_length_m": "0.00598802395",
    "measured:segments": "167",
@@ -22,14 +22,16 @@
    "variation:color": "#1c1c1c",
    "variation:end_a": "usb_c_plug",
    "variation:end_b": "usb_c_inline",
+   "variation:end_b_opening_m": "0.00834053847 0.00253191362",
    "variation:layout": "slack",
    "variation:length_m": "1",
    "variation:linear_density_kg_per_m": "0.0212219997",
    "variation:nominal_length_m": "1",
+   "variation:opening_m": "",
    "variation:youngs_modulus_pa": "74775905.5"
   },
   {
-   "aspects": "length ends color stiffness density",
+   "aspects": "length ends color stiffness density clearance",
    "classes": "cable usb_c",
    "file": "filaire_usb_c.usdc",
    "generator": "filaire",
@@ -50,14 +52,16 @@
    "variation:color": "#9aa0a6",
    "variation:end_a": "usb_c_plug",
    "variation:end_b": "usb_c_plug",
+   "variation:end_b_opening_m": "0.00837287584 0.00253775079",
    "variation:layout": "slack",
    "variation:length_m": "1",
    "variation:linear_density_kg_per_m": "0.0242528078",
    "variation:nominal_length_m": "1",
+   "variation:opening_m": "",
    "variation:youngs_modulus_pa": "67520618.5"
   },
   {
-   "aspects": "length ends color stiffness density",
+   "aspects": "length ends color stiffness density clearance",
    "classes": "cable usb_c",
    "file": "filaire_usb_c.usdc",
    "generator": "filaire",
@@ -78,14 +82,16 @@
    "variation:color": "#202326",
    "variation:end_a": "usb_c_plug",
    "variation:end_b": "usb_c_plug",
+   "variation:end_b_opening_m": "0.0083828882 0.00257989294",
    "variation:layout": "slack",
    "variation:length_m": "1",
    "variation:linear_density_kg_per_m": "0.0218546793",
    "variation:nominal_length_m": "1",
+   "variation:opening_m": "",
    "variation:youngs_modulus_pa": "70013740"
   },
   {
-   "aspects": "",
+   "aspects": "clearance",
    "classes": "socket usb_c",
    "file": "sockets.usdc",
    "generator": "filaire",
@@ -102,14 +108,16 @@
    "name": "usb_c",
    "preset": "usb_c",
    "prim": "/World/Sockets/usb_c",
-   "seed": "0",
+   "seed": "7",
    "variation:color": "",
    "variation:end_a": "",
    "variation:end_b": "",
+   "variation:end_b_opening_m": "",
    "variation:layout": "",
    "variation:length_m": "",
    "variation:linear_density_kg_per_m": "",
    "variation:nominal_length_m": "",
+   "variation:opening_m": "0.00835371844 0.00255613631",
    "variation:youngs_modulus_pa": ""
   }
  ]

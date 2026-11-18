@@ -129,14 +129,14 @@ Filaire is part of [Primvaria](https://primvaria.com) and follows its
 version 0, which the four generators share. Every cable and every socket is an asset any tool can find without knowing Filaire: a model of kind
 `component` with `assetInfo` (name, identifier, version) and the attributes
 `primvaria:contract`, `primvaria:generator`, `primvaria:version`,
-`primvaria:preset` and `primvaria:seed`; `/World` is an `assembly`, `/World/Cables` and `/World/Sockets` are groups; a socket is not drawn, so its preset is its connector family and its seed 0. The command above checks
+`primvaria:preset` and `primvaria:seed`; `/World` is an `assembly`, `/World/Cables` and `/World/Sockets` are groups; a socket's preset is its connector family, and its seed is the scene's when its opening is drawn, else 0. The command above checks
 the stage units, the model hierarchy and this identity; the tests and CI
 require it on every preset.
 
 What was drawn for each cable is in the file too, its ground truth:
 `primvaria:variation:aspects` lists the aspects that were switched on
-(`length`, `layout`, `ends`, `color`, `stiffness`, `density`) and `primvaria:variation:<name>` holds each drawn value
-(`length_m`, `nominal_length_m`, `layout`, `end_a`, `end_b`, `color`, `youngs_modulus_pa`, `linear_density_kg_per_m`; a coiled cord also `coil_leads_m`, and its `length_m` and `linear_density_kg_per_m` are the coil's and the wire's, as drawn: the axis, leads included, is measured). How each is drawn: [variation.md](variation.md). A socket draws nothing: its list of aspects is empty. An aspect that is switched off is still recorded, at its
+(`length`, `layout`, `ends`, `color`, `stiffness`, `density`, `clearance`) and `primvaria:variation:<name>` holds each drawn value
+(`length_m`, `nominal_length_m`, `layout`, `end_a`, `end_b`, `color`, `youngs_modulus_pa`, `linear_density_kg_per_m`; a coiled cord also `coil_leads_m`; a cable with a USB-C extension `end_b_opening_m` (width, height); and a coiled cord's `length_m` and `linear_density_kg_per_m` are the coil's and the wire's, as drawn: the axis, leads included, is measured). How each is drawn: [variation.md](variation.md). A socket draws only its opening (`opening_m`, aspect `clearance`), when it is published with a tolerance (USB-C, USB-A ports); the others draw nothing: their list of aspects is empty. An aspect that is switched off is still recorded, at its
 nominal value, and the other aspects keep their draws.
 
 What was measured on each cable once generated is there as well, as

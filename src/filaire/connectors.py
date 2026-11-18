@@ -37,7 +37,7 @@ orders of magnitude for simulation, not the drawings of the standard; the
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 import numpy as np
 
@@ -131,6 +131,34 @@ class ConnectorSpec:
             (round((o.width - o.width_tol[0] - w) / 2, 6), round((o.width + o.width_tol[1] - w) / 2, 6)),
             (round((o.height - o.height_tol[0] - h) / 2, 6), round((o.height + o.height_tol[1] - h) / 2, 6)),
         )
+
+
+def toleranced(spec: ConnectorSpec) -> bool:
+    """Whether the receptacle's published opening comes with a tolerance to draw in."""
+    o = spec.opening
+    return o is not None and any(o.width_tol + o.height_tol)
+
+
+def opening_band(spec: ConnectorSpec) -> tuple[tuple[float, float], tuple[float, float]]:
+    """The published opening's extremes (mm): ((width lo, hi), (height lo, hi))."""
+    o = spec.opening
+    return (
+        (o.width - o.width_tol[0], o.width + o.width_tol[1]),
+        (o.height - o.height_tol[0], o.height + o.height_tol[1]),
+    )
+
+
+def draw_opening(spec: ConnectorSpec, rng) -> tuple[float, float]:
+    """A receptacle's opening (mm), width and height each uniform over its published tolerance."""
+    (wlo, whi), (hlo, hhi) = opening_band(spec)
+    return float(rng.uniform(wlo, whi)), float(rng.uniform(hlo, hhi))
+
+
+def with_opening(spec: ConnectorSpec, opening: tuple[float, float] | None) -> ConnectorSpec:
+    """The spec of one receptacle: its opening is the one given (mm), drawn for it; None: nominal."""
+    if opening is None:
+        return spec
+    return replace(spec, opening=Opening(opening[0], opening[1], source=spec.opening.source))
 
 
 def _outline_size(spec: ConnectorSpec) -> tuple[float, float]:

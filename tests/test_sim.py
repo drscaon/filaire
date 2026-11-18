@@ -126,3 +126,20 @@ def test_bnc_locks_with_a_quarter_turn():
     r = twist_lock_suite(plug, rec, spec.depth * 1e-3, spec.twist)
     assert r["passed"], r
     assert r["turned"]["remaining"] > 0.9 and r["not_turned"]["remaining"] < 0.5
+
+
+@pytest.mark.parametrize("key", ["usb_c", "usb_a"])
+@pytest.mark.parametrize("end", [0, 1])
+def test_insertion_at_both_ends_of_the_published_tolerance(key, end):
+    """The tightest and the loosest receptacle the drawn opening can give still mate and key (FIL-10)."""
+    from filaire.cable import connector_end
+    from filaire.connectors import opening_band, with_opening
+    from filaire.sim.usd_reader import Body
+
+    spec = CONNECTORS[key]
+    (w, h) = (band[end] for band in opening_band(spec))
+    plug_end = connector_end(f"{key}_plug", "#000000")
+    plug = Body(key, None, None, plug_end.mass, plug_end.com, [1e-7] * 3, None, hulls=plug_end.hulls)
+    rec = [hull for p in receptacle_parts(with_opening(spec, (w, h))) for hull in p.convex_hulls()]
+    r = insertion_suite(plug, rec, spec.depth * 1e-3, spec.keying)
+    assert r["passed"], r
