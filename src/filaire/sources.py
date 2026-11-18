@@ -242,10 +242,43 @@ SOURCES = {
         note="measured on photographs of handset cords: close-wound, about 8 to 9 mm across, 4 to 8 cm of "
         "straight cord at each end",
     ),
+    "usb_c_receptacle": Source(
+        "datasheet",
+        "USB Type-C receptacle opening 8.34 +0.06/−0.02 × 2.56 ± 0.04 mm (GCT USB4900); the plug's shell "
+        "8.25 × 2.40 mm. One manufacturer's tolerance: the plug's own is not included",
+        ("https://www.mouser.lt/datasheet/3/1507/1/usb4900.pdf",),
+    ),
+    "usb_a_interface": Source(
+        "datasheet",
+        "USB 2.0 Standard-A receptacle opening 12.50 ± 0.10 × 5.12 ± 0.10 mm (TE Connectivity 108-1586), "
+        "plug shell 12.00 × 4.50 mm (Adam Tech). The receptacle's spring tabs, which take up part of this "
+        "play on a real port, are not modelled",
+        (
+            "https://en.eeworld.com.cn/datasheet/view/3886042.html",
+            "https://dtsheet.com/doc/1419227/usb-connector",
+        ),
+    ),
+    "hdmi_interface": Source(
+        "handbook",
+        "HDMI Type A plug 13.9 × 4.45 mm, receptacle 14 × 4.55 mm (nominal, no tolerance given)",
+        (
+            "https://en.wikipedia.org/wiki/HDMI",
+            "https://uk.rs-online.com/web/content/product-knowledge/computing-networking/display-video-technology/hdmi-connectors-guide",  # noqa: E501
+        ),
+    ),
+    "jack35_socket": Source(
+        "datasheet",
+        "3.5 mm socket bore Ø3.60 mm (Same Sky SJ3-35083D, Adam Tech ASJ series) for a Ø3.5 mm plug "
+        "(nominal, no tolerance given)",
+        (
+            "https://www.digikey.com/en/products/detail/same-sky-formerly-cui-devices/SJ3-35083D-TR/24627981",
+            "https://zenode.ai/parts/pxm2n5epom",
+        ),
+    ),
     "connector_body": Source(
         "estimate",
         "effective density of a connector (plastic body with metal parts) and its clearance in its "
-        "receptacle",
+        "receptacle (where no opening is published: around the outline; else inside and at the tip)",
         note="between plastic (1.0 to 1.4 g/cm³) and brass or steel, by the share of metal: 1.2 to 1.4 "
         "g/cm³ for "
         "moulded plugs, 2.2 to 2.5 for metal-shelled ones, 4.5 for a BNC; clearances of 0.05 to 0.3 mm, "
@@ -368,6 +401,12 @@ def _materials() -> list[Value]:
     for key, spec in CONNECTORS.items():
         out.append(Value(f"CONNECTORS.{key}.density", spec.density, "kg/m³", "connector_body"))
         out.append(Value(f"CONNECTORS.{key}.clearance", spec.clearance, "mm", "connector_body"))
+        if spec.opening is not None:
+            (wlo, whi), (hlo, hhi) = spec.outer_clearance_range()
+            cx, cy = spec.outer_clearance
+            src = spec.opening.source
+            out.append(Value(f"CONNECTORS.{key}.clearance_width", cx, "mm", src, wlo, whi))
+            out.append(Value(f"CONNECTORS.{key}.clearance_height", cy, "mm", src, hlo, hhi))
     return out
 
 

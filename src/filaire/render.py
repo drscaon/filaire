@@ -86,7 +86,7 @@ def connectors_sheet(out: str | Path, keys: list[str] | None = None) -> Path:
     from matplotlib.path import Path as MplPath
 
     from . import geometry2d as g2
-    from .connectors import CONNECTORS, _cavity, keying_of
+    from .connectors import CONNECTORS, cavity, keying_of
 
     keys = keys or list(CONNECTORS)
     ncol = 4
@@ -114,12 +114,12 @@ def connectors_sheet(out: str | Path, keys: list[str] | None = None) -> Path:
             draw(a_plug, layer.region, plug_color)
         # the receptacle seen from the front: its opening, and the pins or tongue deeper inside
         front = max(spec.layers, key=lambda la: la.t1)
-        opening = _cavity(front.region, spec.clearance)
+        opening = cavity(spec, front.region)
         draw(a_rec, outline, (0.9, 0.9, 0.91))
         draw(a_rec, opening, (0.35, 0.35, 0.37))
         for layer in spec.layers:
             if layer is not front:
-                inner = outline.difference(_cavity(layer.region, spec.clearance)).intersection(opening)
+                inner = outline.difference(cavity(spec, layer.region)).intersection(opening)
                 draw(a_rec, inner, (0.7, 0.7, 0.72))
         for ax in (a_plug, a_rec):
             minx, miny, maxx, maxy = outline.bounds

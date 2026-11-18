@@ -54,6 +54,18 @@ class Layer:
     region: object  # shapely geometry in the face plane (mm)
 
 
+@dataclass(frozen=True)
+class Opening:
+    """A receptacle's published opening (mm): its width (x) and height (y) across the plug's outline,
+    each with its tolerance (below, above the nominal). The plug's outline is the spec's own."""
+
+    width: float
+    height: float
+    width_tol: tuple = (0.0, 0.0)
+    height_tol: tuple = (0.0, 0.0)
+    source: str = ""  # key of filaire.sources.SOURCES
+
+
 @dataclass
 class ConnectorSpec:
     key: str
@@ -65,7 +77,9 @@ class ConnectorSpec:
     body: list  # plug body behind the mating plane: [(length mm, region), ...] from the plane back
     inline: tuple | None  # receptacle on a cable: (body length mm, outline)
     panel: tuple  # fixed receptacle: (block depth behind the cavity mm, front outline)
-    clearance: float = 0.1  # mm, radial, between plug and receptacle
+    clearance: float = 0.1  # mm, plug to receptacle: everywhere, or inside and at the tip with an opening
+    # published receptacle opening: sets the clearance around the plug's outline, per axis
+    opening: Opening | None = None
     density: float = 1400.0  # kg/m³, effective (plastic + metal parts)
     plug_name: str = ""  # display names (gender words of the standard)
     inline_name: str = ""
@@ -97,6 +111,32 @@ class ConnectorSpec:
     @property
     def body_length(self) -> float:
         return sum(length for length, _ in self.body)
+
+    @property
+    def outer_clearance(self) -> tuple[float, float]:
+        """Clearance (mm) around the plug's outline, across its width and its height: from the
+        published opening when there is one, else the spec's clearance."""
+        if self.opening is None:
+            return (self.clearance, self.clearance)
+        w, h = _outline_size(self)
+        return (round((self.opening.width - w) / 2, 6), round((self.opening.height - h) / 2, 6))
+
+    def outer_clearance_range(self) -> tuple[tuple[float, float], tuple[float, float]]:
+        """The same, at both ends of the published tolerance of the opening: ((lo, hi), (lo, hi))."""
+        o = self.opening
+        if o is None:
+            return ((self.clearance,) * 2, (self.clearance,) * 2)
+        w, h = _outline_size(self)
+        return (
+            (round((o.width - o.width_tol[0] - w) / 2, 6), round((o.width + o.width_tol[1] - w) / 2, 6)),
+            (round((o.height - o.height_tol[0] - h) / 2, 6), round((o.height + o.height_tol[1] - h) / 2, 6)),
+        )
+
+
+def _outline_size(spec: ConnectorSpec) -> tuple[float, float]:
+    """Width and height (mm) of the plug's mating outline: all its layers seen from the tip."""
+    minx, miny, maxx, maxy = g2.union(*(layer.region for layer in spec.layers)).bounds
+    return maxx - minx, maxy - miny
 
 
 # ----------------------------------------------------------------- helpers
@@ -247,6 +287,7 @@ CONNECTORS: dict[str, ConnectorSpec] = {
         inline=(24.0, g2.rrect(13.0, 7.5, 2.5)),
         panel=(3.0, g2.rrect(22.0, 12.0, 1.5)),
         clearance=0.05,
+        opening=Opening(8.34, 2.56, (0.02, 0.06), (0.04, 0.04), "usb_c_receptacle"),
         plug_name="USB-C plug",
         inline_name="USB-C receptacle (extension)",
         panel_name="USB-C port",
@@ -256,6 +297,8 @@ CONNECTORS: dict[str, ConnectorSpec] = {
         sources=[
             "receptacle opening 8.34 × 2.56, plug insertion length ≈ 6.65: "
             "https://www.accesscomms.com.au/usb-connector-dimensions/",
+            "receptacle opening 8.34 +0.06/−0.02 × 2.56 ± 0.04: GCT USB4900 drawing, "
+            "https://www.mouser.lt/datasheet/3/1507/1/usb4900.pdf",
         ],
     ),
     "usb_a": ConnectorSpec(
@@ -269,12 +312,19 @@ CONNECTORS: dict[str, ConnectorSpec] = {
         inline=None,
         panel=(3.0, g2.rrect(24.0, 14.0, 1.5)),
         clearance=0.08,
+        opening=Opening(12.50, 5.12, (0.10, 0.10), (0.10, 0.10), "usb_a_interface"),
         plug_name="USB-A plug",
         panel_name="USB-A port",
         shell=_METAL,
         socket_shell=_METAL,
-        approximate=["shell 12.0 × 4.5", "inner cavity (receptacle tongue) 11.2 × 1.85, upper half"],
-        sources=["plug body length ≈ 12: https://www.accesscomms.com.au/usb-connector-dimensions/"],
+        approximate=["inner cavity (receptacle tongue) 11.2 × 1.85, upper half"],
+        sources=[
+            "plug body length ≈ 12: https://www.accesscomms.com.au/usb-connector-dimensions/",
+            "plug shell 12.00 × 4.50, receptacle opening 12.50 × 5.12: Adam Tech USB-A drawings, "
+            "https://dtsheet.com/doc/1419227/usb-connector",
+            "receptacle opening 12.50 ± 0.10 × 5.12 ± 0.10: TE Connectivity 108-1586, "
+            "https://en.eeworld.com.cn/datasheet/view/3886042.html",
+        ],
     ),
     "hdmi_a": ConnectorSpec(
         key="hdmi_a",
@@ -287,6 +337,7 @@ CONNECTORS: dict[str, ConnectorSpec] = {
         inline=(30.0, g2.rrect(22.0, 12.0, 2.5)),
         panel=(3.0, g2.rrect(28.0, 14.0, 1.5)),
         clearance=0.05,
+        opening=Opening(14.0, 4.55, source="hdmi_interface"),
         plug_name="HDMI plug",
         inline_name="HDMI receptacle (extension)",
         panel_name="HDMI port",
@@ -348,6 +399,7 @@ CONNECTORS: dict[str, ConnectorSpec] = {
         inline=(22.0, g2.circle(7.5)),
         panel=(3.0, g2.rrect(12.0, 12.0, 1.5)),
         clearance=0.05,
+        opening=Opening(3.60, 3.60, source="jack35_socket"),
         plug_name="3.5 mm plug",
         inline_name="3.5 mm socket (extension)",
         panel_name="3.5 mm socket",
@@ -355,7 +407,11 @@ CONNECTORS: dict[str, ConnectorSpec] = {
         bands=[(4.0, 5.5, _BLACK), (7.7, 9.2, _BLACK)],
         shell=_METAL,
         approximate=["overmold Ø6 × 18", "insulator rings at 4.0–5.5 and 7.7–9.2 from the tip"],
-        sources=["Ø3.5, length 15: https://en.wikipedia.org/wiki/Phone_connector_(audio)"],
+        sources=[
+            "Ø3.5, length 15: https://en.wikipedia.org/wiki/Phone_connector_(audio)",
+            "socket bore Ø3.60: Same Sky SJ3-35083D, "
+            "https://www.digikey.com/en/products/detail/same-sky-formerly-cui-devices/SJ3-35083D-TR/24627981",
+        ],
     ),
     "c13": ConnectorSpec(
         key="c13",
@@ -792,7 +848,7 @@ def _receptacle_cavity(spec: ConnectorSpec, layer) -> object:
     """The cavity a receptacle keeps clear at the depth of one plug layer: the layer grown by the
     clearance and, for a bayonet, swept through the locking turn made at full depth."""
     if not spec.twist:
-        return _cavity(layer.region, spec.clearance)
+        return cavity(spec, layer.region)
     key = (spec.key, layer.t0, layer.t1, spec.twist, spec.clearance)
     if key not in _SWEPT:
         steps = max(2, int(math.ceil(abs(spec.twist) / TWIST_STEP)) + 1)
@@ -985,6 +1041,34 @@ def locked(spec: ConnectorSpec, mount: str = "panel", tol: float = 1e-9) -> bool
 
 def _cavity(region, clearance: float):
     return region.buffer(clearance, quad_segs=g2.QUAD_SEGS, join_style="mitre")
+
+
+def cavity(spec: ConnectorSpec, region):
+    """What a receptacle keeps clear around a plug cross-section: the outline grown by the outer
+    clearance (per axis when the opening is published), what stands inside the plug (its holes:
+    the receptacle's tongue or pins) shrunk by the spec's clearance."""
+    cx, cy = spec.outer_clearance
+    if cx == cy == spec.clearance:
+        return _cavity(region, spec.clearance)
+    from shapely.geometry import Polygon
+
+    polys = list(region.geoms) if hasattr(region, "geoms") else [region]
+    out = g2.union(*(_grow(Polygon(p.exterior), cx, cy) for p in polys))
+    for p in polys:
+        for hole in p.interiors:
+            out = out.difference(_cavity(Polygon(hole), -spec.clearance))
+    return out
+
+
+def _grow(poly, cx: float, cy: float):
+    """A polygon grown by cx along x and cy along y (mitred: straight edges move by exactly that)."""
+    if cx == cy:
+        return _cavity(poly, cx)
+    from shapely import affinity
+
+    k = cy / cx
+    squeezed = affinity.scale(poly, 1.0, 1.0 / k, origin=(0, 0))
+    return affinity.scale(_cavity(squeezed, cx), 1.0, k, origin=(0, 0))
 
 
 def admissible_angles(spec: ConnectorSpec, step: float = 15.0) -> list[float]:

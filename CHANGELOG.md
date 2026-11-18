@@ -8,6 +8,15 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Changed values
 
+- Receptacle clearances from published openings (FIL-10), per axis around
+  the plug's outline: USB-C 0.05 → 0.045 mm across and 0.05 → 0.08 mm up
+  and down (receptacle opening 8.34 × 2.56 mm), USB-A 0.08 → 0.25 and
+  0.31 mm (opening 12.50 × 5.12 mm for a 12.00 × 4.50 mm plug). HDMI
+  Type A and the 3.5 mm jack keep 0.05 mm, now sourced. The tongue or pins
+  inside keep each family's clearance. A USB-C extension's receptacle is
+  4 mg lighter: `measured:end_b_mass_kg` 0.0029647 → 0.0029604 kg in the
+  `usb_c` golden reference.
+
 - Every physical value of the catalogue now names its source (PRV-33), and
   the values that did not match theirs were corrected. Diameters: `power_c7`
   2 × Ø3.4 → 2 × Ø3.2 mm (H03VVH2-F 2 × 0.75 mm²), `ethernet` Ø6.0 → Ø5.4 mm
@@ -32,6 +41,10 @@ and the project uses [Semantic Versioning](https://semver.org/).
   other preset changes (PRV-34).
 
 ### Added
+
+- `filaire:clearanceWidth` and `filaire:clearanceHeight` on every mate
+  frame: the clearance around the plug's outline, across its width and its
+  height (FIL-10).
 
 - `docs/sources.md` and `filaire/sources.py`: the source of every physical
   value (cable datasheets, a friction table, or an estimate with what it

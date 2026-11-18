@@ -95,3 +95,31 @@ def test_bnc_bayonet():
     assert stud_layer > barrel * 1.1
     # a push-in connector is never locked
     assert not locked(CONNECTORS["usb_c"])
+
+
+@pytest.mark.parametrize("key", [k for k, s in CONNECTORS.items() if s.opening is not None])
+def test_the_receptacle_opening_is_the_published_one(key):
+    """With a published opening, the receptacle's mouth measures it on both axes (FIL-10)."""
+    from filaire.connectors import cavity
+
+    spec = CONNECTORS[key]
+    front = max(spec.layers, key=lambda la: la.t1)
+    minx, miny, maxx, maxy = cavity(spec, front.region).bounds
+    # round outlines are polygons: a mitred offset overshoots a few micrometres at their corners
+    assert maxx - minx == pytest.approx(spec.opening.width, abs=0.005)
+    assert maxy - miny == pytest.approx(spec.opening.height, abs=0.005)
+    (wlo, whi), (hlo, hhi) = spec.outer_clearance_range()
+    cx, cy = spec.outer_clearance
+    assert 0 < wlo <= cx <= whi and 0 < hlo <= cy <= hhi
+
+
+def test_usb_clearances_follow_their_drawings():
+    """USB-C: 0.045 mm across, 0.08 mm up and down; USB-A: 0.25 and 0.31 mm (it was 0.08)."""
+    assert CONNECTORS["usb_c"].outer_clearance == (0.045, 0.08)
+    assert CONNECTORS["usb_a"].outer_clearance == (0.25, 0.31)
+    # the tongue keeps its own clearance: the plug's inner cavity shrunk by spec.clearance
+    from filaire.connectors import cavity
+
+    spec = CONNECTORS["usb_c"]
+    tongue = cavity(spec, spec.layers[0].region).interiors
+    assert len(list(tongue)) == 1

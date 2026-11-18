@@ -250,6 +250,9 @@ def _mate_frame(stage, path: str, spec_key: str, role: str, mount: str) -> None:
     _attr(p, "filaire:contactGender", _F.Token, spec.gender if role == "plug" else _other(spec.gender))
     _attr(p, "filaire:insertionDepth", _F.Float, float(spec.depth * MM))
     _attr(p, "filaire:clearance", _F.Float, float(spec.clearance * MM))
+    cx, cy = spec.outer_clearance  # around the outline, across its width and its height
+    _attr(p, "filaire:clearanceWidth", _F.Float, float(cx * MM))
+    _attr(p, "filaire:clearanceHeight", _F.Float, float(cy * MM))
     _attr(p, "filaire:keying", _F.Token, spec.keying)
     if spec.twist:  # bayonet: turned by this angle (degrees, about +z of the mate frame) to lock
         _attr(p, "filaire:lockTwist", _F.Float, float(spec.twist))
