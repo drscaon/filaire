@@ -6,6 +6,17 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.5.0b1] - 2026-11-20 (beta)
+
+### Breaking changes
+
+- A cable's materials, and a socket's, are inside it:
+  `/World/Cables/<cable>/Looks/…` and `…/PhysicsMaterials/jacket`,
+  `connector`, instead of `/World/Looks` and `/World/PhysicsMaterials`
+  shared by the file. A cable referenced alone into another stage lost its
+  colours and its friction; it now keeps them (PRV-40). The values are
+  unchanged.
+
 ### Changed values
 
 - `usb_c`: every cable lists the aspect `clearance` and records its USB-C
@@ -110,15 +121,6 @@ and the project uses [Semantic Versioning](https://semver.org/).
 - `sim-test` places plug and receptacle by their MateFrames for the insertion
   and locking checks, instead of by their bodies' origins, where the frames
   are today: a frame moved in a file is now what the check tests.
-
-### Breaking changes
-
-- A cable's materials, and a socket's, are inside it:
-  `/World/Cables/<cable>/Looks/…` and `…/PhysicsMaterials/jacket`,
-  `connector`, instead of `/World/Looks` and `/World/PhysicsMaterials`
-  shared by the file. A cable referenced alone into another stage lost its
-  colours and its friction; it now keeps them (PRV-40). The values are
-  unchanged.
 
 ## [0.4.0b1] - 2026-11-13 (beta)
 
