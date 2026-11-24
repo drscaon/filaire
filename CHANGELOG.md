@@ -6,13 +6,7 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-### Changed
-
-- Newton layer: every segment's inertia is raised by the armature Filaire's MuJoCo model gives
-  its joints (k (dt / 0.3)², dt = 1 ms); the mass is unchanged. Without it Newton's XPBD solver
-  cannot hold the drives against a thin segment's inertia (about 1e-10 kg m²), and a USB-C
-  sample held flat at one end drooped 7.9 times more than beam theory; with it, the cable holds
-  its shape, its bend depending on XPBD's iteration count.
+## [0.6.0b1] - 2026-11-24 (beta)
 
 ### Added
 
@@ -23,6 +17,14 @@ and the project uses [Semantic Versioning](https://semver.org/).
   are unchanged; `python -m filaire.newton` checks the layers.
 - `generate --engines LIST`: the engine layers to write (`physx`, `omniphysics`, `newton`,
   comma-separated, or `none`); by default all of them, as the four Primvaria generators do.
+
+### Changed
+
+- Newton layer: every segment's inertia is raised by the armature Filaire's MuJoCo model gives
+  its joints (k (dt / 0.3)², dt = 1 ms); the mass is unchanged. Without it Newton's XPBD solver
+  cannot hold the drives against a thin segment's inertia (about 1e-10 kg m²), and a USB-C
+  sample held flat at one end drooped 7.9 times more than beam theory; with it, the cable holds
+  its shape, its bend depending on XPBD's iteration count.
 
 ## [0.5.0b1] - 2026-11-20 (beta)
 
