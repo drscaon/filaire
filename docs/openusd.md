@@ -85,8 +85,13 @@ it, built the same way: `filaire_<preset>_newton.usda` and
 | every collider but the ground | `newton:contactGap`, the distance from which contacts are generated | 0.5 mm, the PhysX layer's contact offset. Newton's own default, 0.1 m, is meant for robots |
 | every joint between two segments | `PhysicsLimitAPI` on `rotX`, `rotY`, `rotZ` | ±170°. The file leaves these rotations free, which is what UsdPhysics means by an axis with no limit; Newton 1.8 gives a generic joint a degree of freedom only on an axis with a limit, and would make the cable rigid. Two neighbouring segments never turn that far, so the limit is never reached |
 
+| every segment | its `PhysicsMassAPI` diagonal inertia, plus an armature | the armature Filaire's MuJoCo model gives the joints around it, k (dt / 0.3)² for the stiffest drive k, at dt = 1 ms; the mass stays the file's. A thin segment's own inertia (about 1e-10 kg m² for USB-C) is so small that Newton's XPBD solver cannot hold a drive against it: without the armature a cable held flat at one end hangs like a chain. XPBD has no joint armature, so it is written as inertia |
+
 The drives (twist and bending stiffness, damping) are the file's: Newton
-reads them and converts them from per degree to per radian. `python -m
+reads them and converts them from per degree to per radian. Under XPBD the
+bend still depends on the solver's iteration count, which this layer cannot
+set: a USB-C sample held flat at one end drops 13.4 mm with 5 iterations,
+5.1 mm with 20 and 3.4 mm with 50, where beam theory gives 13.8 mm. `python -m
 filaire.newton <folder>` checks the layers of a pack. Primvaria's CI opens
 them in Newton 1.8 on CPU, with its XPBD solver: a cable hung from one end
 bends under its weight; it is not yet compared with MuJoCo.
