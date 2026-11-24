@@ -3,8 +3,11 @@ name: CI
 on:
   push:
     branches: [main]
+    tags: ["v*"]  # the macOS tests on every release (generator-checks.yml)
   pull_request:
   workflow_dispatch:
+  schedule:
+    - cron: "37 5 * * *"  # daily: the macOS tests, which pull requests skip (generator-checks.yml)
 
 permissions:
   contents: read
