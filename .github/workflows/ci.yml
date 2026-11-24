@@ -105,6 +105,7 @@ jobs:
           done
           exit $status
       - name: The same, rigid bodies set by hand (for comparison, not a gate)
+        if: env.FULL == 'true'  # these three presets are generated only when every preset is
         run: |
           for preset in usb_c power_c13 coiled_handset; do
             filaire blender-test "ci-output/$preset" --mode naive
