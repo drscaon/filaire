@@ -11,7 +11,13 @@ the main file and which adds, as `over`s:
   bendings). The file leaves these axes free, which UsdPhysics reads as free; Newton 1.8 gives a
   generic joint a degree of freedom only on an axis with a limit, and would make the cable rigid.
   A cable never bends that far between two neighbouring segments, so the limit is never reached
-  and the motion is the file's: the drives (stiffness and damping) are read from the file.
+  and the motion is the file's: the drives (stiffness and damping) are read from the file;
+* every segment: its rotational inertia raised by the armature Filaire's MuJoCo model gives the
+  joints around it, k (dt / 0.3)² for the stiffest drive k of those joints at dt = 1 ms
+  (sim/mujoco_model.py). A segment's own inertia (about 1e-10 kg m² for a USB-C cable) is so
+  small that Newton's XPBD solver cannot hold a drive against it: without the armature a
+  USB-C sample held flat at one end drops about 8 times more than beam theory. XPBD has no
+  joint armature, so it is written as inertia; the mass is the file's.
 
 Open the layer instead of the file to get both. Engines other than Newton ignore it.
 
@@ -23,6 +29,7 @@ The check here is structural; Primvaria's CI opens the layers in Newton (scripts
 from __future__ import annotations
 
 import argparse
+import math
 import sys
 from pathlib import Path
 
@@ -34,6 +41,9 @@ SUFFIX = "_newton"
 GROUND = physx.GROUND
 GAP = "newton:contactGap"
 LIMIT = 170.0  # degrees, either way: far beyond a bend between two neighbouring segments
+ARMATURE_DT = 1e-3  # s: the timestep the armature is sized for, as in sim/mujoco_model.py
+ARMATURE_PERIOD = 0.3  # the same rule: a = k (dt / 0.3)²
+DEG = math.pi / 180
 ROTATIONS = ("rotX", "rotY", "rotZ")
 _F = Sdf.ValueTypeNames
 
@@ -63,6 +73,26 @@ def _tune(prim) -> None:
         limit.CreateHighAttr(LIMIT)
 
 
+def armatures(stage) -> dict:
+    """{segment path: armature (kg m²)}: the stiffest drive of the joints around each segment."""
+    out: dict = {}
+    for joint in stage.Traverse():
+        if joint.GetTypeName() != "PhysicsJoint":
+            continue
+        k = max(
+            (UsdPhysics.DriveAPI(joint, a).GetStiffnessAttr().Get() or 0.0) / DEG
+            for a in ROTATIONS
+            if joint.HasAPI(UsdPhysics.DriveAPI, a)
+        )
+        a = k * (ARMATURE_DT / ARMATURE_PERIOD) ** 2
+        j = UsdPhysics.Joint(joint)
+        for rel in (j.GetBody0Rel(), j.GetBody1Rel()):
+            for target in rel.GetTargets():
+                if "/Segments/" in str(target):
+                    out[target] = max(out.get(target, 0.0), a)
+    return out
+
+
 def write_overlay(usd) -> Path:
     """Write `<file>_newton.usda` beside an OpenUSD file and return its path."""
     usd = Path(usd)
@@ -82,6 +112,10 @@ def write_overlay(usd) -> Path:
             holders.append(prim)
         if not physx._in_variant(prim):
             _tune(prim)
+    for path, a in armatures(base).items():  # segments: outside every variant
+        mass = UsdPhysics.MassAPI(stage.GetPrimAtPath(path))
+        inertia = mass.GetDiagonalInertiaAttr().Get()
+        mass.GetDiagonalInertiaAttr().Set(type(inertia)(*(float(v) + a for v in inertia)))
     session = stage.GetSessionLayer()
     for holder in holders:  # what a variant brings: written inside that variant
         sets = holder.GetVariantSets()
@@ -117,6 +151,11 @@ def check(path) -> list[str]:
     ]
     if extra:
         problems.append(f"defines prims the file does not have: {extra[0]}")
+    for path, a in armatures(base).items():
+        below = UsdPhysics.MassAPI(base.GetPrimAtPath(path)).GetDiagonalInertiaAttr().Get()
+        over = UsdPhysics.MassAPI(stage.GetPrimAtPath(path)).GetDiagonalInertiaAttr().Get()
+        if any(abs(o - b - a) > 1e-6 * (b + a) for o, b in zip(over, below, strict=True)):
+            problems.append(f"{path}: inertia is not the file's plus the armature {a:.3g} kg m²")
     for prim in stage.Traverse():
         collider = prim.HasAPI(UsdPhysics.CollisionAPI) and prim.GetPath() != GROUND
         gap = prim.GetAttribute(GAP).Get() if prim.HasAttribute(GAP) else None

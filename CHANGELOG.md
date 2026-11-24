@@ -6,6 +6,14 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Newton layer: every segment's inertia is raised by the armature Filaire's MuJoCo model gives
+  its joints (k (dt / 0.3)², dt = 1 ms); the mass is unchanged. Without it Newton's XPBD solver
+  cannot hold the drives against a thin segment's inertia (about 1e-10 kg m²), and a USB-C
+  sample held flat at one end drooped 7.9 times more than beam theory; with it, the cable holds
+  its shape, its bend depending on XPBD's iteration count.
+
 ### Added
 
 - A Newton layer beside every file with physics, `<file>_newton.usda` (contract section 9,

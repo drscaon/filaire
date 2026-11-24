@@ -80,3 +80,23 @@ def test_no_layer_without_physics(tmp_path):
     _pack(tmp_path)
     out = _pack(tmp_path, physics=False)
     assert not list(out.glob("*_newton.usda"))
+
+
+def test_every_segment_gets_the_mujoco_armature_as_inertia(tmp_path):
+    out = _pack(tmp_path)
+    base = Usd.Stage.Open(str(out / "filaire_usb_c.usdc"))
+    stage = Usd.Stage.Open(str(out / "filaire_usb_c_newton.usda"))
+    added = newton.armatures(base)
+    segments = [
+        p for p in base.Traverse() if "/Segments/" in str(p.GetPath()) and p.HasAPI(UsdPhysics.MassAPI)
+    ]
+    assert set(added) == {p.GetPath() for p in segments}
+    for path, a in added.items():
+        below = UsdPhysics.MassAPI(base.GetPrimAtPath(path))
+        over = UsdPhysics.MassAPI(stage.GetPrimAtPath(path))
+        assert over.GetMassAttr().Get() == below.GetMassAttr().Get()  # the mass is the file's
+        for o, b in zip(
+            over.GetDiagonalInertiaAttr().Get(), below.GetDiagonalInertiaAttr().Get(), strict=True
+        ):
+            assert o == pytest.approx(b + a, rel=1e-6)
+        assert a > 100 * max(below.GetDiagonalInertiaAttr().Get())  # it dominates a thin segment's own
