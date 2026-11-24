@@ -428,6 +428,8 @@ NOT_PHYSICAL = {
     "cable.DAMPING_TIME": "the joints' damping as a time constant: a simulation setting (docs/physics.md)",
     "physx.CONTACT_OFFSET, REST_OFFSET, POSITION_ITERATIONS, VELOCITY_ITERATIONS, "
     "MAX_DEPENETRATION_VELOCITY": "solver settings of the PhysX layer",
+    "newton.LIMIT": "the rotation limit the Newton layer adds between segments (±170°), wide enough "
+    "never to be reached: an engine setting, not a property of the cable",
     "JACKETS.*.roughness, connectors colours, SHELL_WALL": "render appearance, not a physical property",
     "connectors.TWIST_STEP": "how finely a bayonet's turn is sampled to cut its receptacle",
     "declared.CLIP": "the length's normal draw is kept within ±2.5 standard deviations: a choice",

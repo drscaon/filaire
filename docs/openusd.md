@@ -74,6 +74,27 @@ end you select. `python -m filaire.physx <folder>` checks the layers of a
 pack; the OpenUSD validators run on them in CI. Not simulated: see
 [Limits](limits.md#limits).
 
+## Newton layer
+
+What Newton needs and cannot guess from the file is a second layer beside
+it, built the same way: `filaire_<preset>_newton.usda` and
+`sockets_newton.usda`.
+
+| On | What | Value |
+|---|---|---|
+| every collider but the ground | `newton:contactGap`, the distance from which contacts are generated | 0.5 mm, the PhysX layer's contact offset. Newton's own default, 0.1 m, is meant for robots |
+| every joint between two segments | `PhysicsLimitAPI` on `rotX`, `rotY`, `rotZ` | ±170°. The file leaves these rotations free, which is what UsdPhysics means by an axis with no limit; Newton 1.8 gives a generic joint a degree of freedom only on an axis with a limit, and would make the cable rigid. Two neighbouring segments never turn that far, so the limit is never reached |
+
+The drives (twist and bending stiffness, damping) are the file's: Newton
+reads them and converts them from per degree to per radian. `python -m
+filaire.newton <folder>` checks the layers of a pack. Primvaria's CI opens
+them in Newton 1.8 on CPU, with its XPBD solver: a cable hung from one end
+bends under its weight; it is not yet compared with MuJoCo.
+
+`generate --engines` chooses the layers: `physx,newton` (or the default,
+which also names `omniphysics`, a layer Filaire has nothing for), `physx`,
+`newton`, or `none`.
+
 **Without physics** (`--no-physics`, `write_outputs(…, physics=False)`):
 each cable is one mesh, `/World/Cables/<cable>/Visual`, each end a `Body`
 with its `Visual` and `MateFrame`; no rigid bodies, colliders, joints,

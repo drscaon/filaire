@@ -25,6 +25,7 @@ from . import __version__
 from .catalog import CATEGORIES, JACKETS, PRESETS
 from .centerline import LAYOUTS
 from .connectors import CONNECTORS, keying_of
+from .contract import ENGINES, engine_list
 from .generator import DEFAULT_LENGTH, Variations, all_end_variants, generate_scene, summarize, write_outputs
 
 VARIATION_HELP = {
@@ -129,7 +130,7 @@ def _cmd_generate(args) -> int:
         color=args.color,
         youngs_modulus=args.modulus,
     )
-    out = write_outputs(scene, args.out, physics=args.physics)
+    out = write_outputs(scene, args.out, physics=args.physics, engines=args.engines)
     print(json.dumps(summarize(scene), indent=2, ensure_ascii=False))
     print(f"written to {out}")
     return 0
@@ -228,6 +229,13 @@ def build_parser() -> argparse.ArgumentParser:
         dest="physics",
         action="store_false",
         help="visual assets only: no rigid bodies, colliders, joints, physics scene or ground",
+    )
+    g.add_argument(
+        "--engines",
+        type=engine_list,
+        default=ENGINES,
+        metavar="LIST",
+        help=f"engine layers beside each file, comma-separated, or none (default: {','.join(ENGINES)})",
     )
     for name, text in VARIATION_HELP.items():
         g.add_argument(
