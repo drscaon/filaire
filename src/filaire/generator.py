@@ -12,6 +12,7 @@ from .cable import Cable, build_cable
 from .catalog import PRESETS, end_connector
 from .centerline import LAYOUTS
 from .connectors import CONNECTORS, draw_opening, toleranced
+from .contract import ENGINES
 from .pack import write_pack
 
 # independent random streams per cable, one per aspect: turning a variation off
@@ -292,14 +293,22 @@ def summarize(scene: Scene) -> dict:
     }
 
 
-def write_outputs(scene: Scene, out_root: str | Path = "output", physics: bool = True) -> Path:
+def write_outputs(
+    scene: Scene, out_root: str | Path = "output", physics: bool = True, engines=ENGINES
+) -> Path:
     """Write the OpenUSD files and the pack's table and manifest (instances.csv,
     manifest.json) under out_root/<preset>.
 
     physics=False writes visual assets only: no rigid bodies, colliders, joints, physics
-    materials, physics scene or ground (the cables keep their filaire:* attributes)."""
-    from .physx import overlay_path, write_overlay
+    materials, physics scene or ground (the cables keep their filaire:* attributes).
+    engines: the engine layers written beside each file with physics, among ENGINES (contract,
+    section 9); Filaire writes "physx" and "newton", and has nothing for "omniphysics"."""
+    from . import newton, physx
     from .usd_export import export_cables, export_sockets
+
+    unknown = set(engines) - set(ENGINES)
+    if unknown:
+        raise ValueError(f"unknown engine {sorted(unknown)[0]!r}; expected some of {', '.join(ENGINES)}")
 
     out = Path(out_root) / scene.preset_key
     out.mkdir(parents=True, exist_ok=True)
@@ -307,11 +316,12 @@ def write_outputs(scene: Scene, out_root: str | Path = "output", physics: bool =
     if scene.connectors:
         openings = socket_openings(scene.connectors, scene.seed, scene.variations)
         files.append(export_sockets(out / "sockets.usdc", scene.connectors, physics, scene.seed, openings))
-    for file in files:  # what only PhysX reads: a layer over each file (physx.py)
-        if physics:
-            write_overlay(file)
-        else:
-            overlay_path(file).unlink(missing_ok=True)
+    for file in files:  # what only one engine reads: a layer over each file (physx.py, newton.py)
+        for name, module in (("physx", physx), ("newton", newton)):
+            if physics and name in engines:
+                module.write_overlay(file)
+            else:
+                module.overlay_path(file).unlink(missing_ok=True)
     # instances.csv (one row per cable and per socket, read back from the files) and manifest.json
     aspects = [name for name, on in asdict(scene.variations).items() if on]
     extra = {c.name: {"jacket": c.jacket} for c in scene.cables}

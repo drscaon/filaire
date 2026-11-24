@@ -6,6 +6,16 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- A Newton layer beside every file with physics, `<file>_newton.usda` (contract section 9,
+  a new engine layer): `newton:contactGap` on every collider, and a ±170° limit on each
+  rotation between two segments. Newton 1.8 gives a generic joint a degree of freedom only on
+  an axis with a limit, so without it a cable is rigid there. The files and their PhysX layers
+  are unchanged; `python -m filaire.newton` checks the layers.
+- `generate --engines LIST`: the engine layers to write (`physx`, `omniphysics`, `newton`,
+  comma-separated, or `none`); by default all of them, as the four Primvaria generators do.
+
 ## [0.5.0b1] - 2026-11-20 (beta)
 
 ### Breaking changes

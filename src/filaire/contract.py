@@ -47,8 +47,9 @@ GENERATORS = ("granulaire", "maillage", "filaire", "quincaillerie")
 NAMESPACE = "primvaria"
 # Engine layers (contract, section 9): what only one engine reads lies in <file stem><suffix>,
 # a layer over the file, never in the file.
-ENGINE_LAYERS = ("_physx", "_omniphysics")
-ENGINE_SCHEMAS = ("Physx", "OmniPhysics")
+ENGINE_LAYERS = ("_physx", "_omniphysics", "_newton")
+ENGINE_SCHEMAS = ("Physx", "OmniPhysics", "Newton")
+ENGINES = tuple(s.removeprefix("_") for s in ENGINE_LAYERS)  # the values of generate --engines
 SUFFIXES = (".usd", ".usda", ".usdc")
 
 # attribute -> (value type, Python type of the value read back)
@@ -394,14 +395,24 @@ def conformance(stage, own: bool = True) -> list[str]:
     return problems
 
 
+def engine_list(text: str) -> tuple[str, ...]:
+    """The engines of a comma-separated list such as "physx,newton" ("none": no engine layer),
+    as given to generate --engines; a generator writes the layers it has among them."""
+    names = () if text.strip() == "none" else tuple(n.strip() for n in text.split(",") if n.strip())
+    unknown = [n for n in names if n not in ENGINES]
+    if unknown:
+        raise ValueError(f"unknown engine {unknown[0]!r}: expected some of {', '.join(ENGINES)}, or none")
+    return names
+
+
 def is_engine_layer(path: str | Path) -> bool:
-    """Whether a file is an engine layer, by its name: <file stem>_physx, <file stem>_omniphysics."""
+    """Whether a file is an engine layer, by its name: <file stem>_physx, _omniphysics, _newton."""
     return Path(path).stem.endswith(ENGINE_LAYERS)
 
 
 def engine_data(stage) -> list[str]:
     """What a stage holds that only one engine reads, as 'path: name' lines: applied schemas
-    (Physx*, OmniPhysics*) and attributes (physx*:, omniphysics:). Empty for a file."""
+    (Physx*, OmniPhysics*, Newton*) and attributes (physx*:, omniphysics:, newton:). Empty for a file."""
     found = []
     for prim in Usd.PrimRange.AllPrims(stage.GetPseudoRoot()):
         names = set()
@@ -410,7 +421,7 @@ def engine_data(stage) -> list[str]:
             names.update(listed.GetAppliedItems() if listed else ())
         names = {n for n in names if n.startswith(ENGINE_SCHEMAS)}
         for attr in prim.GetAttributes():
-            if attr.GetName().startswith("physx") or "omniphysics:" in attr.GetName():
+            if attr.GetName().startswith(("physx", "newton:")) or "omniphysics:" in attr.GetName():
                 names.add(attr.GetName())
         found += [f"{prim.GetPath()}: {name}" for name in sorted(names)]
     return found
