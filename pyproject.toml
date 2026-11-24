@@ -48,6 +48,11 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+markers = [
+    # the tests of 8 s or more: engine runs, examples, every preset; CI runs them before a
+    # release (and on demand), and on every commit only the others: pytest -m "not slow"
+    "slow: a test of 8 s or more, run before a release, not on every commit",
+]
 
 [tool.ruff]
 line-length = 110

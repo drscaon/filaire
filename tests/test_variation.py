@@ -42,6 +42,7 @@ def test_an_aspect_switched_off_is_recorded_at_its_nominal_value(tmp_path):
             assert d[key] == on[name][key]
 
 
+@pytest.mark.slow
 def test_sockets_draw_nothing_and_coiled_cords_record_their_leads(tmp_path):
     _, folder, drawn = _drawn(tmp_path, preset="coiled_handset")
     assert all(len(d["coil_leads_m"]) == 2 for d in drawn.values())
@@ -49,6 +50,7 @@ def test_sockets_draw_nothing_and_coiled_cords_record_their_leads(tmp_path):
     assert all(variation(prim) == {"aspects": []} for prim in asset_roots(sockets))
 
 
+@pytest.mark.slow
 def test_usb_c_receptacles_carry_their_drawn_opening(tmp_path):
     """The USB-C extension's receptacle and the USB-C port draw their opening (FIL-10)."""
     scene, folder, drawn = _drawn(tmp_path, preset="usb_c")

@@ -4,6 +4,8 @@ import csv
 import subprocess
 import sys
 
+import pytest
+
 BASE = ["generate", "--preset", "usb_c", "--count", "2", "--seed", "4"]
 
 
@@ -17,6 +19,7 @@ def table(tmp_path, *extra):
         return list(csv.DictReader(f))
 
 
+@pytest.mark.slow
 def test_no_vary_is_the_old_option(tmp_path):
     assert table(tmp_path, "--no-vary", "layout") == table(tmp_path, "--no-vary-layout")
 

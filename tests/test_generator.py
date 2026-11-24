@@ -16,6 +16,7 @@ def test_length_option_and_preset_lengths():
     assert lengths <= set(PRESETS["ethernet"]["lengths"]) and len(lengths) > 1
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("preset", list(PRESETS))
 def test_every_preset_generates(preset):
     scene = generate_scene(preset, count=2, seed=3)
