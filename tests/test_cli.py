@@ -58,6 +58,7 @@ def test_bad_options():
             main(argv)
 
 
+@pytest.mark.slow
 def test_preview_and_connectors(tmp_path):
     pytest.importorskip("matplotlib")
     main(["generate", "--preset", "ribbon_idc", "--count", "2", "--out", str(tmp_path)])

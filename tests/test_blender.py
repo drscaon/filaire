@@ -17,6 +17,7 @@ def test_addon_package(tmp_path):
     assert "def setup_physics" in open(py, encoding="utf-8").read()
 
 
+@pytest.mark.slow
 @pytest.mark.skipif(importlib.util.find_spec("bpy") is None, reason="needs Blender as a Python module (bpy)")
 def test_blender_drop_holds_together(tmp_path):
     from filaire.blender.checks import blender_test

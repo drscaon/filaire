@@ -13,6 +13,7 @@ def test_there_are_examples():
     assert len(EXAMPLES) >= 3
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("script", EXAMPLES, ids=lambda p: p.stem)
 def test_example_runs(script, tmp_path):
     if "mujoco" in script.stem:

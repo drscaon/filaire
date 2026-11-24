@@ -50,6 +50,7 @@ def _ends(folder):
     return found
 
 
+@pytest.mark.slow
 def test_every_connector_is_measured(folders):
     from filaire.connectors import CONNECTORS
 

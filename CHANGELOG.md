@@ -6,6 +6,15 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- CI runs at two levels. On a commit (push to main, pull request): the tests not marked
+  `slow` on Ubuntu and Python 3.12 only, and the engine checks on two presets, the first one and one picked from the commit's hash (`.github/ci_presets.py`). Before a release and with the "Run
+  workflow" button: every test, platform and Python, the oldest OpenUSD and every
+  preset, as before. `release.yml` runs that full level first and releases nothing
+  unless it passes. Tests of 8 s or more are marked `slow` (`pytest -m "not slow"` runs
+  the others).
+
 ## [0.6.0b1] - 2026-11-24 (beta)
 
 ### Added

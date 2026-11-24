@@ -26,6 +26,7 @@ def _stage_with_assets(files):
     raise AssertionError("no generated file has an asset root")
 
 
+@pytest.mark.slow
 def test_generated_files_conform(contract_files):
     assert contract_files
     for f in contract_files:
@@ -104,6 +105,7 @@ def test_no_asset_root_is_reported(contract_files):
     assert any("no asset root" in p for p in contract.conformance(stage))
 
 
+@pytest.mark.slow
 def test_command_line(contract_files, capsys):
     assert conformance.main([str(contract_files[0].parent)]) == 0
     assert "0 with issues" in capsys.readouterr().out
@@ -129,6 +131,7 @@ def test_engine_data_in_a_file_is_reported(contract_files, tmp_path):
     assert any("engine data in the file" in p for p in contract.check(copy, own=False))
 
 
+@pytest.mark.slow
 def test_an_engine_layer_lies_over_its_file_only(contract_files, tmp_path):
     for layer in (f for f in contract_files if contract.is_engine_layer(f)):
         assert not any("engine layer" in p for p in contract.check(layer)), layer.name

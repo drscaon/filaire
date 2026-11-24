@@ -84,6 +84,7 @@ def test_a_missing_row_and_a_missing_file_are_reported(copy):
     assert pack.check_pack(copy) == [f"no {pack.MANIFEST} or no {pack.TABLE}"]
 
 
+@pytest.mark.slow
 def test_command_line_checks_packs(pack_folder, copy, capsys):
     assert conformance.main([str(pack_folder)]) == 0
     assert "1 packs checked" in capsys.readouterr().out

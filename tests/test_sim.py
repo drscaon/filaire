@@ -113,6 +113,7 @@ def test_coil_joints_neither_compress_nor_overstretch(tmp_path):
     assert total == pytest.approx(float(c.attrs["filaire:coil:wireLength"]), rel=0.1)
 
 
+@pytest.mark.slow
 def test_bnc_locks_with_a_quarter_turn():
     """Pushed in and turned 90°, a BNC plug stays in when pulled; not turned, it comes out."""
     from filaire.cable import connector_end

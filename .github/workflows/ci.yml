@@ -1,13 +1,32 @@
 name: CI
 
+# Two levels. On a commit (push to main, pull request): the fast tests (pytest -m "not
+# slow") on Ubuntu and Python 3.12, and the engine checks on a sample of the presets
+# (.github/ci_presets.py). Before a release (release.yml calls this workflow with
+# full: true) and with the "Run workflow" button: every test on Linux, Windows and macOS
+# and on every Python, the oldest OpenUSD, and the engine checks on every preset.
 on:
   push:
     branches: [main]
   pull_request:
   workflow_dispatch:
+    inputs:
+      full:
+        description: Every test, platform and preset (as before a release)
+        type: boolean
+        default: true
+  workflow_call:
+    inputs:
+      full:
+        description: Every test, platform and preset
+        type: boolean
+        default: true
 
 permissions:
   contents: read
+
+env:
+  FULL: ${{ inputs.full && 'true' || 'false' }}  # read by .github/ci_presets.py and the steps
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -20,6 +39,7 @@ jobs:
     # the same in the four generators, written once in the primvaria repository
     uses: drscaon/primvaria/.github/workflows/generator-checks.yml@main
     with:
+      full: ${{ inputs.full || false }}
       package: filaire
       smoke: |
         filaire --version
@@ -33,7 +53,7 @@ jobs:
         filaire preview ci-output/usb_c
 
   sim:
-    name: MuJoCo checks of every preset
+    name: MuJoCo checks of the presets
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -44,10 +64,10 @@ jobs:
           cache-dependency-path: pyproject.toml
       - name: Install
         run: pip install -e ".[sim]"
-      - name: Generate and check every preset
+      - name: Generate and check the presets
         run: |
           status=0
-          for preset in $(python -c "import filaire; print(' '.join(filaire.PRESETS))"); do
+          for preset in $(python .github/ci_presets.py filaire); do
             filaire generate --preset "$preset" --count 2 --out ci-output > /dev/null
             filaire sim-test "ci-output/$preset" --cables 2 || status=1
           done
@@ -60,7 +80,7 @@ jobs:
           retention-days: 14
 
   blender:
-    name: Blender checks of every preset (add-on)
+    name: Blender checks of the presets (add-on)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -79,7 +99,7 @@ jobs:
       - name: Drop checks through the add-on
         run: |
           status=0
-          for preset in $(python -c "import filaire; print(' '.join(filaire.PRESETS))"); do
+          for preset in $(python .github/ci_presets.py filaire); do
             filaire generate --preset "$preset" --count 2 --out ci-output > /dev/null
             filaire blender-test "ci-output/$preset" --cables 2 || status=1
           done
@@ -102,7 +122,7 @@ jobs:
 
 
   openusd:
-    name: OpenUSD validators of every preset
+    name: OpenUSD validators of the presets
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -113,9 +133,9 @@ jobs:
           cache-dependency-path: pyproject.toml
       - name: Install
         run: pip install -e .
-      - name: Generate every preset, with and without physics
+      - name: Generate the presets, with and without physics
         run: |
-          for preset in $(python -c "from filaire.catalog import PRESETS; print(' '.join(PRESETS))"); do
+          for preset in $(python .github/ci_presets.py filaire.catalog); do
             filaire generate --preset "$preset" --count 2 --out ci-usd > /dev/null
             filaire generate --preset "$preset" --count 1 --no-physics --out ci-usd-visual > /dev/null
           done

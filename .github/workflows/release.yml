@@ -4,7 +4,8 @@ name: Release
 # packages and publishes them on the GitHub release for that tag. Pre-release
 # versions (a, b, rc) are marked as pre-releases. If the release already exists
 # (for example created from the GitHub web page), the packages are added to it.
-# The Python packages are then published on PyPI (job `pypi`).
+# The Python packages are then published on PyPI (job `pypi`). Nothing is released
+# before CI's full checks pass (job `checks`).
 
 on:
   push:
@@ -14,7 +15,16 @@ permissions:
   contents: read
 
 jobs:
+  checks:
+    name: Every test, platform and preset
+    # CI's full level (ci.yml with full: true): nothing is released or published unless
+    # it passes. Commits only get the fast tests and a sample of the presets.
+    uses: ./.github/workflows/ci.yml
+    with:
+      full: true
+
   release:
+    needs: checks
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -32,11 +42,6 @@ jobs:
             exit 1
           fi
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
-
-      - name: Test
-        run: |
-          pip install -e ".[dev]"
-          pytest
 
       - name: Build
         run: |
