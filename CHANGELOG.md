@@ -8,6 +8,13 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- The code of the Primvaria contract comes from the new package primvaria-contract, which
+  this generator now requires, instead of copies kept identical in the four generators.
+  `contract`, `pack`, `ground` and `conformance` stay as modules of this package and give
+  the same names as before, filled in with this generator's name and version: nothing
+  changes for code that imports them or for `python -m filaire.conformance`. The contract
+  tests on stages written by hand moved to primvaria-contract; `tests/test_contract.py`
+  keeps the tests of this generator's files.
 - CI runs at two levels. On a commit (push to main, pull request): the tests not marked
   `slow` on Ubuntu and Python 3.12 only, and the engine checks on two presets, the first one and one picked from the commit's hash (`.github/ci_presets.py`). Before a release and with the "Run
   workflow" button: every test, platform and Python, the oldest OpenUSD and every
