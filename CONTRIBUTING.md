@@ -46,10 +46,13 @@ Commit messages start with the kind of change (`feat:`, `fix:`, `docs:`,
 
 ## Shared files
 
-`src/filaire/ground.py`, `src/filaire/contract.py`, `src/filaire/conformance.py`
-and `tests/test_contract.py` are byte-identical in the four generators. Change
-them in all four at once; a check in the primvaria repository fails when they
-differ.
+The code of the Primvaria contract is in the package
+[primvaria-contract](https://github.com/drscaon/primvaria/tree/main/contract), on
+which the four generators depend: change it there. `src/filaire/contract.py`,
+`pack.py`, `ground.py` and `conformance.py` only bind it to this generator's name
+and version; they and `tests/test_contract.py`, `tests/test_pack.py` and
+`tests/test_golden.py` are byte-identical in the four generators. Change them in
+all four at once; a check in the primvaria repository fails when they differ.
 
 ## Licence
 

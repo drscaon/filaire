@@ -44,8 +44,9 @@ different generators can share one scene and every engine gets the same floor:
 | `/World/Ground` | a static box (`UsdGeom.Cube`, `CollisionAPI`), its top face at z = 0, 2 cm thick, covering the content with 0.5 m to spare on each side (1 m × 1 m at least), grey and rendered, no PhysX attributes (engines derive their contact offsets) |
 | `/World/GroundMaterial` | its physics material: static friction 0.6, dynamic friction 0.5, restitution 0.1, a wooden or concrete floor |
 
-The code is one file, `ground.py`, identical in Granulaire, Maillage, Filaire
-and Quincaillerie; a test checks every generated file against it. The MuJoCo
+The code is in the package primvaria-contract (`primvaria_contract.ground`, given
+here as `filaire.ground`), on which Granulaire, Maillage, Filaire and Quincaillerie
+depend; a test checks every generated file against it. The MuJoCo
 checks and the Blender rigid-body checks take the ground's friction from the
 file (Blender's cloth, in Maillage, has its own collision settings).
 
