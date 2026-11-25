@@ -15,6 +15,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
   changes for code that imports them or for `python -m filaire.conformance`. The contract
   tests on stages written by hand moved to primvaria-contract; `tests/test_contract.py`
   keeps the tests of this generator's files.
+- `filaire.validate` (the OpenUSD validators) comes from primvaria-contract too, which this
+  generator now requires at 0.2.0b1 or later; `python -m filaire.validate` works as before. Nothing changes: Filaire's copy was the one the shared module now follows for missing paths.
 - CI runs at two levels. On a commit (push to main, pull request): the tests not marked
   `slow` on Ubuntu and Python 3.12 only, and the engine checks on two presets, the first one and one picked from the commit's hash (`.github/ci_presets.py`). Before a release and with the "Run
   workflow" button: every test, platform and Python, the oldest OpenUSD and every
