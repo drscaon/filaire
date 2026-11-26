@@ -6,6 +6,10 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Documentation
+
+- The README links to Primvaria's note on how standards are used; the pull request checklist gains a line for it.
+
 ### Added
 
 - D-sub connectors in shell sizes A and B, DA-15 (`dsub15`) and DB-25 (`dsub25`), built as the DE-9:

@@ -18,6 +18,7 @@ And all of these hold:
 
 - [ ] The base layer is still plain OpenUSD, readable without an engine overlay
 - [ ] It runs on CPU
+- [ ] Values from standards are numbers with a public source, in our own words: no text, printed table or figure of a standard, no copy or link to one ([how](https://github.com/drscaon/primvaria/blob/main/docs/standards.md))
 - [ ] CI checks the acceptance criterion (test added or updated)
 - [ ] The limit that remains is written in the README's Limits section
 - [ ] If the file format changed, `docs/contract.md` in primvaria changed first
