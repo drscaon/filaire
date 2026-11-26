@@ -48,6 +48,10 @@ ribbon, CAN bus, BNC coaxial lead, servo lead, jumper wire, battery lead, balanc
 handset cord), imported from the OpenUSD files into Blender
 and rendered with Cycles.*
 
+> [!TIP]
+> If Filaire is useful to you, please ⭐ star the repository. Stars show me
+> what people actually need, so I can decide which features to develop next.
+
 ## What it does
 
 - Generates *N* cables of a preset, **1 m long by default** (`--length` for
