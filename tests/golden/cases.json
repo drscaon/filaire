@@ -49,6 +49,30 @@
     "--seed",
     "7"
    ]
+  },
+  {
+   "name": "vga",
+   "args": [
+    "generate",
+    "--preset",
+    "vga",
+    "--count",
+    "2",
+    "--seed",
+    "5"
+   ]
+  },
+  {
+   "name": "m8_sensor",
+   "args": [
+    "generate",
+    "--preset",
+    "m8_sensor",
+    "--count",
+    "3",
+    "--seed",
+    "2"
+   ]
   }
  ]
 }

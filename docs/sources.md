@@ -154,6 +154,41 @@ Part of the [Filaire](../README.md) documentation.
 | `PRESETS.can_bus.lengths.1` | 1 | m |  | [retail_lengths](#retail_lengths) |
 | `PRESETS.can_bus.lengths.2` | 2 | m |  | [retail_lengths](#retail_lengths) |
 | `PRESETS.can_bus.lengths.5` | 5 | m |  | [retail_lengths](#retail_lengths) |
+| `PRESETS.da15.profile.d` | 6.9 | mm | 6.9 to 6.9 | [liycy](#liycy) |
+| `PRESETS.da15.linear_density.min` | 77.4 | g/m | 77.4 to 94.6 | [liycy](#liycy) |
+| `PRESETS.da15.linear_density.max` | 94.6 | g/m | 77.4 to 94.6 | [liycy](#liycy) |
+| `PRESETS.da15.youngs_modulus.min` | 60 | MPa |  | [stiffness](#stiffness) |
+| `PRESETS.da15.youngs_modulus.max` | 120 | MPa |  | [stiffness](#stiffness) |
+| `PRESETS.da15.tolerance` | 0.01 |  |  | [length_tolerance](#length_tolerance) |
+| `PRESETS.da15.lengths.1` | 1 | m |  | [retail_lengths](#retail_lengths) |
+| `PRESETS.da15.lengths.2` | 2 | m |  | [retail_lengths](#retail_lengths) |
+| `PRESETS.da15.lengths.5` | 5 | m |  | [retail_lengths](#retail_lengths) |
+| `PRESETS.db25.profile.d` | 8.4 | mm | 8.4 to 8.4 | [liycy](#liycy) |
+| `PRESETS.db25.linear_density.min` | 134.1 | g/m | 134.1 to 163.9 | [liycy](#liycy) |
+| `PRESETS.db25.linear_density.max` | 163.9 | g/m | 134.1 to 163.9 | [liycy](#liycy) |
+| `PRESETS.db25.youngs_modulus.min` | 60 | MPa |  | [stiffness](#stiffness) |
+| `PRESETS.db25.youngs_modulus.max` | 120 | MPa |  | [stiffness](#stiffness) |
+| `PRESETS.db25.tolerance` | 0.01 |  |  | [length_tolerance](#length_tolerance) |
+| `PRESETS.db25.lengths.1.8` | 1.8 | m |  | [retail_lengths](#retail_lengths) |
+| `PRESETS.db25.lengths.3` | 3 | m |  | [retail_lengths](#retail_lengths) |
+| `PRESETS.db25.lengths.5` | 5 | m |  | [retail_lengths](#retail_lengths) |
+| `PRESETS.vga.profile.d` | 9 | mm | 9 to 9 | [vga_cable](#vga_cable) |
+| `PRESETS.vga.linear_density.min` | 84 | g/m | 84 to 95 | [vga_cable](#vga_cable) |
+| `PRESETS.vga.linear_density.max` | 95 | g/m | 84 to 95 | [vga_cable](#vga_cable) |
+| `PRESETS.vga.youngs_modulus.min` | 60 | MPa |  | [stiffness](#stiffness) |
+| `PRESETS.vga.youngs_modulus.max` | 120 | MPa |  | [stiffness](#stiffness) |
+| `PRESETS.vga.tolerance` | 0.01 |  |  | [length_tolerance](#length_tolerance) |
+| `PRESETS.vga.lengths.1` | 1 | m |  | [retail_lengths](#retail_lengths) |
+| `PRESETS.vga.lengths.1.8` | 1.8 | m |  | [retail_lengths](#retail_lengths) |
+| `PRESETS.vga.lengths.5` | 5 | m |  | [retail_lengths](#retail_lengths) |
+| `PRESETS.m8_sensor.profile.d` | 4.5 | mm | 4.275 to 4.725 | [murr_m8](#murr_m8) |
+| `PRESETS.m8_sensor.linear_density.min` | 32.01 | g/m | 32.01 to 33 | [murr_m8](#murr_m8) |
+| `PRESETS.m8_sensor.linear_density.max` | 33 | g/m | 32.01 to 33 | [murr_m8](#murr_m8) |
+| `PRESETS.m8_sensor.youngs_modulus.min` | 50 | MPa |  | [stiffness](#stiffness) |
+| `PRESETS.m8_sensor.youngs_modulus.max` | 100 | MPa |  | [stiffness](#stiffness) |
+| `PRESETS.m8_sensor.tolerance` | 0.01 |  |  | [length_tolerance](#length_tolerance) |
+| `PRESETS.m8_sensor.lengths.2` | 2 | m |  | [retail_lengths](#retail_lengths) |
+| `PRESETS.m8_sensor.lengths.5` | 5 | m |  | [retail_lengths](#retail_lengths) |
 | `PRESETS.servo_lead.profile.pitch` | 1.05 | mm |  | [hookup_wire](#hookup_wire) |
 | `PRESETS.servo_lead.profile.thickness` | 1.05 | mm |  | [hookup_wire](#hookup_wire) |
 | `PRESETS.servo_lead.linear_density.min` | 6 | g/m |  | [hookup_wire](#hookup_wire) |
@@ -282,6 +317,16 @@ Part of the [Filaire](../README.md) documentation.
 | `CONNECTORS.bal5.clearance` | 0.1 | mm |  | [connector_body](#connector_body) |
 | `CONNECTORS.dsub9.density` | 2200 | kg/m³ |  | [connector_body](#connector_body) |
 | `CONNECTORS.dsub9.clearance` | 0.1 | mm |  | [connector_body](#connector_body) |
+| `CONNECTORS.dsub15.density` | 2200 | kg/m³ |  | [connector_body](#connector_body) |
+| `CONNECTORS.dsub15.clearance` | 0.1 | mm |  | [connector_body](#connector_body) |
+| `CONNECTORS.dsub25.density` | 2200 | kg/m³ |  | [connector_body](#connector_body) |
+| `CONNECTORS.dsub25.clearance` | 0.1 | mm |  | [connector_body](#connector_body) |
+| `CONNECTORS.de15.density` | 2200 | kg/m³ |  | [connector_body](#connector_body) |
+| `CONNECTORS.de15.clearance` | 0.1 | mm |  | [connector_body](#connector_body) |
+| `CONNECTORS.m8a3.density` | 2500 | kg/m³ |  | [connector_body](#connector_body) |
+| `CONNECTORS.m8a3.clearance` | 0.1 | mm |  | [connector_body](#connector_body) |
+| `CONNECTORS.m8a4.density` | 2500 | kg/m³ |  | [connector_body](#connector_body) |
+| `CONNECTORS.m8a4.clearance` | 0.1 | mm |  | [connector_body](#connector_body) |
 | `CONNECTORS.bnc.density` | 4500 | kg/m³ |  | [connector_body](#connector_body) |
 | `CONNECTORS.bnc.clearance` | 0.1 | mm |  | [connector_body](#connector_body) |
 
@@ -312,6 +357,11 @@ Part of the [Filaire](../README.md) documentation.
 | `batt35` | 2-pole battery connector, 3.5 mm bullets, 7.2 mm pitch | 7.2 mm pitch: https://altronics.cl/uploads/XT-60.pdf; 3.5 mm bullets | front 13.6 × 6.4 with 1.6 chamfers, body 15.8 × 8.2 with 2.0 chamfers; insertion depth 8 |
 | `bal5` | 5-way wire-to-board housing, 2.5 mm pitch | header width 2.5 (n − 1) + 4.9, 0.64 mm posts: https://mantech.co.za/datasheets/products/XH-JST.pdf | housing 12.9 × 4.2 with two 1.2 ribs; header depth 6; insertion depth 6 |
 | `dsub9` | IEC 60807-3 / MIL-DTL-24308, shell size E | male shell 16.92 × 8.36, flange 30.81 × 12.55: https://www.farnell.com/datasheets/2722993.pdf; 2.77 mm pitch: https://uk.rs-online.com/p/d-sub-connectors/2411334 | female D 16.30 × 7.80 (male shell 16.92 × 8.36 less its wall); row spacing 2.84; hood 31.5 × 15.5 × 32; engagement 6 |
+| `dsub15` | IEC 60807-3 / MIL-DTL-24308, shell size A | female D 16.33 / 24.66 / 38.38, male shell 16.92 / 25.25 / 38.96, holes 24.99 / 33.32 / 47.04, flange 30.81 / 39.14 / 53.04 (shells E, A, B): https://dtsheet.com/doc/1419327/d-subminiature; 2.77 mm pitch, 2.84 mm row spacing: https://dtsheet.com/doc/1419302/d-subminiature | hood 40 × 15.5 × 32; contact holes Ø1.2; engagement 6; clearance 0.1 |
+| `dsub25` | IEC 60807-3 / MIL-DTL-24308, shell size B | female D 16.33 / 24.66 / 38.38, male shell 16.92 / 25.25 / 38.96, holes 24.99 / 33.32 / 47.04, flange 30.81 / 39.14 / 53.04 (shells E, A, B): https://dtsheet.com/doc/1419327/d-subminiature; 2.77 mm pitch, 2.84 mm row spacing: https://dtsheet.com/doc/1419302/d-subminiature | hood 54 × 15.5 × 32; contact holes Ø1.2; engagement 6; clearance 0.1 |
+| `de15` | IEC 60807-3 / MIL-DTL-24308, shell size E, three rows | female D 16.33 / 24.66 / 38.38, male shell 16.92 / 25.25 / 38.96, holes 24.99 / 33.32 / 47.04, flange 30.81 / 39.14 / 53.04 (shells E, A, B): https://dtsheet.com/doc/1419327/d-subminiature; high density: 15 contacts in shell E, 2.29 mm pitch, 1.98 mm row spacing: https://docs.rs-online.com/6a2b/A700000015406202.pdf | shell wall 0.3; pins Ø0.8; hood 31.5 × 15.5 × 30; engagement 6; clearance 0.1 |
+| `m8a3` | IEC 61076-2-104 | thread M8 × 1, nut SW9, IEC 61076-2-104: https://docs.rs-online.com/d63c/A700000016092333.pdf | insert Ø5.8; key 1.0; pins on Ø3.5; nut as a ring Ø9 / bore Ø8.2; body Ø10 |
+| `m8a4` | IEC 61076-2-104 | thread M8 × 1, nut SW9, IEC 61076-2-104: https://docs.rs-online.com/d63c/A700000016092333.pdf | insert Ø5.8; key 1.0; pins on Ø3.5; nut as a ring Ø9 / bore Ø8.2; body Ø10 |
 | `bnc` | IEC 61169-8 | interface (barrel 9.78–9.91, sleeve ≥ 10.52 inside, pin 1.32–1.37, 1/4 turn): https://www.chipfind.net/static/pdf/amphenol/bnc_coaxial_connectors.pdf; coupling nut Ø14.50: https://www.milestek.com/media/descriptions/productspecs/MTCN0001.pdf | studs Ø2.1, 5.5 from the jack's front, out to Ø12.6; slot 2.4 wide, entry 4.95 deep; barrel 9.9 × 11.5; crimp ferrule Ø8.6 × 8, boot Ø7.2 × 14 |
 
 ### Sources
@@ -325,6 +375,9 @@ Part of the [Filaire](../README.md) documentation.
 - <a id="speaker_cable"></a>**speaker_cable** (datasheet): 2 × 1.5 mm² flat speaker cables: Helukabel 40025, 5.5 × 2.6 mm, approx. 37 kg/km; Prysmian (Draka) Speaker 2 × 1.5 mm² flat, 3.0 × 6.5 mm. Filaire's figure-8 is d high and 2 d wide. <https://shop.helukabel.com/at-en/speaker-cable-m40180/40025>, <https://mrcable.ru/upload/iblock/f5a/0lynreubljpvhg1e13rdt12gr7ekv1wz.pdf>
 - <a id="murr_m12"></a>**murr_m12** (datasheet): Murrelektronik M12 sensor cables, PUR 4 × 0.34 mm²: outer diameter 4.5 mm ± 5 %, cable weight 27.6, 33 and 36.3 g/m (cable types 3 and 634). <https://www.mouser.lt/datasheet/3/5927/2/7004_12341_6342500_Product_PDF_en.pdf>, <https://www.mouser.lt/datasheet/3/5927/1/7000_40021_0340500_Product_PDF_en.pdf>, <https://static.chipdip.ru/lib/045/DOC045045007.pdf>
 - <a id="3m_3365"></a>**3m_3365** (datasheet): 3M 3365/10 round-conductor flat cable: 10 conductors 28 AWG (7/36), pitch 1.27 mm, ribbon thickness 0.89 mm (0.035 in), width 12.70 mm. <https://azcus.digikey.com/en/products/detail/3m/3365-10-100/1107680>
+- <a id="liycy"></a>**liycy** (datasheet): Lapp UNITRONIC LiYCY, screened data cable 0.14 mm²: 15 cores Ø 6.9 mm, 86 kg/km; 25 cores Ø 8.4 mm, 149 kg/km (approximate weights). <https://efobasen.efo.no/API/Produktfiler/LastNed?id=652619>
+- <a id="vga_cable"></a>**vga_cable** (datasheet): StarTech coax VGA cables HD15 M/M, cable OD 9 mm: 195 g at 1 m, 271 g at 1.8 m, 748 g at 7.6 m; the cable's own weight from the differences, 84 to 95 g/m (the connectors cancel out). <https://media.bechtle.com/asrc/180712/1c4b3d4ee288fc9434f5175bf56070570/c3/-/eda8d15b4d144991843bca49c4ff50f5/startech-vga-kabel-1-m-adatlap-1>, <https://www.mouser.lt/datasheet/3/6177/1/mxt101mmhq_datasheet.pdf>, <https://www.farnell.com/datasheets/4813572.pdf>
+- <a id="murr_m8"></a>**murr_m8** (datasheet): Murrelektronik M8 sensor cables, PUR 4 × 0.25 mm²: outer diameter 4.5 mm ± 5 %, cable weight 32.01 and 33 g/m (cable types 2 and 3). <https://docs.rs-online.com/164e/A700000016091853.pdf>, <https://docs.rs-online.com/9bb7/A700000016091289.pdf>, <https://docs.rs-online.com/45f7/A700000011068082.pdf>
 - <a id="can_cable"></a>**can_cable** (datasheet): CAN bus cables 2 × 2 × 0.25 mm², PUR: Helukabel 801982, Ø 8.4 ± 0.3 mm, approx. 80 kg/km; Klaus Faber 101632, Ø 8.4 mm, 68 kg/km. <https://assets-cdn.helukabel.com/suppliers/Helukabel/documents/db/HELUKABEL_M801982_EN_GB.pdf>, <https://www.icsgroup.ru/faber/files/dbl_bus_can_pur.pdf>
 - <a id="silicone_wire"></a>**silicone_wire** (datasheet): Lapp ÖLFLEX HEAT 180 SiF A, single silicone wire: 14 AWG Ø 3.5 mm, approx. 22 lbs/mft (32.7 kg/km); 12 AWG Ø 4.1 mm, approx. 33 lbs/mft (49.1 kg/km). A battery lead is two of them, of 14 or 12 AWG. <https://advantageelectricsupplystoragepublic.s3-us-west-1.amazonaws.com/PartAttachment/2093214/Datasheet.pdf>
 - <a id="rg58"></a>**rg58** (datasheet): RG 58 C/U coaxial cable: Lapp 2170000, outer diameter 4.95 ± 0.12 mm, approx. 36 kg/km; Huber+Suhner RG_58_C/U, ø 4.95 mm, approx. 37 g/m; RG58 C/U LSF (RS), 4.95 ± 0.2 mm, 40 kg/km. <https://static.rapidonline.com/pdf/67-5860_v1.pdf>, <https://www.mouser.com/datasheet/3/1498/1/H_S_RG_58_CU_EN.PDF>, <https://nonprod.docs.rs-online.com/024f/0900766b80626139.pdf>

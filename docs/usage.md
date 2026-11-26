@@ -37,10 +37,14 @@ other ends…).
 | | `usb_micro` | round Ø3.5 mm | USB-A plug | Micro-B plug |
 | | `ethernet` | round Ø5.4 mm, 4 pairs | RJ45 plug | RJ45 plug, RJ45 coupler |
 | | `hdmi` | round Ø7.3 mm | HDMI plug | HDMI plug, HDMI receptacle (extension) |
+| | `vga` | round Ø9.0 mm, three coax lines | DE-15 male | DE-15 male, DE-15 female (extension) |
+| | `db25` | round Ø8.4 mm, shielded, 25 cores | DB-25 female | DB-25 female, DB-25 male (extension) |
 | Audio | `audio_jack` | round Ø3.5 mm | 3.5 mm plug | 3.5 mm plug, 3.5 mm socket (extension) |
 | | `xlr_mic` | round Ø6.0 mm | XLR3 female | XLR3 male |
 | | `speaker_wire` | figure-8, 2 × Ø3.0 mm | stripped, cut | stripped, cut |
 | Industrial | `m12_sensor` | round Ø4.5 mm, PUR | M12 female | stripped, cut |
+| | `m8_sensor` | round Ø4.5 mm, PUR | M8 female, 4 or 3 contacts | stripped, cut |
+| | `da15` | round Ø6.9 mm, shielded, 15 cores | DA-15 female | stripped, cut |
 | | `ribbon_idc` | flat, 10 × 1.27 mm, wire 1 red | IDC socket 2 × 5 | IDC socket, cut |
 | | `can_bus` | round Ø8.4 mm, PUR, shielded | DE-9 female | DE-9 female, DE-9 male (extension), stripped |
 | Robotics | `servo_lead` | flat, 3 × 1.05 mm: brown, red, orange (or black, red, white) | servo plug (3 sockets) | servo extension (3 pins), cut, stripped |
@@ -52,12 +56,12 @@ other ends…).
 
 Every cable also carries `cut` and `stripped` variants on both ends, and any
 other variant forced with `--end-a` / `--end-b`. Diameters and densities
-(2–80 g/m) come from the datasheets of common cables of each kind where one
+(2–164 g/m) come from the datasheets of common cables of each kind where one
 was found, and are estimates otherwise; the moduli (10–300 MPa, drawn per
 cable) are estimates for every preset. Each value and its source:
 [Sources](sources.md).
 
-![The 20 presets, one cable each](https://raw.githubusercontent.com/drscaon/filaire/main/docs/images/presets.jpg)
+![20 of the 24 presets, one cable each (the image predates vga, db25, da15 and m8_sensor)](https://raw.githubusercontent.com/drscaon/filaire/main/docs/images/presets.jpg)
 
 *Each preset with its usual ends (the first variant of each end), 40 cm
 long (shorter for the ribbon, the robot leads and the jumper wire; 25 cm of coil for the
