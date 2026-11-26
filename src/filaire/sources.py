@@ -124,6 +124,32 @@ SOURCES = {
         "0.89 mm (0.035 in), width 12.70 mm",
         ("https://azcus.digikey.com/en/products/detail/3m/3365-10-100/1107680",),
     ),
+    "liycy": Source(
+        "datasheet",
+        "Lapp UNITRONIC LiYCY, screened data cable 0.14 mm²: 15 cores Ø 6.9 mm, 86 kg/km; 25 cores Ø 8.4 mm, "
+        "149 kg/km (approximate weights)",
+        ("https://efobasen.efo.no/API/Produktfiler/LastNed?id=652619",),
+    ),
+    "vga_cable": Source(
+        "datasheet",
+        "StarTech coax VGA cables HD15 M/M, cable OD 9 mm: 195 g at 1 m, 271 g at 1.8 m, 748 g at 7.6 m; the "
+        "cable's own weight from the differences, 84 to 95 g/m (the connectors cancel out)",
+        (
+            "https://media.bechtle.com/asrc/180712/1c4b3d4ee288fc9434f5175bf56070570/c3/-/eda8d15b4d144991843bca49c4ff50f5/startech-vga-kabel-1-m-adatlap-1",
+            "https://www.mouser.lt/datasheet/3/6177/1/mxt101mmhq_datasheet.pdf",
+            "https://www.farnell.com/datasheets/4813572.pdf",
+        ),
+    ),
+    "murr_m8": Source(
+        "datasheet",
+        "Murrelektronik M8 sensor cables, PUR 4 × 0.25 mm²: outer diameter 4.5 mm ± 5 %, cable weight "
+        "32.01 and 33 g/m (cable types 2 and 3)",
+        (
+            "https://docs.rs-online.com/164e/A700000016091853.pdf",
+            "https://docs.rs-online.com/9bb7/A700000016091289.pdf",
+            "https://docs.rs-online.com/45f7/A700000011068082.pdf",
+        ),
+    ),
     "can_cable": Source(
         "datasheet",
         "CAN bus cables 2 × 2 × 0.25 mm², PUR: Helukabel 801982, Ø 8.4 ± 0.3 mm, approx. 80 kg/km; Klaus "
@@ -306,6 +332,10 @@ DIAMETER = {  # preset: (source, range the source gives, mm) for the profile's d
     "m12_sensor": ("murr_m12", 4.275, 4.725),
     "ribbon_idc": ("3m_3365", 0.89, 0.89),  # the thickness; the pitch is the source's too
     "can_bus": ("can_cable", 8.1, 8.7),
+    "da15": ("liycy", 6.9, 6.9),
+    "db25": ("liycy", 8.4, 8.4),
+    "vga": ("vga_cable", 9.0, 9.0),
+    "m8_sensor": ("murr_m8", 4.275, 4.725),
     "servo_lead": ("hookup_wire", None, None),
     "jumper_wire": ("hookup_wire", None, None),
     "battery_lead": ("silicone_wire", 3.5, 4.1),
@@ -330,6 +360,10 @@ WEIGHT = {  # preset: (source, range the source gives, g/m) for the linear densi
     "m12_sensor": ("murr_m12", 27.6, 36.3),
     "ribbon_idc": ("hookup_wire", 17.0, 22.0),
     "can_bus": ("can_cable", 68.0, 80.0),
+    "da15": ("liycy", 86.0 * (1 - APPROXIMATE), 86.0 * (1 + APPROXIMATE)),
+    "db25": ("liycy", 149.0 * (1 - APPROXIMATE), 149.0 * (1 + APPROXIMATE)),
+    "vga": ("vga_cable", 84.0, 95.0),
+    "m8_sensor": ("murr_m8", 32.01, 33.0),
     "servo_lead": ("hookup_wire", None, None),
     "jumper_wire": ("hookup_wire", None, None),
     "battery_lead": ("silicone_wire", *_PAIR),

@@ -63,6 +63,10 @@ none. A cable or socket without such a receptacle does not list the aspect.
 | `m12_sensor` | 2.0 50 %, 5.0 50 % | 0.01 | coil 50 %, slack 40 %, straight 10 % | m12a_plug 100 % | stripped 80 %, cut 20 % | 3 | 50 to 100 | 28 to 36 |  |
 | `ribbon_idc` | 0.15 40 %, 0.3 40 %, 0.5 20 % | 0.02 | straight 50 %, slack 50 % | idc10_plug 100 % | idc10_plug 90 %, cut 10 % | 2 | 150 to 300 | 17 to 22 |  |
 | `can_bus` | 0.5 20 %, 1.0 30 %, 2.0 30 %, 5.0 20 % | 0.01 | slack 50 %, coil 40 %, straight 10 % | dsub9_plug 100 % | dsub9_plug 60 %, dsub9_inline 25 %, stripped 15 % | 3 | 60 to 120 | 68 to 80 |  |
+| `da15` | 1.0 30 %, 2.0 40 %, 5.0 30 % | 0.01 | slack 50 %, coil 40 %, straight 10 % | dsub15_plug 100 % | stripped 80 %, cut 20 % | 2 | 60 to 120 | 77.4 to 94.6 |  |
+| `db25` | 1.8 40 %, 3.0 30 %, 5.0 30 % | 0.01 | slack 50 %, coil 40 %, straight 10 % | dsub25_plug 100 % | dsub25_plug 60 %, dsub25_inline 40 % | 3 | 60 to 120 | 134.1 to 163.9 |  |
+| `vga` | 1.0 20 %, 1.8 50 %, 5.0 30 % | 0.01 | slack 50 %, coil 40 %, straight 10 % | de15_plug 100 % | de15_plug 85 %, de15_inline 15 % | 2 | 60 to 120 | 84 to 95 |  |
+| `m8_sensor` | 2.0 50 %, 5.0 50 % | 0.01 | coil 50 %, slack 40 %, straight 10 % | m8a4_plug 60 %, m8a3_plug 40 % | stripped 80 %, cut 20 % | 3 | 50 to 100 | 32.01 to 33 |  |
 | `servo_lead` | 0.15 30 %, 0.3 50 %, 0.5 20 % | 0.02 | slack 60 %, coil 20 %, straight 20 % | servo3_plug 100 % | servo3_inline 50 %, cut 30 %, stripped 20 % | 2 | 30 to 60 | 6 to 7.5 |  |
 | `jumper_wire` | 0.1 30 %, 0.2 50 %, 0.3 20 % | 0.03 | slack 70 %, straight 30 % | pin_m_plug 50 %, pin_f_plug 50 % | pin_m_plug 50 %, pin_f_plug 30 %, pin_m_inline 20 % | 8 | 30 to 80 | 2.4 to 2.9 |  |
 | `battery_lead` | 0.1 30 %, 0.15 30 %, 0.3 40 % | 0.03 | slack 60 %, straight 25 %, coil 15 % | batt35_plug 100 % | stripped 50 %, batt35_inline 50 % | 1 | 10 to 25 | 66 to 80 |  |

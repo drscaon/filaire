@@ -45,6 +45,10 @@ colliders, masses and insertion results do not depend on them.
 | `idc10` | IDC socket 2 × 5 | **female** | | box header 2 × 5 | keyed | 6 mm |
 | `dc5521`, `dc5525`, `dc4017` | DC plug 5.5 × 2.1, 5.5 × 2.5, 4.0 × 1.7 mm | male | DC jack | DC jack | none | 9.5 mm |
 | `dsub9` | DE-9 female | **female** | DE-9 male | DE-9 male (panel) | keyed | 6 mm |
+| `dsub15` | DA-15 female | **female** | DA-15 male | DA-15 male (panel) | keyed | 6 mm |
+| `dsub25` | DB-25 female | **female** | DB-25 male | DB-25 male (panel) | keyed | 6 mm |
+| `de15` | DE-15 male (VGA, three rows) | male | DE-15 female | DE-15 female (panel) | keyed | 6 mm |
+| `m8a3`, `m8a4` | M8 A-coded female, 3 or 4 contacts | **female** | | M8 male (panel) | keyed | 6 mm |
 | `servo3` | servo plug, 3 sockets 2.54 mm | **female** | servo extension (3 pins) | servo port (3 pins in a slot) | keyed | 6 mm |
 | `pin_m` | jumper pin | male | jumper socket | breadboard contact | square | 6 mm |
 | `pin_f` | jumper socket | **female** | | header pin | square | 6 mm |

@@ -251,6 +251,106 @@ _DSUB_SOCKET = _holes(_DSUB_D, *(g2.circle(1.2, x, y) for x, y in _DSUB_ROWS))
 _DSUB_FLANGE = g2.rrect(30.81, 12.55, 1.0)
 _DSUB_HOOD = g2.rrect(31.5, 15.5, 3.0)
 
+# The D-sub family (MIL-DTL-24308 / IEC 60807-3): the same D, 10 degree sides, in every shell size,
+# wider for more contacts. Per shell (mm): the female insert's width (its D goes into the male's shell),
+# the male shell's width, the flange and the hood around it (the hood an estimate, as the DE-9's).
+DSUB_SHELLS = {
+    "E": dict(female=16.33, male=16.92, flange=30.81, holes=24.99, hood=31.5),
+    "A": dict(female=24.66, male=25.25, flange=39.14, holes=33.32, hood=40.0),
+    "B": dict(female=38.38, male=38.96, flange=53.04, holes=47.04, hood=54.0),
+}
+DSUB_HEIGHT = (7.80, 8.36)  # the female insert's D and the male shell's (all shells)
+DSUB_PITCH, DSUB_ROWS = 2.77, 2.84  # standard density: contact pitch, row spacing
+HD_PITCH, HD_ROWS = 2.29, 1.98  # high density (DE-15): three rows
+
+
+def _dsub_rows(counts, pitch, rows, offsets):
+    """Contact positions (mm), rows from the top: counts per row, each row centred then shifted by
+    its offset (in pitches)."""
+    ys = [rows * ((len(counts) - 1) / 2 - i) for i in range(len(counts))]
+    return [
+        (pitch * (j - (n - 1) / 2 + off), y)
+        for n, y, off in zip(counts, ys, offsets, strict=True)
+        for j in range(n)
+    ]
+
+
+def _dsub_female_insert(shell, contacts, hole):
+    """A female D insert (the cable-side part of DE-9, DA-15, DB-25): the D, with a hole per contact."""
+    d = g2.trapezoid(DSUB_SHELLS[shell]["female"], DSUB_HEIGHT[0], 10.0, r=1.0)
+    return _holes(d, *(g2.circle(hole, x, y) for x, y in contacts))
+
+
+def _dsub_male_shell(shell, contacts, pin, wall=0.3):
+    """A male D (the cable-side part of a DE-15): the shell, a wall of `wall` around an empty D, and the
+    pins standing in it."""
+    w = DSUB_SHELLS[shell]["male"]
+    outer = g2.trapezoid(w, DSUB_HEIGHT[1], 10.0, r=1.0)
+    inner = g2.trapezoid(w - 2 * wall, DSUB_HEIGHT[1] - 2 * wall, 10.0, r=max(1.0 - wall, 0.1))
+    return g2.union(outer.difference(inner), *(g2.circle(pin, x, y) for x, y in contacts))
+
+
+_DA15 = _dsub_rows([8, 7], DSUB_PITCH, DSUB_ROWS, [0.0, 0.0])
+_DB25 = _dsub_rows([13, 12], DSUB_PITCH, DSUB_ROWS, [0.0, 0.0])
+_DE15 = _dsub_rows([5, 5, 5], HD_PITCH, HD_ROWS, [0.0, -0.5, 0.0])
+
+# M8 (IEC 61076-2-104), A-coded, 3 or 4 contacts: the female cable connector's insert inside an M8 x 1
+# coupling nut (SW9), as the M12's. The insert's layout is not public: estimates, marked approximate.
+_M8_NUT = g2.circle(9.0).difference(g2.circle(8.2))
+
+
+def _m8_insert(n):
+    angles = [45, 135, 225, 315] if n == 4 else [45, 135, 270]  # 3 pins: 1, 3, 4 of the 4-pin layout
+    return _holes(
+        g2.circle(5.8),
+        g2.rect(1.0, 1.2, 0.0, 2.9),
+        *(g2.circle(1.1, 1.75 * np.cos(np.radians(a)), 1.75 * np.sin(np.radians(a))) for a in angles),
+    )
+
+
+_DSUB_SOURCES = [
+    "female D 16.33 / 24.66 / 38.38, male shell 16.92 / 25.25 / 38.96, holes 24.99 / 33.32 / 47.04, flange "
+    "30.81 / 39.14 / 53.04 (shells E, A, B): https://dtsheet.com/doc/1419327/d-subminiature",
+    "2.77 mm pitch, 2.84 mm row spacing: https://dtsheet.com/doc/1419302/d-subminiature",
+]
+
+
+def _dsub_female(key, label, shell, contacts):
+    s = DSUB_SHELLS[shell]
+    flange = g2.rrect(s["flange"], 12.55, 1.0)
+    hood = g2.rrect(s["hood"], 15.5, 3.0)
+    return ConnectorSpec(
+        key=key,
+        label=f"D-sub {label}",
+        standard=f"IEC 60807-3 / MIL-DTL-24308, shell size {shell}",
+        gender="female",
+        keying="keyed",
+        layers=[Layer(0.0, 6.0, _dsub_female_insert(shell, contacts, 1.2))],
+        body=[(1.0, flange), (32.0, hood)],
+        inline=(35.0, hood),
+        panel=(4.0, flange),
+        clearance=0.1,
+        density=2200.0,
+        plug_name=f"{label} female (cable)",
+        inline_name=f"{label} male (cable)",
+        panel_name=f"{label} male (panel)",
+        shell=_METAL,
+        plug_insert=_BLACK,
+        plug_rim=0.4,
+        socket_shell=_METAL,
+        socket_insert=_GOLD,
+        insert_metal=True,
+        color="#4a4d52",
+        approximate=[
+            f"hood {s['hood']:g} × 15.5 × 32",
+            "contact holes Ø1.2",
+            "engagement 6",
+            "clearance 0.1",
+        ],
+        sources=_DSUB_SOURCES,
+    )
+
+
 # BNC: the plug's coupling sleeve has two bayonet slots, an axial entry from its face then a
 # quarter turn round; the jack's barrel carries two studs. Plug turned by +90° (seen from the
 # jack) to lock. Diameters (mm): barrel 9.9, sleeve 10.1 inside, 14.5 outside, pin 1.35.
@@ -786,6 +886,88 @@ CONNECTORS: dict[str, ConnectorSpec] = {
         ],
     ),
     # ------------------------------------------------------------ lab bench
+    "dsub15": _dsub_female("dsub15", "DA-15", "A", _DA15),
+    "dsub25": _dsub_female("dsub25", "DB-25", "B", _DB25),
+    "de15": ConnectorSpec(
+        key="de15",
+        label="D-sub DE-15 (VGA, high density)",
+        standard="IEC 60807-3 / MIL-DTL-24308, shell size E, three rows",
+        gender="male",
+        keying="keyed",
+        layers=[Layer(0.0, 6.0, _dsub_male_shell("E", _DE15, 0.8))],
+        body=[(1.0, g2.rrect(30.81, 12.55, 1.0)), (30.0, g2.rrect(31.5, 15.5, 3.0))],
+        inline=(33.0, g2.rrect(31.5, 15.5, 3.0)),
+        panel=(4.0, g2.rrect(30.81, 12.55, 1.0)),
+        clearance=0.1,
+        density=2200.0,
+        plug_name="DE-15 male (cable)",
+        inline_name="DE-15 female (cable)",
+        panel_name="DE-15 female (panel)",
+        shell=_METAL,
+        plug_insert=_BLACK,
+        plug_rim=0.4,
+        socket_shell=_METAL,
+        socket_insert=_BLACK,
+        color="#1f2a44",
+        approximate=["shell wall 0.3", "pins Ø0.8", "hood 31.5 × 15.5 × 30", "engagement 6", "clearance 0.1"],
+        sources=[
+            *_DSUB_SOURCES[:1],
+            "high density: 15 contacts in shell E, 2.29 mm pitch, 1.98 mm row spacing: "
+            "https://docs.rs-online.com/6a2b/A700000015406202.pdf",
+        ],
+    ),
+    "m8a3": ConnectorSpec(
+        key="m8a3",
+        label="M8 A-coded 3-pin",
+        standard="IEC 61076-2-104",
+        gender="female",
+        keying="keyed",
+        layers=[Layer(0.0, 6.0, g2.union(_m8_insert(3), _M8_NUT))],
+        body=[(10.0, g2.circle(10.0)), (20.0, g2.circle(8.5))],
+        inline=None,
+        panel=(4.0, g2.rrect(12.0, 12.0, 1.5)),
+        clearance=0.1,
+        density=2500.0,
+        plug_name="M8 female (cable)",
+        panel_name="M8 male (panel)",
+        socket_insert=_METAL,
+        insert_metal=True,
+        plug_insert=_BLACK,
+        plug_rim=0.4,
+        socket_shell=_METAL,
+        color="#3a3f45",
+        shell=_METAL,
+        approximate=["insert Ø5.8", "key 1.0", "pins on Ø3.5", "nut as a ring Ø9 / bore Ø8.2", "body Ø10"],
+        sources=[
+            "thread M8 × 1, nut SW9, IEC 61076-2-104: https://docs.rs-online.com/d63c/A700000016092333.pdf",
+        ],
+    ),
+    "m8a4": ConnectorSpec(
+        key="m8a4",
+        label="M8 A-coded 4-pin",
+        standard="IEC 61076-2-104",
+        gender="female",
+        keying="keyed",
+        layers=[Layer(0.0, 6.0, g2.union(_m8_insert(4), _M8_NUT))],
+        body=[(10.0, g2.circle(10.0)), (20.0, g2.circle(8.5))],
+        inline=None,
+        panel=(4.0, g2.rrect(12.0, 12.0, 1.5)),
+        clearance=0.1,
+        density=2500.0,
+        plug_name="M8 female (cable)",
+        panel_name="M8 male (panel)",
+        socket_insert=_METAL,
+        insert_metal=True,
+        plug_insert=_BLACK,
+        plug_rim=0.4,
+        socket_shell=_METAL,
+        color="#3a3f45",
+        shell=_METAL,
+        approximate=["insert Ø5.8", "key 1.0", "pins on Ø3.5", "nut as a ring Ø9 / bore Ø8.2", "body Ø10"],
+        sources=[
+            "thread M8 × 1, nut SW9, IEC 61076-2-104: https://docs.rs-online.com/d63c/A700000016092333.pdf",
+        ],
+    ),
     "bnc": ConnectorSpec(
         key="bnc",
         label="BNC (bayonet, 50 Ω)",

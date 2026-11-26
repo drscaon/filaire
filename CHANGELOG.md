@@ -6,6 +6,23 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- D-sub connectors in shell sizes A and B, DA-15 (`dsub15`) and DB-25 (`dsub25`), built as the DE-9:
+  a female D insert on the cable, the male shell on the receptacle, contacts at 2.77 mm in two
+  rows 2.84 mm apart. The D's width, the flange and the mounting holes come from a manufacturer's
+  table for each shell size.
+- DE-15 (`de15`, VGA): the high density D-sub, three rows of five contacts (2.29 mm pitch, rows
+  1.98 mm apart) in shell size E, with the male shell and its pins on the cable side.
+- M8 A-coded female cable connectors with 3 or 4 contacts (`m8a3`, `m8a4`, IEC 61076-2-104): an
+  M8 × 1 coupling nut (SW9) around the insert. The insert's layout is not public: its diameter,
+  the pin circle and the key are estimates, listed in `approximate`.
+- Four presets: `vga` (DE-15 both ends, Ø 9 mm), `db25` (DB-25, Ø 8.4 mm), `da15` (DA-15 and an
+  open end, Ø 6.9 mm) and `m8_sensor` (M8 female, 4 or 3 contacts, and an open end, Ø 4.5 mm).
+  Diameters and weights from datasheets of common cables of each kind (Lapp LiYCY, StarTech VGA,
+  Murrelektronik M8), see `docs/sources.md`; the moduli are estimates, as for every preset.
+  29 connector families, 48 end variants, 24 presets.
+
 ### Changed
 
 - The code of the Primvaria contract comes from the new package primvaria-contract, which
