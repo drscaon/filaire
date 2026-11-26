@@ -120,6 +120,10 @@ cable, since a variant that is not selected is not composed. From Python:
 `filaire.validate.validate(file)` returns the messages. The tests and CI
 require no error and no warning, with and without physics.
 
+What the files use of the OpenUSD Core Specification 1.0, and which schemas
+give them their meaning beyond it, is in the
+[Primvaria contract, section 13](https://github.com/drscaon/primvaria/blob/main/docs/contract.md#13-openusd-core-specification).
+
 Selecting a variant (`end_b = "usb_c_inline"`, `"cut"`…) swaps the end, its
 collision parts and its joint. Angular drives use UsdPhysics units
 (stiffness per degree); the same values per radian and the rod's stiffness
