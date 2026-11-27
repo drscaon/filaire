@@ -6,6 +6,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.7.0b1] - 2026-11-27 (beta)
+
 ### Documentation
 
 - The README links to Primvaria's note on how standards are used; the pull request checklist gains a line for it.
