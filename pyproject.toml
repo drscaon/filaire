@@ -24,7 +24,7 @@ dependencies = [
     "scipy>=1.10",
     "shapely>=2.1",
     "usd-core>=26.5",  # the OpenUSD validators load from 26.5 on (see README)
-    "primvaria-contract>=0.2.0b1",  # the contract code shared by the four generators
+    "primvaria-contract>=0.3.0b1",  # the contract code shared by the four generators
 ]
 
 [project.optional-dependencies]
