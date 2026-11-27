@@ -18,6 +18,7 @@ Part of the [Filaire](../README.md) documentation.
 | `--max-segments N` | 400 | upper bound on the rigid segments per cable (longer segments beyond it) |
 | `--no-physics` | | visual assets only: no rigid bodies, colliders, joints, physics scene or ground |
 | `--engines LIST` | `physx,omniphysics,newton` | engine layers written beside each file with physics, comma-separated, or `none`; Filaire writes the PhysX and Newton ones, see [Newton layer](openusd.md#newton-layer) |
+| `--usdz` / `primvaria_contract.usdz.package(file)` | off | also write the pack's files (cables, sockets) as one `.usdz` package: the file as root layer, the textures and files it references inside, its engine layers beside it in the package (`<name>.usdz[<name>_newton.usda]`); the pack's tables do not list packages |
 | `--no-vary ASPECTS` | | aspects that stay nominal, comma-separated, the others unchanged: `length`, `layout`, `ends`, `color`, `stiffness`, `density`, `clearance` (`--no-vary-length`… still work, and are deprecated) |
 | `--nominal` | | no aspect varies |
 
