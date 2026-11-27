@@ -64,7 +64,14 @@ from .connectors import (
     receptacle_parts,
     with_opening,
 )
-from .contract import set_group, write_identity, write_labels, write_measured, write_variation
+from .contract import (
+    set_group,
+    write_identity,
+    write_labels,
+    write_material_label,
+    write_measured,
+    write_variation,
+)
 from .ground import ground, physics_scene
 from .mesh3d import TriMesh, mass_properties, merge, principal_inertia, split_normals, weld
 
@@ -125,12 +132,23 @@ class _Looks:
                 sh.CreateInput("opacity", _F.Float).Set(float(opacity))
                 sh.CreateInput("ior", _F.Float).Set(1.58)
             mat.CreateSurfaceOutput().ConnectToSource(sh.ConnectableAPI(), "surface")
+            write_material_label(mat, look_label(metallic, opacity))
         self.cache[key] = mat
         return mat
 
 
-def _physics_material(stage, root: str, name: str, friction: float, restitution: float) -> UsdShade.Material:
-    """A physics material of the asset at ``root``, in its own PhysicsMaterials scope."""
+def look_label(metallic: float, opacity: float = 1.0) -> str:
+    """The material label of a look: what a connector or cable part of that look is made of."""
+    if metallic >= 0.5:
+        return "metal"
+    return "clear_plastic" if opacity < 1.0 else "plastic"
+
+
+def _physics_material(
+    stage, root: str, name: str, friction: float, restitution: float, label: str = "plastic"
+) -> UsdShade.Material:
+    """A physics material of the asset at ``root``, in its own PhysicsMaterials scope; ``label``:
+    its material label (the jacket's compound, or plastic for the connectors)."""
     UsdGeom.Scope.Define(stage, f"{root}/PhysicsMaterials")
     path = f"{root}/PhysicsMaterials/{name}"
     mat = UsdShade.Material.Define(stage, path)
@@ -138,6 +156,7 @@ def _physics_material(stage, root: str, name: str, friction: float, restitution:
     api.CreateStaticFrictionAttr(float(friction))
     api.CreateDynamicFrictionAttr(float(friction))
     api.CreateRestitutionAttr(float(restitution))
+    write_material_label(mat, label)
     return mat
 
 
@@ -511,7 +530,8 @@ def measured_values(c: Cable) -> dict:
 def export_cables(path: str | Path, scene, physics: bool = True) -> Path:
     path = Path(path)
     stage, world = _new_stage(path, physics)
-    jacket = JACKETS[PRESETS[scene.preset_key]["jacket"]]
+    jacket_key = PRESETS[scene.preset_key]["jacket"]
+    jacket = JACKETS[jacket_key]
     set_group(UsdGeom.Scope.Define(stage, "/World/Cables").GetPrim())
     aspects = [name for name, on in asdict(scene.variations).items() if on]
     xs, ys = [], []
@@ -523,7 +543,9 @@ def export_cables(path: str | Path, scene, physics: bool = True) -> Path:
         looks, mats = _Looks(stage, cp), None
         if physics:
             mats = {
-                "jacket": _physics_material(stage, cp, "jacket", jacket["friction"], jacket["restitution"]),
+                "jacket": _physics_material(
+                    stage, cp, "jacket", jacket["friction"], jacket["restitution"], jacket_key
+                ),
                 "connector": _physics_material(
                     stage, cp, "connector", CONNECTOR_FRICTION, CONNECTOR_RESTITUTION
                 ),

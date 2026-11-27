@@ -182,3 +182,5 @@ Each cable also says what it is with OpenUSD's own semantic labels
 segmentation masks: `semantics:labels:class` holds `cable` and the preset (`usb_c`); for a socket, `socket` and its connector family (`rj45`), and
 `semantics:labels:instance` the asset's name. The classes are a
 column of `instances.csv` and are listed in `manifest.json`.
+
+Every material also says what it is made of, in the taxonomy `material`: `semantics:labels:material` holds the jacket's compound (`pvc`) on the jacket's physics material, `plastic` on the connectors', and `plastic`, `clear_plastic` or `metal` on each look, from its metalness and opacity; `concrete` on the shared ground's (contract, section 5).
