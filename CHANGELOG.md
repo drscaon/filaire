@@ -12,6 +12,7 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `generate --usdz`: also write the pack's file as one `.usdz` package, with the textures and files it references and its engine layers inside (`primvaria_contract.usdz`, primvaria-contract 0.5.0b1); off by default, so the output is unchanged. Each package passes OpenUSD's validators with their packaging rules and opens in Blender.
 - Every material says what it is made of with a semantic label (`semantics:labels:material`, Primvaria contract section 5), as NVIDIA's SimReady profiles ask; the shared ground is labelled `ground` and rendered with its own grey material (`concrete`). Requires primvaria-contract 0.4.0b1. The jacket's physics material is labelled with its compound (`pvc`), the connectors' `plastic`, each look `plastic`, `clear_plastic` or `metal`.
 - D-sub connectors in shell sizes A and B, DA-15 (`dsub15`) and DB-25 (`dsub25`), built as the DE-9:
   a female D insert on the cable, the male shell on the receptacle, contacts at 2.77 mm in two

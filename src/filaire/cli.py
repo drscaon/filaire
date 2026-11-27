@@ -21,6 +21,8 @@ import json
 import re
 import sys
 
+from primvaria_contract import usdz
+
 from . import __version__
 from .catalog import CATEGORIES, JACKETS, PRESETS
 from .centerline import LAYOUTS
@@ -133,6 +135,9 @@ def _cmd_generate(args) -> int:
     out = write_outputs(scene, args.out, physics=args.physics, engines=args.engines)
     print(json.dumps(summarize(scene), indent=2, ensure_ascii=False))
     print(f"written to {out}")
+    if args.usdz:
+        for package in usdz.package_pack(out):
+            print(f"package {package}")
     return 0
 
 
@@ -236,6 +241,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=ENGINES,
         metavar="LIST",
         help=f"engine layers beside each file, comma-separated, or none (default: {','.join(ENGINES)})",
+    )
+    g.add_argument(
+        "--usdz",
+        action="store_true",
+        help="also write the pack's file as one .usdz package, with what it depends on and its engine layers",
     )
     for name, text in VARIATION_HELP.items():
         g.add_argument(
