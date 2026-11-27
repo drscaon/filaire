@@ -48,6 +48,7 @@ jobs:
           pip install build twine
           python -m build
           twine check --strict dist/*
+          pip install dist/*.whl  # the command below comes with the package just built
           filaire blender-addon --out dist/filaire_physics.zip
 
       - name: Keep the Python packages for the PyPI job
