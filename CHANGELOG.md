@@ -29,6 +29,7 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- `tests/test_contract.py`, `test_pack.py` and `test_golden.py` import the shared tests of primvaria-contract 0.3.0b1 (`primvaria_contract.testing`) instead of keeping a copy of them; the same tests run, one for one. Requires primvaria-contract 0.3.0b1.
 - The code of the Primvaria contract comes from the new package primvaria-contract, which
   this generator now requires, instead of copies kept identical in the four generators.
   `contract`, `pack`, `ground` and `conformance` stay as modules of this package and give
