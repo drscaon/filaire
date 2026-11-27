@@ -50,6 +50,10 @@ and the project uses [Semantic Versioning](https://semver.org/).
   unless it passes. Tests of 8 s or more are marked `slow` (`pytest -m "not slow"` runs
   the others).
 
+### Fixed
+
+- The release workflow installs the package it has just built before writing the Blender add-on (`filaire blender-addon`); since the release runs the full CI first, the command was missing and 0.7.0b1 could not be published at the first attempt.
+
 ## [0.6.0b1] - 2026-11-24 (beta)
 
 ### Added
